@@ -1,6 +1,6 @@
-package com.futternbetter.saas;
+package com.futurenbetter.saas;
 
-import com.futternbetter.saas.config.DotEnvConfig;
+import com.futurenbetter.saas.config.DotEnvConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -11,5 +11,4 @@ public class SaasApplication {
         DotEnvConfig.loadEnv();
         SpringApplication.run(SaasApplication.class, args);
     }
-
 }

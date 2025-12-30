@@ -1,4 +1,4 @@
-package com.futternbetter.saas.config;
+package com.futurenbetter.saas.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.AllArgsConstructor;
