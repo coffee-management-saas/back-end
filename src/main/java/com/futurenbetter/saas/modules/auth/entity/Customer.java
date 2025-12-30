@@ -1,0 +1,55 @@
+package com.futurenbetter.saas.modules.auth.entity;
+
+import com.futurenbetter.saas.modules.auth.enums.CustomerStatus;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
+
+@Entity
+@Table(name = "customers")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Customer {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "username")
+    private String username;
+
+    @Column(name = "fullname")
+    private String fullname;
+
+    @Column(name = "email", unique = true)
+    private String email;
+
+    @Column(name = "phone", unique = true)
+    private String phone;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dob;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private CustomerStatus status;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
+    private List<MemberProfile> memberProfiles;
+}
