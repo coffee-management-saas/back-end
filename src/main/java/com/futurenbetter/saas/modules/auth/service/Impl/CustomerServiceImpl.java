@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.auth.service.Impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.modules.auth.dto.request.CustomerRegistrationRequest;
 import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
@@ -24,11 +25,14 @@ public class CustomerServiceImpl implements CustomerService {
     private final ShopRepository shopRepository;
     private final CustomerMapper customerMapper;
 
-    @Value("${app.shop-config.id}")
-    private Long currentShopId;
-
     @Override
     public CustomerResponse register(CustomerRegistrationRequest request) {
+        Long currentShopId = TenantContext.getCurrentShopId();
+
+        if (currentShopId == null) {
+            throw new BusinessException("Cửa hàng không tồn tại");
+        }
+
         if (customerRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("Email đã tồn tại");
         }
@@ -38,6 +42,7 @@ public class CustomerServiceImpl implements CustomerService {
         }
 
         Customer customer = customerMapper.toEntity(request);
+        customer.setStatus(CustomerStatus.ACTIVE);
         customer = customerRepository.save(customer);
 
 //        MembershipRank defaultRank = rankRepo.findFirstByOrderByMinPointsAsc()
