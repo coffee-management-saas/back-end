@@ -1,4 +1,4 @@
-package com.futurenbetter.saas.common.api;
+package com.futurenbetter.saas.common.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

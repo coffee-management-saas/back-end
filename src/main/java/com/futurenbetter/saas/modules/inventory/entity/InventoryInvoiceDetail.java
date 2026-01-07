@@ -41,7 +41,7 @@ public class InventoryInvoiceDetail {
     Integer inputQuantity;
 
     @Column(name = "converted_quantity", nullable = false)
-    Integer convertedQuantity;
+    Double convertedQuantity;
 
     @Column(name = "unit_price", nullable = false)
     Double unitPrice;

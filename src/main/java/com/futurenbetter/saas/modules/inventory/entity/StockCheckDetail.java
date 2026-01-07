@@ -30,13 +30,13 @@ public class StockCheckDetail {
     RawIngredient ingredient;
 
     @Column(name = "snapshot_quantity", nullable = false)
-    Integer snapshotQuantity;
+    Double snapshotQuantity;
 
     @Column(name = "actual_quantity")
-    Integer actualQuantity;
+    Double actualQuantity;
 
     @Column(name = "diff_quantity")
-    Integer diffQuantity;
+    Double diffQuantity;
 
     @Column(name = "reason", columnDefinition = "TEXT")
     String reason;

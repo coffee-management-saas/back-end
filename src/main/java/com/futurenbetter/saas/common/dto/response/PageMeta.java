@@ -1,4 +1,4 @@
-package com.futurenbetter.saas.common.api;
+package com.futurenbetter.saas.common.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

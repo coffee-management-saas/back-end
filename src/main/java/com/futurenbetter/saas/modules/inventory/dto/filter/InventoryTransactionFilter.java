@@ -1,33 +1,21 @@
 package com.futurenbetter.saas.modules.inventory.dto.filter;
 
-import com.futurenbetter.saas.modules.inventory.enums.Status;
-import com.futurenbetter.saas.modules.inventory.enums.TransactionType;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
+import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.FieldDefaults;
+import lombok.EqualsAndHashCode;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class InventoryTransactionFilter {
-    Long id;
-    Long shopId;
+@EqualsAndHashCode(callSuper = true)
+public class InventoryTransactionFilter extends BaseFilter {
     Long ingredientId;
-    TransactionType transactionType;
-    Long ingredientBatchId;
-    Long inventoryInvoiceId;
-    Long stockCheckDetailId;
-    Long orderId;
-    Integer minQuantityChange;
-    Integer maxQuantityChange;
-    Integer minQuantityAfter;
-    Integer maxQuantityAfter;
-    LocalDateTime fromDate; // created after this date
-    LocalDateTime toDate; // updated before this date
-    Status status;
+    Long batchId;
+    String transactionType;
+    String referenceCode;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    LocalDateTime fromDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    LocalDateTime toDate;
 }

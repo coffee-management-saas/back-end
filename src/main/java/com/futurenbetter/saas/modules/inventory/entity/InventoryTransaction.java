@@ -2,6 +2,7 @@ package com.futurenbetter.saas.modules.inventory.entity;
 
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.inventory.enums.Status;
+import com.futurenbetter.saas.modules.inventory.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -46,10 +47,10 @@ public class InventoryTransaction {
     Long orderId;
 
     @Column(name = "quantity_change", nullable = false)
-    Integer quantityChange;
+    Double quantityChange;
 
     @Column(name = "quantity_after", nullable = false)
-    Integer quantityAfter;
+    Double quantityAfter;
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;
@@ -60,6 +61,10 @@ public class InventoryTransaction {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     Status status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transaction_type", nullable = false)
+    TransactionType transactionType;
 
     @PrePersist
     public void onCreate() {

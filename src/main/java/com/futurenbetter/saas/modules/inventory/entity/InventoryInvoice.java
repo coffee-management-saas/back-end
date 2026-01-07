@@ -7,6 +7,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "inventory_invoices")
@@ -49,6 +50,9 @@ public class InventoryInvoice {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     Status status;
+
+    @OneToMany(mappedBy = "inventoryInvoice", cascade = CascadeType.ALL)
+    private List<InventoryInvoiceDetail> details;
 
     @PrePersist
     public void onCreate() {
