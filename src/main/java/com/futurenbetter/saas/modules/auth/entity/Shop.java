@@ -46,5 +46,5 @@ public class Shop {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
-    private List<MemberProfile> memberProfiles;
+    private List<MembershipRank> membershipRanks;
 }

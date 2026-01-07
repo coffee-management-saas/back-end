@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -13,9 +14,11 @@ import java.time.LocalDate;
 public class CustomerRegistrationRequest {
     private String username;
     private String fullname;
+    private String password;
     private String phone;
     private String email;
     private String address;
-    @JsonFormat(pattern = "dd/MM/yyyy")
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dob;
 }

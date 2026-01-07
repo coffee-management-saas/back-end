@@ -11,7 +11,6 @@ public interface CustomerMapper {
     Customer toEntity(CustomerRegistrationRequest request);
 
     @Mapping(target = "customerId", source = "customer.id")
-    @Mapping(target = "memberProfileId", source = "memberProfileId")
     @Mapping(target = "status", source = "customer.status")
-    CustomerResponse toResponse(Customer customer, Long memberProfileId);
+    CustomerResponse toResponse(Customer customer);
 }
