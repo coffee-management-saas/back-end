@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -28,5 +30,19 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(customerService.login(request));
+    }
+
+    //nên lưu refresh token vào database để quản lý việc đăng xuất của user
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refresh(@RequestBody Map<String, String> request) {
+        String refreshToken  = request.get("refreshToken");
+        return ResponseEntity.ok(customerService.refreshToken(refreshToken));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestBody Map<String, String> request) {
+        String refreshToken  = request.get("refreshToken");
+        customerService.logout(refreshToken);
+        return ResponseEntity.ok("Đăng xuất thành công");
     }
 }

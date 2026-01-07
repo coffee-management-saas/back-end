@@ -9,4 +9,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 public interface CustomerService extends UserDetailsService {
     CustomerResponse register(CustomerRegistrationRequest request);
     LoginResponse login(LoginRequest request);
+    LoginResponse refreshToken(String token);
+    void logout(String token);
 }
