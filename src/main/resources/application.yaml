@@ -21,6 +21,7 @@ spring:
       hibernate:
         format_sql: true
 
-app:
-  shop-config:
-    id: 1
+jwt:
+  secret: ${JWT_SECRET}
+  access-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}

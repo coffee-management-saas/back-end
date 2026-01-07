@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.modules.auth.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,7 +17,6 @@ public class CustomerResponse {
     private String email;
     private String phone;
     private String dob;
-    private Long memberProfileId;
     private LocalDateTime createdAt;
     private String status;
 }

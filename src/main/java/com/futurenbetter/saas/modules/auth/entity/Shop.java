@@ -32,8 +32,8 @@ public class Shop {
     @Column(name = "email", unique = true)
     private String email;
 
-    @Column(name = "website_url")
-    private String websiteUrl;
+    @Column(name = "domain")
+    private String domain;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
@@ -46,5 +46,5 @@ public class Shop {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
-    private List<MemberProfile> memberProfiles;
+    private List<MembershipRank> membershipRanks;
 }
