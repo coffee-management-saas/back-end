@@ -83,6 +83,26 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    public LoginResponse refreshToken(String token) {
+        if (jwtService.isTokenExpired(token)) {
+            throw new BusinessException("Refresh token expired");
+        }
+
+        String username = jwtService.extractUsername(token);
+
+        Customer customer = customerRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("Người dùng không tồn tại"));
+
+        String newAccessToken = jwtService.generateAccessToken(customer.getUsername(), customer.getMembershipRank().getShop().getShopId());
+        String newRefreshToken = jwtService.generateRefreshToken(customer.getUsername());
+
+        return LoginResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .build();
+    }
+
+    @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return (UserDetails) customerRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));

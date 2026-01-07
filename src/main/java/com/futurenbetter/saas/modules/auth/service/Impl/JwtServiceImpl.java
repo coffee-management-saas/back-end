@@ -69,6 +69,27 @@ public class JwtServiceImpl implements JwtService {
         return customer;
     }
 
+    @Override
+    public String extractUsername(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigninKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+    }
+
+    @Override
+    public boolean isTokenExpired(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigninKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration()
+                .before(new Date());
+    }
+
     private SecretKey getSigninKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }

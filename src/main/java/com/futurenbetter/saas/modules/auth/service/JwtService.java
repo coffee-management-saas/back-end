@@ -13,4 +13,6 @@ public interface JwtService {
     String generateRefreshToken(String username);
     String builderToken(Map<String, Object> extraClaims, String subject, long expiration);
     Customer getCustomerByToken(String token);
+    String extractUsername(String token);
+    boolean isTokenExpired(String token);
 }
