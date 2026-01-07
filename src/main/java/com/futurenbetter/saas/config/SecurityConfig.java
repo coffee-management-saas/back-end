@@ -1,6 +1,6 @@
 package com.futurenbetter.saas.config;
 
-import com.futurenbetter.saas.modules.auth.service.CustomerService;
+import com.futurenbetter.saas.modules.auth.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,9 +15,9 @@ import org.springframework.web.cors.CorsUtils;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomerService customerService;
+    private final AuthenticationService authenticationService;
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/api/auth/**",
+            "/api/**",
             "/v3/api-docs/**",
             "/api/swagger-ui/**",
             "/api/swagger-ui.html",
@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
 
-                .userDetailsService(customerService)
+                .userDetailsService(authenticationService)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

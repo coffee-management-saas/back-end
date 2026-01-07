@@ -19,5 +19,6 @@ public class CustomerResponse {
     private String phone;
     private String dob;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private String status;
 }
