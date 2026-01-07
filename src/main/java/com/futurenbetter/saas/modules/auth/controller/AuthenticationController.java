@@ -38,4 +38,11 @@ public class AuthenticationController {
         String refreshToken  = request.get("refreshToken");
         return ResponseEntity.ok(customerService.refreshToken(refreshToken));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestBody Map<String, String> request) {
+        String refreshToken  = request.get("refreshToken");
+        customerService.logout(refreshToken);
+        return ResponseEntity.ok("Đăng xuất thành công");
+    }
 }

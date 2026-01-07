@@ -103,6 +103,13 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    public void logout(String token) {
+        if (jwtService.isTokenExpired(token)) {
+            throw new BusinessException("Refresh token expired");
+        }
+    }
+
+    @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return (UserDetails) customerRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
