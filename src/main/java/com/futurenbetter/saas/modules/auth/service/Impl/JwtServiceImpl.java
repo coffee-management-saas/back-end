@@ -63,8 +63,7 @@ public class JwtServiceImpl implements JwtService {
                 .parseSignedClaims(token)
                 .getPayload();
         String username = extractUsername(token);
-        Customer customer = customerRepository.findByUsername(username).orElse(null);
-        return customer;
+        return customerRepository.findByUsername(username).orElse(null);
     }
 
     @Override
