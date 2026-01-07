@@ -2,6 +2,7 @@ package com.futurenbetter.saas.modules.auth.service.Impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
+import com.futurenbetter.saas.modules.auth.dto.request.ChangePasswordRequest;
 import com.futurenbetter.saas.modules.auth.dto.request.CustomerRegistrationRequest;
 import com.futurenbetter.saas.modules.auth.dto.request.LoginRequest;
 import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
@@ -19,6 +20,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @RequiredArgsConstructor
 @Service
@@ -68,9 +71,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Cửa hàng không hợp lệ");
         }
 
-        Customer customer = customerRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BusinessException("Tên đăng nhập hoặc mật khẩu không đúng"));
+        if (request.getUsername() == null || request.getPassword() == null) {
+            throw new BusinessException("Thiếu thông tin đăng nhập");
+        }
 
+        Customer customer = customerRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new BusinessException("Tên đăng nhập không tồn tại"));
+
+        if (!passwordEncoder.matches(request.getPassword(), customer.getPassword())) {
+            throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
+        }
 
         String accessToken = jwtService.generateAccessToken(customer.getUsername(), currentShopId);
         String refreshToken = jwtService.generateRefreshToken(customer.getUsername());
@@ -106,6 +116,25 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (jwtService.isTokenExpired(token)) {
             throw new BusinessException("Refresh token expired");
         }
+    }
+
+    @Override
+    public void changePassword(Long customerid, ChangePasswordRequest request) {
+        Customer customer = customerRepository.findById(customerid)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy người dùng"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), customer.getPassword())) {
+            throw new BusinessException("Mật khẩu cũ không chính xác");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException("Mật khẩu xác nhận không khớp");
+        }
+
+        customer.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        customer.setUpdatedAt(LocalDateTime.now());
+
+        customerRepository.save(customer);
     }
 
     @Override

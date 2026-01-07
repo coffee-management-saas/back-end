@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.modules.auth.service;
 
+import com.futurenbetter.saas.modules.auth.dto.request.ChangePasswordRequest;
 import com.futurenbetter.saas.modules.auth.dto.request.CustomerRegistrationRequest;
 import com.futurenbetter.saas.modules.auth.dto.request.LoginRequest;
 import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
@@ -11,4 +12,5 @@ public interface AuthenticationService extends UserDetailsService {
     LoginResponse login(LoginRequest request);
     LoginResponse refreshToken(String token);
     void logout(String token);
+    void changePassword(Long customerid, ChangePasswordRequest request);
 }
