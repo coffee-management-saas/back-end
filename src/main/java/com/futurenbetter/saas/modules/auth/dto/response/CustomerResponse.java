@@ -14,6 +14,7 @@ public class CustomerResponse {
     private String customerId;
     private String username;
     private String fullname;
+    private String rankId;
     private String email;
     private String phone;
     private String dob;

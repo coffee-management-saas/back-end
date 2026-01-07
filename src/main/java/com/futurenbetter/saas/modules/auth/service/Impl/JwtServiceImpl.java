@@ -62,10 +62,8 @@ public class JwtServiceImpl implements JwtService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-        String idString = claims.getSubject();
-        long id = Long.parseLong(idString);
-
-        Customer customer = customerRepository.findById(id).orElse(null);
+        String username = extractUsername(token);
+        Customer customer = customerRepository.findByUsername(username).orElse(null);
         return customer;
     }
 

@@ -12,5 +12,6 @@ public interface CustomerMapper {
 
     @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "status", source = "customer.status")
+    @Mapping(target = "rankId", source = "customer.membershipRank.id")
     CustomerResponse toResponse(Customer customer);
 }
