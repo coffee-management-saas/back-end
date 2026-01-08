@@ -1,6 +1,9 @@
 package com.futurenbetter.saas.modules.auth.entity;
 
 import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
+import com.futurenbetter.saas.modules.promotion.entity.Promotion;
+import com.futurenbetter.saas.modules.promotion.entity.PromotionTarget;
+import com.futurenbetter.saas.modules.promotion.entity.PromotionUsage;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -47,4 +50,13 @@ public class Shop {
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
     private List<MembershipRank> membershipRanks;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<PromotionUsage> promotionUsages;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<PromotionTarget> promotionTargets;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<Promotion> promotions;
 }
