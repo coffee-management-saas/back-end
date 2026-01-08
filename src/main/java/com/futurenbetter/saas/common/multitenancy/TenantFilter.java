@@ -33,7 +33,7 @@ public class TenantFilter implements Filter {
             final String finalDomain = domain.toLowerCase();
 
             shopRepository.findByDomain(finalDomain).ifPresent(shop -> {
-                TenantContext.setCurrentShopId(shop.getShopId());
+                TenantContext.setCurrentShopId(shop.getId());
             });
         }
 

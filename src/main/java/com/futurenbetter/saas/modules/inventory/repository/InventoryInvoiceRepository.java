@@ -9,5 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface InventoryInvoiceRepository extends JpaRepository<InventoryInvoice, Long>, JpaSpecificationExecutor<InventoryInvoice> {
-    Optional<InventoryInvoice> findByIdAndShopId(Long id, Long shopId);
+    Optional<InventoryInvoice> findByIdAndId(Long id, Long shopId);
 }

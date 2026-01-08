@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface MembershipRankRepository extends JpaRepository<MembershipRank, Long> {
-    Optional<MembershipRank> findFirstByShop_ShopIdOrderByRequiredPointsAsc(Long shopId);
+    Optional<MembershipRank> findFirstByShop_IdOrderByRequiredPointsAsc(Long shopId);
 }

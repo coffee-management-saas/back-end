@@ -54,7 +54,7 @@ public class StockCheckServiceImpl implements StockCheckService {
         // 2. Xác định danh sách nguyên liệu cần kiểm
         List<RawIngredient> ingredients;
         if (request.getIngredientIds() == null || request.getIngredientIds().isEmpty()) {
-            ingredients = ingredientRepository.findAllByShopId(shop.getId());
+            ingredients = ingredientRepository.findAllById(shop.getId());
         } else {
             ingredients = ingredientRepository.findAllById(request.getIngredientIds());
         }
@@ -82,7 +82,7 @@ public class StockCheckServiceImpl implements StockCheckService {
     @Override
     @Transactional
     public StockCheckSessionResponse updateCount(StockCheckUpdateRequest request) {
-        StockCheckSession session = sessionRepository.findByIdAndShopId(request.getSessionId(), SecurityUtils.getCurrentShopId())
+        StockCheckSession session = sessionRepository.findByIdAndId(request.getSessionId(), SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Phiếu kiểm kê không tồn tại"));
 
         if (Boolean.TRUE.equals(session.getIsApproved())) {
@@ -111,7 +111,7 @@ public class StockCheckServiceImpl implements StockCheckService {
     @Override
     @Transactional
     public StockCheckSessionResponse approveSession(StockCheckApproveRequest request) {
-        StockCheckSession session = sessionRepository.findByIdAndShopId(request.getSessionId(), SecurityUtils.getCurrentShopId())
+        StockCheckSession session = sessionRepository.findByIdAndId(request.getSessionId(), SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Phiếu không tồn tại"));
 
         if (Boolean.TRUE.equals(request.getIsApproved())) {

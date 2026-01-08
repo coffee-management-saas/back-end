@@ -9,5 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface StockCheckSessionRepository extends JpaRepository<StockCheckSession, Long>, JpaSpecificationExecutor<StockCheckSession> {
-    Optional<StockCheckSession> findByIdAndShopId(Long id, Long shopId);
+    Optional<StockCheckSession> findByIdAndId(Long id, Long shopId);
 }

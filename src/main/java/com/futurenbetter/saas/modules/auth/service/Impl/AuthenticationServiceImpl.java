@@ -54,7 +54,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         customer.setStatus(CustomerStatus.ACTIVE);
         customer = customerRepository.save(customer);
 
-        MembershipRank defaultRank = membershipRankRepository.findFirstByShop_ShopIdOrderByRequiredPointsAsc(currentShopId)
+        MembershipRank defaultRank = membershipRankRepository.findFirstByShop_IdOrderByRequiredPointsAsc(currentShopId)
                 .orElseThrow(() -> new BusinessException("Lỗi cấu hình hạng thành viên!"));
 
         customer.setMembershipRank(defaultRank);
@@ -102,7 +102,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Customer customer = customerRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException("Người dùng không tồn tại"));
 
-        String newAccessToken = jwtService.generateAccessToken(customer.getUsername(), customer.getMembershipRank().getShop().getShopId());
+        String newAccessToken = jwtService.generateAccessToken(customer.getUsername(), customer.getMembershipRank().getShop().getId());
         String newRefreshToken = jwtService.generateRefreshToken(customer.getUsername());
 
         return LoginResponse.builder()

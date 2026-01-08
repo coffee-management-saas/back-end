@@ -40,7 +40,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
     @Override
     @Transactional
     public RawIngredientResponse update(Long id, RawIngredientRequest request) {
-        RawIngredient entity = repository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        RawIngredient entity = repository.findByIdAndId(id, SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại"));
 
         mapper.updateFromRequest(entity, request);
@@ -62,7 +62,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
     @Override
     @Transactional(readOnly = true)
     public RawIngredientResponse getDetail(Long id) {
-        RawIngredient entity = repository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        RawIngredient entity = repository.findByIdAndId(id, SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại"));
         return toFullResponse(entity);
     }

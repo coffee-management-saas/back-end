@@ -56,7 +56,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
 
         // 2. Loop Items
         for (InvoiceItemRequest itemReq : request.getItems()) {
-            RawIngredient ingredient = ingredientRepository.findByIdAndShopId(itemReq.getIngredientId(), shop.getId())
+            RawIngredient ingredient = ingredientRepository.findByIdAndId(itemReq.getIngredientId(), shop.getId())
                     .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại: " + itemReq.getIngredientId()));
 
             // Tính toán quy đổi
@@ -128,7 +128,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
 
     @Override
     public InventoryInvoiceResponse getDetail(Long id) {
-        return invoiceRepository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        return invoiceRepository.findByIdAndId(id, SecurityUtils.getCurrentShopId())
                 .map(invoiceMapper::toResponse)
                 .orElseThrow(() -> new BusinessException("Phiếu nhập không tồn tại"));
     }

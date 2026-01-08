@@ -30,7 +30,7 @@ public class RecipeServiceImpl implements RecipeService {
     @Override
     @Transactional
     public RecipeResponse create(RecipeRequest request) {
-        var ingredient = ingredientRepository.findByIdAndShopId(request.getIngredientId(), SecurityUtils.getCurrentShopId())
+        var ingredient = ingredientRepository.findByIdAndId(request.getIngredientId(), SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại"));
 
         Recipe entity = mapper.toEntity(request);
@@ -45,7 +45,7 @@ public class RecipeServiceImpl implements RecipeService {
     @Override
     @Transactional
     public RecipeResponse update(Long id, RecipeRequest request) {
-        Recipe entity = repository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        Recipe entity = repository.findByIdAndId(id, SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Công thức không tồn tại"));
 
         // 1. Update các field cơ bản (quantity, note...)
@@ -53,7 +53,7 @@ public class RecipeServiceImpl implements RecipeService {
 
         // 2. Nếu đổi nguyên liệu, cần set lại quan hệ thủ công
         if (request.getIngredientId() != null && !request.getIngredientId().equals(entity.getRawIngredient().getId())) {
-            var newIngredient = ingredientRepository.findByIdAndShopId(request.getIngredientId(), SecurityUtils.getCurrentShopId())
+            var newIngredient = ingredientRepository.findByIdAndId(request.getIngredientId(), SecurityUtils.getCurrentShopId())
                     .orElseThrow(() -> new BusinessException("Nguyên liệu mới không tồn tại"));
             entity.setRawIngredient(newIngredient);
         }
@@ -64,13 +64,13 @@ public class RecipeServiceImpl implements RecipeService {
 
     @Override
     public List<RecipeResponse> getByVariant(Long variantId) {
-        return repository.findByVariantIdAndShopId(variantId, SecurityUtils.getCurrentShopId())
+        return repository.findByVariantIdAndId(variantId, SecurityUtils.getCurrentShopId())
                 .stream().map(mapper::toResponse).collect(Collectors.toList());
     }
 
     @Override
     public List<RecipeResponse> getByTopping(Long toppingId) {
-        return repository.findByToppingIdAndShopId(toppingId, SecurityUtils.getCurrentShopId())
+        return repository.findByToppingIdAndId(toppingId, SecurityUtils.getCurrentShopId())
                 .stream().map(mapper::toResponse).collect(Collectors.toList());
     }
 }

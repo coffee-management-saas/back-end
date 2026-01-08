@@ -10,9 +10,9 @@ import java.util.Optional;
 @Repository
 public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
-    Optional<Recipe> findByIdAndShopId(Long id, Long shopId);
+    Optional<Recipe> findByIdAndId(Long id, Long shopId);
 
-    List<Recipe> findByVariantIdAndShopId(Long variantId, Long shopId);
+    List<Recipe> findByVariantIdAndId(Long variantId, Long shopId);
 
-    List<Recipe> findByToppingIdAndShopId(Long toppingId, Long shopId);
+    List<Recipe> findByToppingIdAndId(Long toppingId, Long shopId);
 }

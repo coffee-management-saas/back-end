@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface UnitConversionRepository extends JpaRepository<UnitConversion, Long> {
 
-    Optional<UnitConversion> findByIdAndShopId(Long id, Long shopId);
+    Optional<UnitConversion> findByIdAndId(Long id, Long shopId);
 
     boolean existsByIngredientIdAndFromUnitAndStatus(Long ingredientId, InputUnit fromUnit, Status status);
 

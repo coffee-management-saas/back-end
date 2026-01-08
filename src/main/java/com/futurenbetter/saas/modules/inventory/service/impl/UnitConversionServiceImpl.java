@@ -26,7 +26,7 @@ public class UnitConversionServiceImpl implements UnitConversionService {
     @Override
     @Transactional
     public UnitConversion create(UnitConversionRequest request) {
-        var ingredient = ingredientRepository.findByIdAndShopId(request.getIngredientId(), SecurityUtils.getCurrentShopId())
+        var ingredient = ingredientRepository.findByIdAndId(request.getIngredientId(), SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại"));
 
         if (repository.existsByIngredientIdAndFromUnitAndStatus(ingredient.getId(), request.getFromUnit(), Status.ACTIVE)) {
@@ -45,7 +45,7 @@ public class UnitConversionServiceImpl implements UnitConversionService {
     @Override
     @Transactional
     public UnitConversion update(Long id, UnitConversionRequest request) {
-        UnitConversion entity = repository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        UnitConversion entity = repository.findByIdAndId(id, SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Cấu hình quy đổi không tồn tại"));
 
         mapper.updateFromRequest(entity, request);
