@@ -8,4 +8,5 @@ import java.util.List;
 public interface PromotionService {
     PromotionResponse createPromotion(PromotionRequest promotionRequest);
     List<PromotionResponse> getAllPromotions();
+    PromotionResponse getPromotion(Long promotionId);
 }

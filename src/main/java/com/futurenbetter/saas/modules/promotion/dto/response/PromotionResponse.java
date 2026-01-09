@@ -30,6 +30,6 @@ public class PromotionResponse {
     private PromotionEnum promotionStatus;
     private Long shopId;
 //    private List<Long> appliedProductIds;
-    private LocalDateTime createDate;
-    private LocalDateTime updateDate;
+    private LocalDateTime createdDate;
+    private LocalDateTime updatedDate;
 }

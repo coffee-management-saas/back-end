@@ -29,4 +29,10 @@ public class PromotionController {
         List<PromotionResponse> response = promotionService.getAllPromotions();
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{promotionId}")
+    public ResponseEntity<PromotionResponse> getPromotionById(@PathVariable Long promotionId) {
+        PromotionResponse response = promotionService.getPromotion(promotionId);
+        return ResponseEntity.ok(response);
+    }
 }
