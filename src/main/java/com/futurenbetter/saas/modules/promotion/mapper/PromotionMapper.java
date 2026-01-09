@@ -17,7 +17,7 @@ public interface PromotionMapper {
 
 
     @Mapping(source = "shop.id", target = "shopId")
-    @Mapping(source = "createdAt", target = "createDate")
-    @Mapping(source = "updatedAt", target = "updateDate")
+    @Mapping(source = "createdAt", target = "createdDate")
+    @Mapping(source = "updatedAt", target = "updatedDate")
     PromotionResponse toResponse(Promotion promotion);
 }

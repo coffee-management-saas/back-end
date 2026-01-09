@@ -69,4 +69,18 @@ public class PromotionServiceImpl implements PromotionService {
                 .map(promotionMapper::toResponse)
                 .toList();
     }
+
+    @Override
+    public PromotionResponse getPromotion(Long promotionId) {
+        Long currentShopId = TenantContext.getCurrentShopId();
+
+        if (currentShopId == null) {
+            throw new BusinessException("Không tìm thấy cửa hàng");
+        }
+
+        return promotionRepository.findById(promotionId)
+                .filter(p -> p.getShop().getId().equals(currentShopId))
+                .map(promotionMapper::toResponse)
+                .orElseThrow(() -> new BusinessException("Mã khuyến mãi không tồn tại"));
+    }
 }
