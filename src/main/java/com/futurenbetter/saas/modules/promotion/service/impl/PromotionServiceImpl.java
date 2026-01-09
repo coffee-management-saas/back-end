@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.promotion.service.impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.promotion.dto.request.PromotionRequest;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -51,5 +54,19 @@ public class PromotionServiceImpl implements PromotionService {
 
         Promotion savedPromotion = promotionRepository.save(promotion);
         return promotionMapper.toResponse(savedPromotion);
+    }
+
+    @Override
+    public List<PromotionResponse> getAllPromotions() {
+        Long currentShopId = TenantContext.getCurrentShopId();
+
+        if (currentShopId == null) {
+            throw new BusinessException("Không tìm thấy cửa hàng");
+        }
+
+        return promotionRepository.findAllByShopId(currentShopId)
+                .stream()
+                .map(promotionMapper::toResponse)
+                .toList();
     }
 }
