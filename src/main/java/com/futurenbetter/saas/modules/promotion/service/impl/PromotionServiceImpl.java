@@ -88,6 +88,19 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     @Override
+    public PromotionResponse updatePromotion(Long promotionId, PromotionRequest promotionRequest) {
+        Long currentShopId = TenantContext.getCurrentShopId();
+
+        Promotion promotion = promotionRepository.findById(promotionId)
+                .filter(p -> p.getShop().getId().equals(currentShopId))
+                .orElseThrow(() -> new BusinessException("Mã khuyến mãi không tồn tại"));
+
+        promotionMapper.updateEntity(promotionRequest, promotion);
+        promotion.setUpdatedAt(LocalDateTime.now());
+        return promotionMapper.toResponse(promotionRepository.save(promotion));
+    }
+
+    @Override
     public void deletePromotion(Long promotionId) {
         Long currentShopId = TenantContext.getCurrentShopId();
 
