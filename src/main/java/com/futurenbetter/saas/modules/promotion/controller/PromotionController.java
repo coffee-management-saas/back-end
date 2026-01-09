@@ -35,4 +35,10 @@ public class PromotionController {
         PromotionResponse response = promotionService.getPromotion(promotionId);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{promotionId}")
+    public ResponseEntity<String> deletePromotionById(@PathVariable Long promotionId) {
+        promotionService.deletePromotion(promotionId);
+        return new ResponseEntity<>("Xóa mã khuyến mãi thành công", HttpStatus.OK);
+    }
 }

@@ -56,6 +56,7 @@ public class PromotionServiceImpl implements PromotionService {
         return promotionMapper.toResponse(savedPromotion);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<PromotionResponse> getAllPromotions() {
         Long currentShopId = TenantContext.getCurrentShopId();
@@ -64,12 +65,14 @@ public class PromotionServiceImpl implements PromotionService {
             throw new BusinessException("Không tìm thấy cửa hàng");
         }
 
-        return promotionRepository.findAllByShopId(currentShopId)
+        return promotionRepository.findAllByShopIdAndPromotionStatus(
+                        currentShopId, PromotionEnum.ACTIVE)
                 .stream()
                 .map(promotionMapper::toResponse)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public PromotionResponse getPromotion(Long promotionId) {
         Long currentShopId = TenantContext.getCurrentShopId();
@@ -82,5 +85,18 @@ public class PromotionServiceImpl implements PromotionService {
                 .filter(p -> p.getShop().getId().equals(currentShopId))
                 .map(promotionMapper::toResponse)
                 .orElseThrow(() -> new BusinessException("Mã khuyến mãi không tồn tại"));
+    }
+
+    @Override
+    public void deletePromotion(Long promotionId) {
+        Long currentShopId = TenantContext.getCurrentShopId();
+
+        Promotion promotion = promotionRepository.findById(promotionId)
+                .filter(p -> p.getShop().getId().equals(currentShopId))
+                .orElseThrow(() -> new BusinessException("Mã khuyến mãi không tồn tại"));
+
+        promotion.setPromotionStatus(PromotionEnum.INACTIVE);
+        promotion.setUpdatedAt(LocalDateTime.now());
+        promotionRepository.save(promotion);
     }
 }

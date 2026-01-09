@@ -9,4 +9,5 @@ public interface PromotionService {
     PromotionResponse createPromotion(PromotionRequest promotionRequest);
     List<PromotionResponse> getAllPromotions();
     PromotionResponse getPromotion(Long promotionId);
+    void deletePromotion(Long promotionId);
 }
