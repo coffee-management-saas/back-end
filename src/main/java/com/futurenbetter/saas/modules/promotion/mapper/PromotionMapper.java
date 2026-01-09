@@ -5,6 +5,7 @@ import com.futurenbetter.saas.modules.promotion.dto.response.PromotionResponse;
 import com.futurenbetter.saas.modules.promotion.entity.Promotion;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface PromotionMapper {
@@ -20,4 +21,11 @@ public interface PromotionMapper {
     @Mapping(source = "createdAt", target = "createdDate")
     @Mapping(source = "updatedAt", target = "updatedDate")
     PromotionResponse toResponse(Promotion promotion);
+
+    @Mapping(target = "promotionId", ignore = true)
+    @Mapping(target = "shop", ignore = true)
+    @Mapping(target = "promotionTargets", ignore = true)
+    @Mapping(target = "promotionUsages", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    void updateEntity(PromotionRequest request, @MappingTarget Promotion promotion);
 }
