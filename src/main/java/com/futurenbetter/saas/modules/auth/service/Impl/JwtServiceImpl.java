@@ -34,8 +34,8 @@ public class JwtServiceImpl implements JwtService {
 
 
     @Override
-    public String generateAccessToken(String username, Long shopId) {
-        return builderToken(Map.of("shopId", shopId), username, accessExpiration);
+    public String generateAccessToken(String username, Long shopId, String role) {
+        return builderToken(Map.of("shopId", shopId, "role", role), username, accessExpiration);
     }
 
     @Override
