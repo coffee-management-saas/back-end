@@ -30,14 +30,19 @@ public class SecurityConfig {
         return http
                 .cors(cors -> cors.disable())
                 .csrf(AbstractHttpConfigurer::disable)
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
+//                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+//                        .anyRequest().authenticated()
+//                )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
+                        .requestMatchers("/api/auth/**", "/api/system/auth/**").permitAll() // Cho phép login
+                        .requestMatchers("/api/system/**").hasAuthority("SYSTEM") // Chỉ admin hệ thống mới được vào
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-
                 .userDetailsService(authenticationService)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
