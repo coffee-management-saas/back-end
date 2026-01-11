@@ -13,6 +13,7 @@ import com.futurenbetter.saas.modules.auth.entity.Role;
 import com.futurenbetter.saas.modules.auth.entity.UserProfile;
 import com.futurenbetter.saas.modules.auth.enums.ApplyStatus;
 import com.futurenbetter.saas.modules.auth.enums.CustomerStatus;
+import com.futurenbetter.saas.modules.auth.enums.RoleStatus;
 import com.futurenbetter.saas.modules.auth.enums.UserProfileEnum;
 import com.futurenbetter.saas.modules.auth.mapper.CustomerMapper;
 import com.futurenbetter.saas.modules.auth.mapper.UserProfileMapper;
@@ -159,7 +160,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Transactional(readOnly = true)
     @Override
     public SystemAdminLoginResponse loginSystemAdmin(SystemAdminLoginRequest request) {
-        UserProfile admin = profileRepository.findByUsername(request.getUsername())
+        UserProfile admin = profileRepository.findByUsernameWithRoles(request.getUsername())
                 .orElseThrow(() -> new BusinessException("Tài khoản admin không tồn tại"));
 
         if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
@@ -168,6 +169,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         boolean isSystemUser = admin.getRoles().stream()
                 .anyMatch(role -> ApplyStatus.SYSTEM.equals(role.getRole()));
+
+        //System.out.println(admin.getRoles());
 
         if (!isSystemUser) {
             throw new BusinessException("Bạn không có quyền truy cập");
@@ -179,6 +182,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public SystemAdminRegistrationResponse registerSystemAdmin(SystemAdminRegistrationRequest request) {
+
+        // dùng để tạo role do chưa có api (dùng tạm)
+//        Role role = new Role();
+//        role.setName("Admin System");
+//        role.setRole(ApplyStatus.SYSTEM);
+//        role.setStatus(RoleStatus.ACTIVE);
+//
+//         roleRepository.save(role);
+
         if (userProfileRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException("Tên đăng nhập đã tồn tại");
         }
