@@ -15,6 +15,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -35,7 +36,11 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String generateAccessToken(String username, Long shopId, String role) {
-        return builderToken(Map.of("shopId", shopId, "role", role), username, accessExpiration);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        claims.put("shopId", shopId);
+        // dùng HashMap thay cho Map vì khi dùng với system admin thì shopId null.
+        return builderToken(claims, username, accessExpiration);
     }
 
     @Override
