@@ -38,7 +38,7 @@ public class InventoryInvoiceDetail {
     InputUnit inputUnit;
 
     @Column(name = "input_quantity", nullable = false)
-    Integer inputQuantity;
+    Double inputQuantity;
 
     @Column(name = "converted_quantity", nullable = false)
     Double convertedQuantity;

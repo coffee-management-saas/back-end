@@ -29,12 +29,18 @@ public class ProductVariant {
     @JoinColumn(name = "size_id", nullable = false)
     Size size;
 
+    @Column(name = "sku_code", nullable = false, length = 50)
+    String skuCode;
+
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
     Product product;
 
     @Column(name = "price", nullable = false)
     Double price;
+
+    @Column(name = "cost_price", nullable = false)
+    Double costPrice;
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;
