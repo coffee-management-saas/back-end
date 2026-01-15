@@ -25,8 +25,8 @@ public class Size {
     @JoinColumn(name = "shop_id", nullable = false)
     Shop shop;
 
-    @Column(name = "name", nullable = false)
-    String name;
+    @Column(name = "code", nullable = false)
+    String code;
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;
