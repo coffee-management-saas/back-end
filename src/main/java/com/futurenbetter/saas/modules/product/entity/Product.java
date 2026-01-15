@@ -41,6 +41,9 @@ public class Product {
     @Column(name = "updated_at", nullable = false)
     LocalDateTime updatedAt;
 
+    @Column(name = "has_variants", nullable = false)
+    Boolean hasVariants;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     Status status;

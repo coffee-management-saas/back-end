@@ -38,7 +38,7 @@ public class RawIngredient {
     BaseUnit baseUnit;
 
     @Column(name = "min_stock_alert")
-    Integer minStockAlert;
+    Double minStockAlert;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "storage_type", nullable = false)
