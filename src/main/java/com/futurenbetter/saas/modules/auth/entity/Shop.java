@@ -4,6 +4,8 @@ import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
 import com.futurenbetter.saas.modules.promotion.entity.Promotion;
 import com.futurenbetter.saas.modules.promotion.entity.PromotionTarget;
 import com.futurenbetter.saas.modules.promotion.entity.PromotionUsage;
+import com.futurenbetter.saas.modules.subcription.entity.BillingInvoice;
+import com.futurenbetter.saas.modules.subcription.entity.ShopSubcription;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -59,6 +61,12 @@ public class Shop {
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
     private List<Promotion> promotions;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<ShopSubcription> shopSubcriptions;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<BillingInvoice> billingInvoices;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id")
