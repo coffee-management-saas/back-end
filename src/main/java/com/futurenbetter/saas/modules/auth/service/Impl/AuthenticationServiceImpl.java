@@ -177,7 +177,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         String token = jwtService.generateAccessToken(admin.getUsername(), null, "SYSTEM");
-        return SystemAdminLoginResponse.builder().accessToken(token).build();
+        return SystemAdminLoginResponse.builder()
+                .accessToken(token)
+                .refreshToken(token)
+                .build();
     }
 
     @Override

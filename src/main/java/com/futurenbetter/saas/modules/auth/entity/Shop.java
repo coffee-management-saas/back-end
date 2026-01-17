@@ -37,7 +37,7 @@ public class Shop {
     @Column(name = "email", unique = true)
     private String email;
 
-    @Column(name = "domain")
+    @Column(name = "domain", unique = true)
     private String domain;
 
     @Enumerated(EnumType.STRING)

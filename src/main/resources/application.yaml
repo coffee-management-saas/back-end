@@ -25,3 +25,14 @@ jwt:
   secret: ${JWT_SECRET}
   access-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+momo:
+  partner-code: ${MOMO_PARTNER_CODE}
+  access-key: ${MOMO_ACCESS_KEY}
+  secret-key: ${MOMO_SECRET_KEY}
+  api-url: ${MOMO_API_URL}
+  redirect-url: ${MOMO_REDIRECT_URL}
+  ipn-url: ${MOMO_IPN_URL}
+
+  online-redirect-url: ${MOMO_ONLINE_REDIRECT_URL:${MOMO_REDIRECT_URL}}
+  online-ipn-url: ${MOMO_ONLINE_IPN_URL:${MOMO_IPN_URL}}
