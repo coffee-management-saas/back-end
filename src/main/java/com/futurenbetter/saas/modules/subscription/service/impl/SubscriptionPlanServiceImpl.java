@@ -27,7 +27,6 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
     public SubscriptionPlanResponse createSubscriptionPlan(SubscriptionPlanRequest subscriptionPlanRequest) {
         SubscriptionPlan plan = subscriptionPlanMapper.toEntity(subscriptionPlanRequest);
         plan.setCreatedAt(LocalDateTime.now());
-        plan.setUpdatedAt(LocalDateTime.now());
         plan.setSubscriptionPlanStatus(SubscriptionPlanEnum.ACTIVE);
 
         SubscriptionPlan saved = subscriptionPlanRepository.save(plan);
@@ -47,5 +46,16 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
     return subscriptionPlanMapper.toResponse(plan);
+    }
+
+    @Override
+    public SubscriptionPlanResponse updateSubscriptionPlan(SubscriptionPlanRequest subscriptionPlanRequest, Long id) {
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
+
+        subscriptionPlanMapper.updateEntityFromRequest(subscriptionPlanRequest, plan);
+        plan.setUpdatedAt(LocalDateTime.now());
+        SubscriptionPlan saved = subscriptionPlanRepository.save(plan);
+        return subscriptionPlanMapper.toResponse(saved);
     }
 }
