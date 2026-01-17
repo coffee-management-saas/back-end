@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.modules.subscription.service.impl;
 
+import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionPlanRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.SubscriptionPlanResponse;
 import com.futurenbetter.saas.modules.subscription.entity.SubscriptionPlan;
@@ -39,5 +40,12 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
                 .stream()
                 .map(subscriptionPlanMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    public SubscriptionPlanResponse getSubscriptionPlanById(Long id) {
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
+    return subscriptionPlanMapper.toResponse(plan);
     }
 }
