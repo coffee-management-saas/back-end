@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Transactional
@@ -30,5 +31,13 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
         SubscriptionPlan saved = subscriptionPlanRepository.save(plan);
         return subscriptionPlanMapper.toResponse(saved);
+    }
+
+    @Override
+    public List<SubscriptionPlanResponse> getAllSubscriptionPlan() {
+        return subscriptionPlanRepository.findAllBySubscriptionPlanStatus(SubscriptionPlanEnum.ACTIVE)
+                .stream()
+                .map(subscriptionPlanMapper::toResponse)
+                .toList();
     }
 }
