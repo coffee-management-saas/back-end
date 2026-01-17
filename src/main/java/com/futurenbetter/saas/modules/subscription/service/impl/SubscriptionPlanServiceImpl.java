@@ -58,4 +58,14 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
         SubscriptionPlan saved = subscriptionPlanRepository.save(plan);
         return subscriptionPlanMapper.toResponse(saved);
     }
+
+    @Override
+    public void deleteSubscriptionPlan(Long id) {
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
+
+        plan.setSubscriptionPlanStatus(SubscriptionPlanEnum.INACTIVE);
+        plan.setUpdatedAt(LocalDateTime.now());
+        subscriptionPlanRepository.save(plan);
+    }
 }
