@@ -10,4 +10,5 @@ public interface SubscriptionPlanService {
     SubscriptionPlanResponse createSubscriptionPlan(SubscriptionPlanRequest subscriptionPlanRequest);
     List<SubscriptionPlanResponse> getAllSubscriptionPlan();
     SubscriptionPlanResponse getSubscriptionPlanById(Long id);
+    SubscriptionPlanResponse updateSubscriptionPlan(SubscriptionPlanRequest subscriptionPlanRequest, Long id);
 }

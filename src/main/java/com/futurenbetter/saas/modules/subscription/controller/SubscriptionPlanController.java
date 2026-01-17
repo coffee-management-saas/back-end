@@ -39,4 +39,13 @@ public class SubscriptionPlanController {
         SubscriptionPlanResponse response = subscriptionPlanService.getSubscriptionPlanById(id);
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<SubscriptionPlanResponse> updatePlan(
+            @PathVariable long id,
+            @Valid @RequestBody SubscriptionPlanRequest subscriptionPlanRequest
+    ) {
+        SubscriptionPlanResponse response = subscriptionPlanService.updateSubscriptionPlan(subscriptionPlanRequest, id);
+        return ResponseEntity.ok(response);
+    }
 }

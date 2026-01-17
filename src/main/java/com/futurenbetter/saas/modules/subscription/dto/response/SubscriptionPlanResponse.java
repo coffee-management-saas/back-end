@@ -22,5 +22,6 @@ public class SubscriptionPlanResponse {
     private Map<String, Object> configLimit;
     private SubscriptionPlanEnum subscriptionPlanStatus;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
 

@@ -6,10 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionPlanRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.SubscriptionPlanResponse;
 import com.futurenbetter.saas.modules.subscription.entity.SubscriptionPlan;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 import java.util.Map;
 
@@ -28,6 +25,13 @@ public interface SubscriptionPlanMapper {
 
     @Mapping(target = "configLimit", source = "configLimit", qualifiedByName = "jsonStringToMap")
     SubscriptionPlanResponse toResponse(SubscriptionPlan entity);
+
+    @Mapping(target = "subscriptionPlanId", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "shopSubscriptions", ignore = true)
+    @Mapping(target = "configLimit", source = "configLimit", qualifiedByName = "mapToJsonString")
+    void updateEntityFromRequest(SubscriptionPlanRequest request, @MappingTarget SubscriptionPlan entity);
 
 
     //Chuyển đổi Map tính năng thành chuỗi Json lưu vào DB (jsonB)
