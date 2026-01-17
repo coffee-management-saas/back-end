@@ -11,4 +11,5 @@ public interface SubscriptionPlanService {
     List<SubscriptionPlanResponse> getAllSubscriptionPlan();
     SubscriptionPlanResponse getSubscriptionPlanById(Long id);
     SubscriptionPlanResponse updateSubscriptionPlan(SubscriptionPlanRequest subscriptionPlanRequest, Long id);
+    void deleteSubscriptionPlan(Long id);
 }

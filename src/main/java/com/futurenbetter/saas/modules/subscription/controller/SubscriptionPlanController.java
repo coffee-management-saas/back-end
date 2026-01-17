@@ -48,4 +48,12 @@ public class SubscriptionPlanController {
         SubscriptionPlanResponse response = subscriptionPlanService.updateSubscriptionPlan(subscriptionPlanRequest, id);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deletePlan(
+            @PathVariable long id
+    ) {
+        subscriptionPlanService.deleteSubscriptionPlan(id);
+        return new ResponseEntity<>("Xóa gói dịch vụ thành công", HttpStatus.OK);
+    }
 }
