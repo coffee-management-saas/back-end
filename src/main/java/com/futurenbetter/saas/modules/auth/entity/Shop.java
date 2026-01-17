@@ -4,8 +4,8 @@ import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
 import com.futurenbetter.saas.modules.promotion.entity.Promotion;
 import com.futurenbetter.saas.modules.promotion.entity.PromotionTarget;
 import com.futurenbetter.saas.modules.promotion.entity.PromotionUsage;
-import com.futurenbetter.saas.modules.subcription.entity.BillingInvoice;
-import com.futurenbetter.saas.modules.subcription.entity.ShopSubcription;
+import com.futurenbetter.saas.modules.subscription.entity.BillingInvoice;
+import com.futurenbetter.saas.modules.subscription.entity.ShopSubscription;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -63,7 +63,7 @@ public class Shop {
     private List<Promotion> promotions;
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
-    private List<ShopSubcription> shopSubcriptions;
+    private List<ShopSubscription> shopSubscriptions;
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
     private List<BillingInvoice> billingInvoices;

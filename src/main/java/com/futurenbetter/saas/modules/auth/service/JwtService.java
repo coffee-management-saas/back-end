@@ -15,4 +15,5 @@ public interface JwtService {
     Customer getCustomerByToken(String token);
     String extractUsername(String token);
     boolean isTokenExpired(String token);
+    Claims extractAllClaims(String token);
 }

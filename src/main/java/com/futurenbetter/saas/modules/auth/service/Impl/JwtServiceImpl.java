@@ -92,6 +92,15 @@ public class JwtServiceImpl implements JwtService {
                 .before(new Date());
     }
 
+    @Override
+    public Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigninKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
     private SecretKey getSigninKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }

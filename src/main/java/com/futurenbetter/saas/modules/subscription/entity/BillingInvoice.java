@@ -1,7 +1,7 @@
-package com.futurenbetter.saas.modules.subcription.entity;
+package com.futurenbetter.saas.modules.subscription.entity;
 
 import com.futurenbetter.saas.modules.auth.entity.Shop;
-import com.futurenbetter.saas.modules.subcription.enums.InvoiceEnum;
+import com.futurenbetter.saas.modules.subscription.enums.InvoiceEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,14 +27,14 @@ public class BillingInvoice {
     private Shop shop;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subcription_id")
-    private ShopSubcription shopSubcription;
+    @JoinColumn(name = "subscription_id")
+    private ShopSubscription shopSubscription;
 
     @OneToOne(mappedBy = "invoice", cascade = CascadeType.ALL)
-    private SubcriptionTransaction transaction;
+    private SubscriptionTransaction transaction;
 
     @Column(name = "amount")
-    private Float amount;
+    private Long amount;
 
     @Column(name = "due_date")
     private LocalDateTime dueDate;

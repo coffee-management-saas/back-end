@@ -1,7 +1,7 @@
-package com.futurenbetter.saas.modules.subcription.entity;
+package com.futurenbetter.saas.modules.subscription.entity;
 
-import com.futurenbetter.saas.modules.subcription.enums.PaymentGatewayEnum;
-import com.futurenbetter.saas.modules.subcription.enums.SubcriptionTransactionEnum;
+import com.futurenbetter.saas.modules.subscription.enums.PaymentGatewayEnum;
+import com.futurenbetter.saas.modules.subscription.enums.SubscriptionTransactionEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,23 +11,23 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "subcription_transaction")
+@Table(name = "subscription_transaction")
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder
-public class SubcriptionTransaction {
+public class SubscriptionTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long subcriptionTransactionId;
+    private Long subscriptionTransactionId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "billing_invoice_id", unique = true)
     private BillingInvoice invoice;
 
     @Column(name = "amount")
-    private Float amount;
+    private Long amount;
 
     @Column(name = "is_income")
     private Boolean isIncome;
@@ -44,5 +44,5 @@ public class SubcriptionTransaction {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private SubcriptionTransactionEnum status;
+    private SubscriptionTransactionEnum status;
 }
