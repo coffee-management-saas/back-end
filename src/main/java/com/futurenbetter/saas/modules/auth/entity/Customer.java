@@ -5,11 +5,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.List;
 
 @Entity
 @Table(name = "customers")
@@ -27,6 +26,9 @@ public class Customer {
 
     @Column(name = "fullname")
     private String fullname;
+
+    @Column(name = "password")
+    private String password;
 
     @Column(name = "email", unique = true)
     private String email;
@@ -50,6 +52,8 @@ public class Customer {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    private List<MemberProfile> memberProfiles;
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rank_id")
+    private MembershipRank membershipRank;
 }

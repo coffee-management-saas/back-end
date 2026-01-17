@@ -1,9 +1,9 @@
 package com.futurenbetter.saas.modules.auth.service;
 
-import com.futurenbetter.saas.modules.auth.dto.request.CustomerRegistrationRequest;
+import com.futurenbetter.saas.modules.auth.dto.request.UpdateProfileRequest;
 import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
-import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 public interface CustomerService {
-    CustomerResponse register(CustomerRegistrationRequest request);
+    CustomerResponse updateProfile(Long customerId, UpdateProfileRequest request);
 }

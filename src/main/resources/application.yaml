@@ -1,14 +1,14 @@
 server:
-  port: ${PORT:8080}
+  port: ${PORT}
 
 spring:
   application:
-    name: ${APPLICATION_NAME:saas-coffee-service}
+    name: ${APPLICATION_NAME}
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:saas_db}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:password}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?options=-c%20TimeZone=UTC
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -16,7 +16,23 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+momo:
+  partner-code: ${MOMO_PARTNER_CODE}
+  access-key: ${MOMO_ACCESS_KEY}
+  secret-key: ${MOMO_SECRET_KEY}
+  api-url: ${MOMO_API_URL}
+  redirect-url: ${MOMO_REDIRECT_URL}
+  ipn-url: ${MOMO_IPN_URL}
+
+  online-redirect-url: ${MOMO_ONLINE_REDIRECT_URL:${MOMO_REDIRECT_URL}}
+  online-ipn-url: ${MOMO_ONLINE_IPN_URL:${MOMO_IPN_URL}}

@@ -1,6 +1,11 @@
 package com.futurenbetter.saas.modules.auth.entity;
 
 import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
+import com.futurenbetter.saas.modules.promotion.entity.Promotion;
+import com.futurenbetter.saas.modules.promotion.entity.PromotionTarget;
+import com.futurenbetter.saas.modules.promotion.entity.PromotionUsage;
+import com.futurenbetter.saas.modules.subscription.entity.BillingInvoice;
+import com.futurenbetter.saas.modules.subscription.entity.ShopSubscription;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,7 +23,7 @@ public class Shop {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long shopId;
+    private Long id;
 
     @Column(name = "shop_name")
     private String shopName;
@@ -32,7 +37,7 @@ public class Shop {
     @Column(name = "email", unique = true)
     private String email;
 
-    @Column(name = "domain")
+    @Column(name = "domain", unique = true)
     private String domain;
 
     @Enumerated(EnumType.STRING)
@@ -46,5 +51,24 @@ public class Shop {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
-    private List<MemberProfile> memberProfiles;
+    private List<MembershipRank> membershipRanks;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<PromotionUsage> promotionUsages;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<PromotionTarget> promotionTargets;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<Promotion> promotions;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<ShopSubscription> shopSubscriptions;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<BillingInvoice> billingInvoices;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    private UserProfile owner;
 }
