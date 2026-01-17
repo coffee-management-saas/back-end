@@ -2,6 +2,7 @@ package com.futurenbetter.saas.config;
 
 import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.service.JwtService;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,9 +26,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -38,26 +38,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String token = authHeader.substring(7);
 
         try {
-            Customer customer = jwtService.getCustomerByToken(token);
+            Claims claims = jwtService.extractAllClaims(token);
+            String username = claims.getSubject();
+            String role = claims.get("role", String.class);
 
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                List<GrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority(customer.getFullname())
-                );
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
+
+                // 3. Bạn có thể để principal là username hoặc query đúng bảng tùy theo role
+                Object principal = username;
+                if ("CUSTOMER".equals(role)) {
+                    principal = jwtService.getCustomerByToken(token);
+                }
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        customer,
+                        principal,
                         null,
                         authorities
                 );
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-
         } catch (Exception e) {
-            e.printStackTrace();
             SecurityContextHolder.clearContext();
         }
 

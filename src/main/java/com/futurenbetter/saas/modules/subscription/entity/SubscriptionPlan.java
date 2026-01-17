@@ -1,40 +1,43 @@
-package com.futurenbetter.saas.modules.subcription.entity;
+package com.futurenbetter.saas.modules.subscription.entity;
 
-import com.futurenbetter.saas.modules.subcription.enums.SubcriptionPlanEnum;
+import com.futurenbetter.saas.modules.subscription.enums.SubscriptionPlanEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "subcription_plan")
+@Table(name = "subscription_plan")
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder
-public class SubcriptionPlan {
+public class SubscriptionPlan {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long subcriptionPlanId;
+    private Long subscriptionPlanId;
 
-    @Column(name = "subcription_plan_name")
-    private String subcriptionPlanName;
+    @Column(name = "subscription_plan_name")
+    private String subscriptionPlanName;
 
-    @Column(name = "subcription_plan_description")
-    private String subcriptionPlanDescription;
+    @Column(name = "subscription_plan_description")
+    private String subscriptionPlanDescription;
 
     @Column(name = "price_monthly")
-    private Float priceMonthly;
+    private Long priceMonthly;
 
     @Column(name = "price_yearly")
-    private Float priceYearly;
+    private Long priceYearly;
 
     @Column(name = "config_limit", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String configLimit;
 
     @Column(name = "created_at")
@@ -45,8 +48,8 @@ public class SubcriptionPlan {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private SubcriptionPlanEnum subcriptionPlanStatus;
+    private SubscriptionPlanEnum subscriptionPlanStatus;
 
     @OneToMany(mappedBy = "plan", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<ShopSubcription> shopSubcriptions;
+    private List<ShopSubscription> shopSubscriptions;
 }

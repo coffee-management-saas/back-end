@@ -1,4 +1,4 @@
-package com.futurenbetter.saas.modules.subcription.enums;
+package com.futurenbetter.saas.modules.subscription.enums;
 
 public enum InvoiceEnum {
     OVERDUE,
