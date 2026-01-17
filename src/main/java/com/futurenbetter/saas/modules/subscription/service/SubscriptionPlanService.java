@@ -9,4 +9,5 @@ import java.util.List;
 public interface SubscriptionPlanService {
     SubscriptionPlanResponse createSubscriptionPlan(SubscriptionPlanRequest subscriptionPlanRequest);
     List<SubscriptionPlanResponse> getAllSubscriptionPlan();
+    SubscriptionPlanResponse getSubscriptionPlanById(Long id);
 }

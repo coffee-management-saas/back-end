@@ -31,4 +31,12 @@ public class SubscriptionPlanController {
         List<SubscriptionPlanResponse> response = subscriptionPlanService.getAllSubscriptionPlan();
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SubscriptionPlanResponse> getPlanById(
+            @PathVariable long id
+    ) {
+        SubscriptionPlanResponse response = subscriptionPlanService.getSubscriptionPlanById(id);
+        return ResponseEntity.ok(response);
+    }
 }
