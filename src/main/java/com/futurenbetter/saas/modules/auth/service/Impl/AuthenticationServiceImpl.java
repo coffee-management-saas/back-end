@@ -102,6 +102,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 "SHOP");
         String refreshToken = jwtService.generateRefreshToken(customer.getUsername());
 
+        customer.setRefreshToken(refreshToken);
+        customer.setUpdatedAt(LocalDateTime.now());
+        customerRepository.save(customer);
+
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -109,12 +113,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public LoginResponse refreshToken(String token) {
-        if (jwtService.isTokenExpired(token)) {
+    public LoginResponse refreshToken(String refreshToken) {
+        if (jwtService.isTokenExpired(refreshToken)) {
             throw new BusinessException("Refresh token expired");
         }
 
-        String username = jwtService.extractUsername(token);
+        String username = jwtService.extractUsername(refreshToken);
 
         Customer customer = customerRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException("Người dùng không tồn tại"));
@@ -125,6 +129,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 "SHOP");
         String newRefreshToken = jwtService.generateRefreshToken(customer.getUsername());
 
+        customer.setRefreshToken(newRefreshToken);
+        customer.setUpdatedAt(LocalDateTime.now());
+        customerRepository.save(customer);
+
         return LoginResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
@@ -132,10 +140,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void logout(String token) {
-        if (jwtService.isTokenExpired(token)) {
+    public void logout(String refreshToken) {
+        Customer customer = customerRepository.findByRefreshToken(refreshToken)
+                .orElseThrow(() -> new BusinessException("Token không hợp lệ hoặc đã hết hạn"));
+
+        if (jwtService.isTokenExpired(refreshToken)) {
             throw new BusinessException("Refresh token expired");
         }
+
+        customer.setRefreshToken(null);
+        customer.setUpdatedAt(LocalDateTime.now());
+        customerRepository.save(customer);
     }
 
     @Override
@@ -157,7 +172,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         customerRepository.save(customer);
     }
 
-    @Transactional(readOnly = true)
     @Override
     public SystemAdminLoginResponse loginSystemAdmin(SystemAdminLoginRequest request) {
         UserProfile admin = profileRepository.findByUsernameWithRoles(request.getUsername())
@@ -176,10 +190,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Bạn không có quyền truy cập");
         }
 
-        String token = jwtService.generateAccessToken(admin.getUsername(), null, "SYSTEM");
+        String acccessToken = jwtService.generateAccessToken(admin.getUsername(), null, "SYSTEM");
+        String refreshToken = jwtService.generateRefreshToken(admin.getUsername());
+
+        admin.setRefreshToken(refreshToken);
+        admin.setUpdatedAt(LocalDateTime.now());
+        userProfileRepository.save(admin);
+
         return SystemAdminLoginResponse.builder()
-                .accessToken(token)
-                .refreshToken(token)
+                .accessToken(acccessToken)
+                .refreshToken(refreshToken)
                 .build();
     }
 
@@ -201,6 +221,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         UserProfile admin = userProfileMapper.toEntity(request);
         admin.setPassword(passwordEncoder.encode(request.getPassword()));
         admin.setStatus(UserProfileEnum.ACTIVE);
+
+        admin.setAddress(request.getAddress());
+        admin.setDob(request.getDob());
+        admin.setCreatedAt(request.getCreatedAt());
 
         Role adminRole = roleRepository.findByRole(ApplyStatus.SYSTEM)
                 .orElseThrow(() -> new BusinessException("Admin chưa được cấu hình"));

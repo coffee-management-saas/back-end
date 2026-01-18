@@ -46,6 +46,9 @@ public class Customer {
     @Column(name = "status")
     private CustomerStatus status;
 
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
