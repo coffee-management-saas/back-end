@@ -23,8 +23,8 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  access-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
-  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+  access-expiration: ${JWT_ACCESS_EXPIRATION:300000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:3600000}
 
 momo:
   partner-code: ${MOMO_PARTNER_CODE}

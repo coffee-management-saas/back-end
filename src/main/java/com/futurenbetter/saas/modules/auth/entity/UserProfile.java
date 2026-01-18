@@ -45,6 +45,9 @@ public class UserProfile {
     @Column(name = "dob")
     private LocalDateTime dob;
 
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
