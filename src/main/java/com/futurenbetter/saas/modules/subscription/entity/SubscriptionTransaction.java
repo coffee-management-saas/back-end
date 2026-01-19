@@ -32,6 +32,9 @@ public class SubscriptionTransaction {
     @Column(name = "is_income")
     private Boolean isIncome;
 
+    @Column(name = "order_id")
+    private String orderId;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

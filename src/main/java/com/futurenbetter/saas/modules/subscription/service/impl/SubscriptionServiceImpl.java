@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -114,6 +115,17 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 "&requestType=" + requestType;
         String signature = hmacSha256(rawHash, secretKey);
 
+        SubscriptionTransaction pendingTransaction = SubscriptionTransaction.builder()
+                .orderId(orderId)
+                .amount(amount)
+                .paymentGateway(PaymentGatewayEnum.MOMO)
+                .status(SubscriptionTransactionEnum.PENDING)
+                .isIncome(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        subscriptionTransactionRepository.save(pendingTransaction);
+
         //5. Gọi Momo API
         Map<String, Object> body = new HashMap<>();
         body.put("partnerCode", partnerCode);
@@ -149,7 +161,15 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     @Transactional
     public void handleMomoIpn(Map<String, String> payload) {
+        String orderId = payload.get("orderId");
+
         if (!"0".equals(payload.get("resultCode"))) return ;
+
+        Optional<SubscriptionTransaction> existingTask = subscriptionTransactionRepository.findByOrderId(orderId);
+        if (existingTask.isPresent() && existingTask.get().getStatus() == SubscriptionTransactionEnum.ACTIVE) {
+            log.info("Giao dịch {} đã được xử lý trước đó, bỏ qua.", orderId);
+            return;
+        }
 
         //1. Giải mã thông tin shop từ extra data
         String extraData = payload.get("extraData");
@@ -213,15 +233,46 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         billingInvoiceRepository.save(invoice);
 
         //4. Lưu giao dịch
-        SubscriptionTransaction transaction = SubscriptionTransaction.builder()
-                .invoice(invoice)
-                .amount(invoice.getAmount())
-                .paymentGateway(PaymentGatewayEnum.MOMO)
-                .status(SubscriptionTransactionEnum.ACTIVE)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+        SubscriptionTransaction transaction = existingTask.orElse(new SubscriptionTransaction());
+                    transaction.setInvoice(invoice);
+                    transaction.setAmount(transaction.getAmount() + sub.getPrice());
+                    transaction.setIsIncome(true);
+                    transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);
+                    transaction.setPaymentGateway(PaymentGatewayEnum.MOMO);
+                    transaction.setUpdatedAt(LocalDateTime.now());
+                    transaction.setCreatedAt(LocalDateTime.now());
+                    subscriptionTransactionRepository.save(transaction);
         subscriptionTransactionRepository.save(transaction);
+    }
+
+    @Override
+    public Map<String, String> queryMomoTransaction(String orderId) {
+        String requestId = String.valueOf(System.currentTimeMillis());
+        String requestType = "queryStatus";
+
+        // Tạo signature theo tài liệu Momo
+        String rawHash = "accessKey=" + accessKey +
+                "&orderId=" + orderId +
+                "&partnerCode=" + partnerCode +
+                "&requestId=" + requestId +
+                "&requestType=" + requestType;
+        String signature = hmacSha256(rawHash, secretKey);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("partnerCode", partnerCode);
+        body.put("requestId", requestId);
+        body.put("orderId", orderId);
+        body.put("signature", signature);
+        body.put("lang", "vi");
+
+        RestTemplate restTemplate = new RestTemplate();
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(momoApiUrl.replace("create", "query"), body, Map.class);
+            return (Map<String, String>) response.getBody();
+        } catch (Exception e) {
+            log.error("Lỗi truy vấn giao dịch Momo: {}", e.getMessage());
+            return null;
+        }
     }
 
     private String hmacSha256(String data, String key) {
