@@ -15,6 +15,8 @@ import com.futurenbetter.saas.modules.subscription.repository.BillingInvoiceRepo
 import com.futurenbetter.saas.modules.subscription.repository.ShopSubscriptionRepository;
 import com.futurenbetter.saas.modules.subscription.repository.SubscriptionPlanRepository;
 import com.futurenbetter.saas.modules.subscription.repository.SubscriptionTransactionRepository;
+import com.futurenbetter.saas.modules.subscription.service.CloudinaryStorageService;
+import com.futurenbetter.saas.modules.subscription.service.PdfExportService;
 import com.futurenbetter.saas.modules.subscription.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +45,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private final ObjectMapper objectMapper;
     private final ShopRepository shopRepository;
     private final BillingInvoiceRepository billingInvoiceRepository;
+    private final PdfExportService pdfExportService;
+    private final CloudinaryStorageService cloudinaryStorageService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -199,6 +203,13 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .dueDate(LocalDateTime.now().plusHours(1))
                 .createdAt(LocalDateTime.now())
                 .build();
+        billingInvoiceRepository.save(invoice);
+
+        byte[] pdfContent = pdfExportService.generateInvoicePdf(invoice);
+        String fileName = "Invoice_" + invoice.getBillingInvoiceId();
+
+        String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
+        invoice.setPdfUrl(pdfUrl);
         billingInvoiceRepository.save(invoice);
 
         //4. Lưu giao dịch

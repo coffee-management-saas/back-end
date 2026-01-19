@@ -10,8 +10,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 public interface AuthenticationService extends UserDetailsService {
     CustomerResponse register(CustomerRegistrationRequest request);
     LoginResponse login(LoginRequest request);
-    LoginResponse refreshToken(String token);
-    void logout(String token);
+    LoginResponse refreshToken(String refreshToken);
+    void logout(String refreshToken);
     void changePassword(Long customerid, ChangePasswordRequest request);
     SystemAdminLoginResponse loginSystemAdmin(SystemAdminLoginRequest request);
     SystemAdminRegistrationResponse registerSystemAdmin(SystemAdminRegistrationRequest request);
