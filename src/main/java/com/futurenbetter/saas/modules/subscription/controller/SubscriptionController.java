@@ -1,7 +1,11 @@
 package com.futurenbetter.saas.modules.subscription.controller;
 
+import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.MomoPaymentResponse;
+import com.futurenbetter.saas.modules.subscription.entity.BillingInvoice;
+import com.futurenbetter.saas.modules.subscription.repository.BillingInvoiceRepository;
+import com.futurenbetter.saas.modules.subscription.service.PdfExportService;
 import com.futurenbetter.saas.modules.subscription.service.SubscriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +21,7 @@ import java.util.Map;
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
+    private final BillingInvoiceRepository billingInvoiceRepository;
 
     @PostMapping("/checkout")
     public ResponseEntity<MomoPaymentResponse> checkout(
@@ -32,5 +37,17 @@ public class SubscriptionController {
             ) {
         subscriptionService.handleMomoIpn(payload);
         return ResponseEntity.ok("Thành công");
+    }
+
+    @GetMapping("/invoice/{id}/download")
+    public ResponseEntity<String> downloadInvoice(@PathVariable Long id) {
+        BillingInvoice invoice = billingInvoiceRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Hóa đơn không tồn tại"));
+
+        if(invoice.getPdfUrl() == null) {
+            throw new BusinessException("Hóa đơn này chưa được xuất pdf");
+        }
+
+        return ResponseEntity.ok(invoice.getPdfUrl());
     }
 }

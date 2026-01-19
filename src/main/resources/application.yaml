@@ -36,3 +36,8 @@ momo:
 
   online-redirect-url: ${MOMO_ONLINE_REDIRECT_URL:${MOMO_REDIRECT_URL}}
   online-ipn-url: ${MOMO_ONLINE_IPN_URL:${MOMO_IPN_URL}}
+
+cloudinary:
+  cloud-name: ${CLOUD_NAME}
+  api-key: ${CLOUD_API_KEY}
+  api-secret: ${CLOUD_API_SECRET}
