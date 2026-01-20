@@ -6,6 +6,7 @@ import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.MomoPaymentResponse;
+import com.futurenbetter.saas.modules.subscription.dto.response.VnpayPaymentResponse;
 import com.futurenbetter.saas.modules.subscription.entity.BillingInvoice;
 import com.futurenbetter.saas.modules.subscription.entity.ShopSubscription;
 import com.futurenbetter.saas.modules.subscription.entity.SubscriptionPlan;
@@ -29,11 +30,13 @@ import tools.jackson.databind.ObjectMapper;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 @Transactional
@@ -275,6 +278,167 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
     }
 
+    @Value("${vnpay.api-url}")
+    private String vnpPayUrl;
+    @Value("${vnpay.tmn-code}")
+    private String vnpTmnCode;
+    @Value("${vnpay.hash-secret}")
+    private String vnpHashSecret;
+    @Value("${vnpay.return-url}")
+    private String vnpReturnUrl;
+
+    @Override
+    public VnpayPaymentResponse createSubscriptionWithVnpay(SubscriptionRequest request, String ipAddress) {
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
+                .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
+
+        Long amount = request.getBillingCycle() == BillingCycleEnum.MONTHLY
+                ? plan.getPriceMonthly() : plan.getPriceYearly();
+
+        String orderId = "VNP_" + System.currentTimeMillis();
+
+        SubscriptionTransaction transaction = SubscriptionTransaction.builder()
+                .orderId(orderId)
+                .amount(amount)
+                .paymentGateway(PaymentGatewayEnum.VNPAY)
+                .status(SubscriptionTransactionEnum.PENDING)
+                .isIncome(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        subscriptionTransactionRepository.save(transaction);
+
+        Map<String, String> vnp_Params = new HashMap<>();
+        vnp_Params.put("vnp_Version", "2.1.0");
+        vnp_Params.put("vnp_Command", "pay");
+        vnp_Params.put("vnp_TmnCode", vnpTmnCode);
+        vnp_Params.put("vnp_Amount", String.valueOf(amount * 100));
+        vnp_Params.put("vnp_CurrCode", "VND");
+        vnp_Params.put("vnp_TxnRef", orderId);
+        vnp_Params.put("vnp_OrderInfo", "Thanh toan goi dich vu: " + plan.getSubscriptionPlanName());
+        vnp_Params.put("vnp_OrderType", "other");
+        vnp_Params.put("vnp_Locale", "vn");
+        vnp_Params.put("vnp_ReturnUrl", vnpReturnUrl);
+        vnp_Params.put("vnp_IpAddr", ipAddress);
+        vnp_Params.put("vnp_CreateDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
+
+        // 3. Sắp xếp tham số theo alphabet
+        List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
+        Collections.sort(fieldNames);
+
+        // 4. Xây dựng chuỗi hash và chuỗi query
+        StringBuilder hashData = new StringBuilder();
+        StringBuilder query = new StringBuilder();
+        Iterator<String> itr = fieldNames.iterator();
+        while (itr.hasNext()) {
+            String fieldName = itr.next();
+            String fieldValue = vnp_Params.get(fieldName);
+            if ((fieldValue != null) && (fieldValue.length() > 0)) {
+                hashData.append(fieldName);
+                hashData.append('=');
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8));
+
+                query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8));
+                query.append('=');
+                query.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8));
+
+                if (itr.hasNext()) {
+                    query.append('&');
+                    hashData.append('&');
+                }
+            }
+        }
+
+        // 5. Tạo Secure Hash (HMAC SHA512)
+        String queryUrl = query.toString();
+        String vnp_SecureHash = hmacSHA512(vnpHashSecret, hashData.toString());
+        String paymentUrl = vnpPayUrl + "?" + queryUrl + "&vnp_SecureHash=" + vnp_SecureHash;
+
+        return VnpayPaymentResponse.builder()
+                .paymentUrl(paymentUrl)
+                .orderId(orderId)
+                .amount(String.valueOf(amount))
+                .build();
+    }
+
+    public void handleVnpayReturn(Map<String, String> params) {
+        String vnp_SecureHash = params.get("vnp_SecureHash");
+
+        // Chỉ giữ lại các tham số bắt đầu bằng vnp_ và không phải là Hash
+        Map<String, String> vnp_HashParams = new HashMap<>();
+        params.forEach((key, value) -> {
+            if (key.startsWith("vnp_") && !key.equals("vnp_SecureHash") && !key.equals("vnp_SecureHashType")) {
+                vnp_HashParams.put(key, value);
+            }
+        });
+
+        // Gọi hàm chung để tính toán lại chữ ký
+        String hashData = buildHashData(vnp_HashParams);
+        String reSign = hmacSHA512(vnpHashSecret, hashData);
+
+        if (!reSign.equalsIgnoreCase(vnp_SecureHash)) {
+            throw new BusinessException("Chữ ký không hợp lệ");
+        }
+
+        // 5. Kiểm tra ResponseCode
+        String responseCode = params.get("vnp_ResponseCode");
+        if (!"00".equals(responseCode)) {
+            throw new BusinessException("Giao dịch không thành công. Mã lỗi: " + responseCode);
+        }
+
+        // 6. Logic nghiệp vụ (Khởi tạo Shop, Invoice, v.v.)
+        String orderId = params.get("vnp_TxnRef");
+        SubscriptionTransaction transaction = subscriptionTransactionRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy giao dịch"));
+
+        if (transaction.getStatus() == SubscriptionTransactionEnum.ACTIVE) {
+            return; // Giao dịch đã được xử lý (tránh xử lý lặp)
+        }
+
+        Shop shop = new Shop();
+        shop.setShopStatus(ShopStatus.ACTIVE);
+        shop = shopRepository.save(shop);
+
+        SubscriptionPlan plan = (transaction.getInvoice() != null)
+                ? transaction.getInvoice().getShopSubscription().getPlan()
+                : null;
+
+        ShopSubscription sub = ShopSubscription.builder()
+                .shop(shop)
+                .plan(plan)
+                .price(transaction.getAmount())
+                .subscriptionPlanStatus(SubscriptionPlanEnum.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .endedAt(LocalDateTime.now().plusMonths(1))
+                .build();
+        shopSubscriptionRepository.save(sub);
+
+        BillingInvoice invoice = BillingInvoice.builder()
+                .shop(shop)
+                .shopSubscription(sub)
+                .amount(sub.getPrice())
+                .status(InvoiceEnum.PAID)
+                .createdAt(LocalDateTime.now())
+                .build();
+        billingInvoiceRepository.save(invoice);
+
+        // Xuất PDF & Upload
+        try {
+            byte[] pdfContent = pdfExportService.generateInvoicePdf(invoice);
+            String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, "Invoice_VNP_" + invoice.getBillingInvoiceId());
+            invoice.setPdfUrl(pdfUrl);
+            billingInvoiceRepository.save(invoice);
+        } catch (Exception e) {
+            log.error("Lỗi khi tạo và upload hóa đơn PDF: {}", e.getMessage());
+        }
+
+        // Cập nhật trạng thái transaction
+        transaction.setInvoice(invoice);
+        transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);
+        transaction.setUpdatedAt(LocalDateTime.now());
+        subscriptionTransactionRepository.save(transaction);
+    }
+
     private String hmacSha256(String data, String key) {
         try {
             byte[] keyBytes = key.getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -294,5 +458,54 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         } catch (Exception e) {
             throw new RuntimeException("Lỗi tạo signature: " + e.getMessage());
         }
+    }
+
+    private String hmacSHA512(String key, String data) {
+        try {
+            if (key == null || data == null) {
+                throw new NullPointerException();
+            }
+            final Mac hmac512 = Mac.getInstance("HmacSHA512");
+            byte[] hmacKeyBytes = key.getBytes(StandardCharsets.UTF_8);
+            final SecretKeySpec secretKey = new SecretKeySpec(hmacKeyBytes, "HmacSHA512");
+            hmac512.init(secretKey);
+
+            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
+            byte[] result = hmac512.doFinal(dataBytes);
+
+            StringBuilder sb = new StringBuilder(2 * result.length);
+            for (byte b : result) {
+                sb.append(String.format("%02x", b & 0xff));
+            }
+            return sb.toString();
+        } catch (Exception ex) {
+            log.error("Lỗi khi tính HMAC SHA512: {}", ex.getMessage());
+            return "";
+        }
+    }
+
+    private String buildHashData(Map<String, String> params) {
+        // 1. Sắp xếp alphabet các key
+        Map<String, String> sortedMap = new TreeMap<>(params);
+
+        // 2. Xây dựng chuỗi data
+        StringBuilder hashData = new StringBuilder();
+        Iterator<Map.Entry<String, String>> itr = sortedMap.entrySet().iterator();
+        while (itr.hasNext()) {
+            Map.Entry<String, String> entry = itr.next();
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            // VNPay 2.1.0: Chỉ hash các trường vnp_ và giá trị không trống
+            if (value != null && !value.isEmpty()) {
+                hashData.append(key).append('=');
+                // Dùng US_ASCII cho đồng bộ hoàn toàn với VNPay
+                hashData.append(URLEncoder.encode(value, StandardCharsets.US_ASCII));
+                if (itr.hasNext()) {
+                    hashData.append('&');
+                }
+            }
+        }
+        return hashData.toString();
     }
 }
