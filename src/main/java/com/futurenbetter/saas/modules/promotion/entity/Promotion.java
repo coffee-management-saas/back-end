@@ -55,6 +55,9 @@ public class Promotion {
     @Column(name = "usage_limit_per_user")
     private int usageLimitPerUser;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Column(name = "start_date")
     private LocalDateTime startDate;
 

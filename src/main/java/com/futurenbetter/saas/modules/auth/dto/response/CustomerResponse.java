@@ -17,6 +17,7 @@ public class CustomerResponse {
     private String rankId;
     private String email;
     private String phone;
+    private String address;
     private String dob;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
