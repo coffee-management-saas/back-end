@@ -38,6 +38,7 @@ public class PromotionServiceImpl implements PromotionService {
 
         promotion.setShop(shop);
         promotion.setPromotionStatus(PromotionEnum.ACTIVE);
+        promotion.setImageUrl(promotionRequest.getImageUrl());
         promotion.setCreatedAt(LocalDateTime.now());
         promotion.setUpdatedAt(LocalDateTime.now());
 

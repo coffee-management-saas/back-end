@@ -39,6 +39,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/system/auth/**").permitAll() // Cho phép login
                         .requestMatchers("/api/subscriptions/momo-callback/**").permitAll()
+                        .requestMatchers("/api/subscriptions/vnpay-return").permitAll()
                         .requestMatchers("/api/system/**").hasAuthority("SYSTEM") // Chỉ admin hệ thống mới được vào
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()
