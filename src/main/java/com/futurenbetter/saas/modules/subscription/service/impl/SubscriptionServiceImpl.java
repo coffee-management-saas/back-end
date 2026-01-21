@@ -324,6 +324,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         vnp_Params.put("vnp_ReturnUrl", vnpReturnUrl);
         vnp_Params.put("vnp_IpAddr", ipAddress);
         vnp_Params.put("vnp_CreateDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
+        vnp_Params.put("vnp_ExpireDate", LocalDateTime.now().plusMinutes(15).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
 
         // 3. Sắp xếp tham số theo alphabet
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
@@ -339,11 +340,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
                 hashData.append(fieldName);
                 hashData.append('=');
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8));
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
 
-                query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8));
+                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII));
                 query.append('=');
-                query.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8));
+                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
 
                 if (itr.hasNext()) {
                     query.append('&');
