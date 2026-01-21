@@ -30,8 +30,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -39,7 +37,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 @Slf4j
 public class SubscriptionServiceImpl implements SubscriptionService {
@@ -71,6 +68,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private String redirectUrl;
 
     @Override
+    @Transactional
     public MomoPaymentResponse createSubscriptionWithMomo(SubscriptionRequest request) {
         //1. Kiểm tra gói dịch vụ
         SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
@@ -288,6 +286,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private String vnpReturnUrl;
 
     @Override
+    @Transactional
     public VnpayPaymentResponse createSubscriptionWithVnpay(SubscriptionRequest request, String ipAddress) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
                 .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
@@ -336,11 +335,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
                 hashData.append(fieldName);
                 hashData.append('=');
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8));
+                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
 
-                query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8));
+                query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII));
                 query.append('=');
-                query.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8));
+                query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
 
                 if (itr.hasNext()) {
                     query.append('&');
@@ -392,7 +391,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .orElseThrow(() -> new BusinessException("Không tìm thấy giao dịch"));
 
         if (transaction.getStatus() == SubscriptionTransactionEnum.ACTIVE) {
-            return; // Giao dịch đã được xử lý (tránh xử lý lặp)
+            return;
         }
 
         Shop shop = new Shop();
@@ -418,6 +417,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .shopSubscription(sub)
                 .amount(sub.getPrice())
                 .status(InvoiceEnum.PAID)
+                .dueDate(LocalDateTime.now().plusHours(1))
                 .createdAt(LocalDateTime.now())
                 .build();
         billingInvoiceRepository.save(invoice);
