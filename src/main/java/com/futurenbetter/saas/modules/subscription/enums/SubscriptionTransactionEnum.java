@@ -4,6 +4,7 @@ public enum SubscriptionTransactionEnum {
     ACTIVE,
     PENDING,
     FAILED,
+    CANCELLED,
     INACTIVE,
     OUTDATE
 }

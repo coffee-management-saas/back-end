@@ -39,7 +39,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 @Slf4j
 public class SubscriptionServiceImpl implements SubscriptionService {
@@ -71,6 +70,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private String redirectUrl;
 
     @Override
+    @Transactional
     public MomoPaymentResponse createSubscriptionWithMomo(SubscriptionRequest request) {
         //1. Kiểm tra gói dịch vụ
         SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
@@ -170,7 +170,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         Optional<SubscriptionTransaction> existingTask = subscriptionTransactionRepository.findByOrderId(orderId);
         if (existingTask.isPresent() && existingTask.get().getStatus() == SubscriptionTransactionEnum.ACTIVE) {
-            log.info("Giao dịch {} đã được xử lý trước đó, bỏ qua.", orderId);
+//            log.info("Giao dịch {} đã được xử lý trước đó, bỏ qua.", orderId);
             return;
         }
 
@@ -228,13 +228,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .build();
         billingInvoiceRepository.save(invoice);
 
-        byte[] pdfContent = pdfExportService.generateInvoicePdf(invoice);
-        String fileName = "Invoice_" + invoice.getBillingInvoiceId();
+        try {
+            byte[] pdfContent = pdfExportService.generateInvoicePdf(invoice);
+            String fileName = "Invoice_" + invoice.getBillingInvoiceId();
 
-        String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
-        invoice.setPdfUrl(pdfUrl);
-        billingInvoiceRepository.save(invoice);
-
+            String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
+            invoice.setPdfUrl(pdfUrl);
+            billingInvoiceRepository.save(invoice);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         //4. Lưu giao dịch
         SubscriptionTransaction transaction = existingTask.orElse(new SubscriptionTransaction());
                     transaction.setInvoice(invoice);
@@ -244,7 +247,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                     transaction.setPaymentGateway(PaymentGatewayEnum.MOMO);
                     transaction.setUpdatedAt(LocalDateTime.now());
                     transaction.setCreatedAt(LocalDateTime.now());
-                    subscriptionTransactionRepository.save(transaction);
         subscriptionTransactionRepository.save(transaction);
     }
 
@@ -273,7 +275,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             ResponseEntity<Map> response = restTemplate.postForEntity(momoApiUrl.replace("create", "query"), body, Map.class);
             return (Map<String, String>) response.getBody();
         } catch (Exception e) {
-            log.error("Lỗi truy vấn giao dịch Momo: {}", e.getMessage());
+//            log.error("Lỗi truy vấn giao dịch Momo: {}", e.getMessage());
             return null;
         }
     }
@@ -288,6 +290,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private String vnpReturnUrl;
 
     @Override
+    @Transactional
     public VnpayPaymentResponse createSubscriptionWithVnpay(SubscriptionRequest request, String ipAddress) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
                 .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
