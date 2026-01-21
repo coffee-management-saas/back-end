@@ -22,10 +22,8 @@ public class PaymentReconciliationTask {
 
     @Scheduled(fixedDelay = 900000)
     public void reconcileMissingPayment() {
-//        log.info("Bắt đầu tiến trình đối soát giao dịch treo...");
-
         //1. Tìm các giao dịch PENDING được tạo cách đây 15 phút
-        LocalDateTime limitTime = LocalDateTime.now().minusHours(2);
+        LocalDateTime limitTime = LocalDateTime.now().minusMinutes(15);
         List<SubscriptionTransaction> pendingTrans = transactionRepository.findAllByStatusAndCreatedAtBefore(
                 SubscriptionTransactionEnum.PENDING, limitTime
         );
@@ -34,15 +32,16 @@ public class PaymentReconciliationTask {
         for (SubscriptionTransaction transaction : pendingTrans) {
             try {
                 Map<String, String> momoStatus = subscriptionService.queryMomoTransaction(transaction.getOrderId());
-                if (momoStatus != null && "0".equals(String.valueOf(momoStatus.get("resultCode")))) {
-                    // 3. Nếu Momo báo THÀNH CÔNG, tiến hành bù dữ liệu (Tạo Shop, Invoice...)
-//                    log.info("Phát hiện giao dịch {} thành công trên Momo nhưng DB chưa cập nhật. Đang bù dữ liệu...", transaction.getOrderId());
+                String resultCode = momoStatus.get("resultCode");
+                if ("0".equals(resultCode)) {
                     subscriptionService.handleMomoIpn(momoStatus);
                 } else {
-//                    log.info("Giao dịch {} vẫn chưa hoàn tất hoặc thất bại trên Momo.", transaction.getOrderId());
+                    transaction.setStatus(SubscriptionTransactionEnum.CANCELLED);
+                    transaction.setUpdatedAt(LocalDateTime.now());
+                    transactionRepository.save(transaction);
                 }
             } catch (Exception e) {
-//                log.error("Lỗi khi đối soát đơn hàng {}: {}", transaction.getOrderId(), e.getMessage());
+//                log.error("Lỗi đối soát đơn hàng {}: {}", transaction.getOrderId(), e.getMessage());
             }
         }
     }
