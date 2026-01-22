@@ -8,5 +8,4 @@ import java.util.List;
 
 @Repository
 public interface ComboItemRepository extends JpaRepository<ComboItem, Long> {
-    List<ComboItem> findByComboProductId(Long comboProductId);
 }

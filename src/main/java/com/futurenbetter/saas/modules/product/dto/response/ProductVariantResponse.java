@@ -10,7 +10,6 @@ import lombok.experimental.FieldDefaults;
 public class ProductVariantResponse {
     Long id;
     String productName;
-    String sizeName;
     String sizeCode;
     Double price;
     Double costPrice;
