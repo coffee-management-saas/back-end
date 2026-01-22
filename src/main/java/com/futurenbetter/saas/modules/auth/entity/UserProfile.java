@@ -66,7 +66,7 @@ public class UserProfile {
     )
     private Set<Role> roles;
 
-    @OneToMany(mappedBy = "owner")
-    private List<Shop> ownedShops;
+//    @OneToMany(mappedBy = "owner")
+//    private List<Shop> ownedShops;
 }
 

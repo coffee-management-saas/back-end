@@ -8,12 +8,14 @@ import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 
 @Service
+@Slf4j
 public class PdfExportServiceImpl implements PdfExportService {
 
     @Override
@@ -25,7 +27,8 @@ public class PdfExportServiceImpl implements PdfExportService {
 
             // --- NẠP FONT TIẾNG VIỆT ---
             // Sử dụng IDENTITY_H để hỗ trợ vẽ ký tự Tiếng Việt có dấu
-            BaseFont bf = BaseFont.createFont("fonts/arial.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            String fontPath = "src/main/resources/fonts/arial.ttf";
+            BaseFont bf = BaseFont.createFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
 
             Font fontBold = new Font(bf, 10, Font.BOLD);
             Font fontNormal = new Font(bf, 10, Font.NORMAL);
@@ -40,6 +43,13 @@ public class PdfExportServiceImpl implements PdfExportService {
             Paragraph title = new Paragraph("HÓA ĐƠN GIÁ TRỊ GIA TĂNG", fontTitle);
             title.setAlignment(Element.ALIGN_CENTER);
             document.add(title);
+
+            String paymentMethod = "N/A";
+            if (billingInvoice.getTransaction() != null && billingInvoice.getTransaction().getPaymentGateway() != null) {
+                paymentMethod = billingInvoice.getTransaction().getPaymentGateway().toString();
+            }
+
+            log.info(paymentMethod);
 
             // Ngày tháng năm Tiếng Việt
             String dateText = String.format("Ngày %02d tháng %02d năm %d",
@@ -56,7 +66,7 @@ public class PdfExportServiceImpl implements PdfExportService {
             document.add(new Paragraph("----------------------------------------------------------------------------------"));
 
             document.add(new Paragraph("Tên đơn vị mua hàng: " + billingInvoice.getShop().getShopName(), fontNormal));
-            document.add(new Paragraph("Hình thức thanh toán: " + PaymentGatewayEnum.MOMO, fontNormal));
+            document.add(new Paragraph("Hình thức thanh toán: " + paymentMethod, fontNormal));
             document.add(new Paragraph(" "));
 
             // --- Bảng chi tiết (PdfPTable) ---
@@ -71,7 +81,11 @@ public class PdfExportServiceImpl implements PdfExportService {
             addCell(table, "Thành tiền", fontBold);
 
             addCell(table, "1", fontNormal);
-            addCell(table, "Gói dịch vụ: " + billingInvoice.getShopSubscription().getPlan().getSubscriptionPlanName(), fontNormal);
+            String planName = "N/A";
+            if (billingInvoice.getShopSubscription() != null && billingInvoice.getShopSubscription().getPlan() != null) {
+                planName = billingInvoice.getShopSubscription().getPlan().getSubscriptionPlanName();
+            }
+            addCell(table, planName, fontNormal);
             addCell(table, "Gói", fontNormal);
             addCell(table, "1", fontNormal);
             addCell(table, String.format("%,d", billingInvoice.getAmount()), fontNormal);
