@@ -30,8 +30,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -298,11 +296,23 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Long amount = request.getBillingCycle() == BillingCycleEnum.MONTHLY
                 ? plan.getPriceMonthly() : plan.getPriceYearly();
 
+        Shop shop = new Shop();
+        shop.setShopName(request.getShopName());
+        shop.setAddress(request.getAddress());
+        shop.setPhone(request.getPhone());
+        shop.setEmail(request.getEmail());
+        shop.setDomain(request.getDomain());
+        shop.setShopStatus(ShopStatus.PENDING);
+        shopRepository.save(shop);
+
         String orderId = "VNP_" + System.currentTimeMillis();
 
         SubscriptionTransaction transaction = SubscriptionTransaction.builder()
                 .orderId(orderId)
                 .amount(amount)
+                .plan(plan)
+                .shop(shop)
+                .billingCycle(request.getBillingCycle())
                 .paymentGateway(PaymentGatewayEnum.VNPAY)
                 .status(SubscriptionTransactionEnum.PENDING)
                 .isIncome(true)
@@ -396,24 +406,26 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .orElseThrow(() -> new BusinessException("Không tìm thấy giao dịch"));
 
         if (transaction.getStatus() == SubscriptionTransactionEnum.ACTIVE) {
-            return; // Giao dịch đã được xử lý (tránh xử lý lặp)
+            return;
         }
 
-        Shop shop = new Shop();
+        Shop shop = transaction.getShop();
         shop.setShopStatus(ShopStatus.ACTIVE);
         shop = shopRepository.save(shop);
 
-        SubscriptionPlan plan = (transaction.getInvoice() != null)
-                ? transaction.getInvoice().getShopSubscription().getPlan()
-                : null;
+        SubscriptionPlan plan = transaction.getPlan();
+        BillingCycleEnum cycle = transaction.getBillingCycle();
 
         ShopSubscription sub = ShopSubscription.builder()
                 .shop(shop)
                 .plan(plan)
+                .autoRenewal(true)
                 .price(transaction.getAmount())
+                .billingCycleStatus(cycle)
                 .subscriptionPlanStatus(SubscriptionPlanEnum.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .endedAt(LocalDateTime.now().plusMonths(1))
+                .updatedAt(LocalDateTime.now())
                 .build();
         shopSubscriptionRepository.save(sub);
 
@@ -422,31 +434,38 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .shopSubscription(sub)
                 .amount(sub.getPrice())
                 .status(InvoiceEnum.PAID)
+                .dueDate(LocalDateTime.now().plusHours(1))
                 .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
         billingInvoiceRepository.save(invoice);
 
+        BillingInvoice finalInvoice = billingInvoiceRepository.findById(invoice.getBillingInvoiceId())
+                .orElseThrow(() -> new BusinessException("Lỗi nạp hóa đơn"));
+
         // Xuất PDF & Upload
-        try {
-            byte[] pdfContent = pdfExportService.generateInvoicePdf(invoice);
-            String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, "Invoice_VNP_" + invoice.getBillingInvoiceId());
-            invoice.setPdfUrl(pdfUrl);
-            billingInvoiceRepository.save(invoice);
-        } catch (Exception e) {
-            log.error("Lỗi khi tạo và upload hóa đơn PDF: {}", e.getMessage());
-        }
+        byte[] pdfContent = pdfExportService.generateInvoicePdf(finalInvoice);
+        String fileName = "Invoice_" + invoice.getBillingInvoiceId();
+
+        String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
+        invoice.setPdfUrl(pdfUrl);
+        billingInvoiceRepository.save(invoice);
 
         // Cập nhật trạng thái transaction
+        invoice.setTransaction(transaction);
+        billingInvoiceRepository.save(invoice);
+
         transaction.setInvoice(invoice);
         transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);
         transaction.setUpdatedAt(LocalDateTime.now());
         subscriptionTransactionRepository.save(transaction);
+        billingInvoiceRepository.flush();
     }
 
     private String hmacSha256(String data, String key) {
         try {
-            byte[] keyBytes = key.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            byte[] dataBytes = data.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
 
             SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, "HmacSHA256");
             Mac mac = Mac.getInstance("HmacSHA256");
