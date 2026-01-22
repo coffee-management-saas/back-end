@@ -19,6 +19,11 @@ public class TenantFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
+        String path = httpRequest.getRequestURI();
+        if (path.startsWith("/api/system/")) {
+            chain.doFilter(request, response);
+            return;
+        }
 
         String host = httpRequest.getHeader("Host");
 

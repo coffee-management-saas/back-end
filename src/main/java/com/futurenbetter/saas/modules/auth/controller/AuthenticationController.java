@@ -4,6 +4,7 @@ import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.modules.auth.dto.request.ChangePasswordRequest;
 import com.futurenbetter.saas.modules.auth.dto.request.CustomerRegistrationRequest;
 import com.futurenbetter.saas.modules.auth.dto.request.LoginRequest;
+import com.futurenbetter.saas.modules.auth.dto.request.TokenRequest;
 import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.LoginResponse;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
@@ -37,15 +38,13 @@ public class AuthenticationController {
 
     //nên lưu refresh token vào database để quản lý việc đăng xuất của user
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponse> refresh(@RequestBody Map<String, String> request) {
-        String refreshToken  = request.get("refreshToken");
-        return ResponseEntity.ok(authenticationService.refreshToken(refreshToken));
+    public ResponseEntity<LoginResponse> refresh(@RequestBody TokenRequest request) {
+        return ResponseEntity.ok(authenticationService.refreshToken(request.getRefreshToken()));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestBody Map<String, String> request) {
-        String refreshToken  = request.get("refreshToken");
-        authenticationService.logout(refreshToken);
+    public ResponseEntity<String> logout(@RequestBody TokenRequest request) {
+        authenticationService.logout(request.getRefreshToken());
         return ResponseEntity.ok("Đăng xuất thành công");
     }
 
