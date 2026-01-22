@@ -334,7 +334,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         vnp_Params.put("vnp_ReturnUrl", vnpReturnUrl);
         vnp_Params.put("vnp_IpAddr", ipAddress);
         vnp_Params.put("vnp_CreateDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
-        vnp_Params.put("vnp_ExpireDate", LocalDateTime.now().plusMinutes(15).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
 
         // 3. Sắp xếp tham số theo alphabet
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
@@ -438,22 +437,23 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
+        invoice.setTransaction(transaction);
         billingInvoiceRepository.save(invoice);
 
         BillingInvoice finalInvoice = billingInvoiceRepository.findById(invoice.getBillingInvoiceId())
                 .orElseThrow(() -> new BusinessException("Lỗi nạp hóa đơn"));
 
         // Xuất PDF & Upload
-        byte[] pdfContent = pdfExportService.generateInvoicePdf(finalInvoice);
-        String fileName = "Invoice_" + invoice.getBillingInvoiceId();
+        try {
+            byte[] pdfContent = pdfExportService.generateInvoicePdf(finalInvoice);
+            String fileName = "Invoice_" + invoice.getBillingInvoiceId();
 
-        String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
-        invoice.setPdfUrl(pdfUrl);
-        billingInvoiceRepository.save(invoice);
-
-        // Cập nhật trạng thái transaction
-        invoice.setTransaction(transaction);
-        billingInvoiceRepository.save(invoice);
+            String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
+            invoice.setPdfUrl(pdfUrl);
+            billingInvoiceRepository.save(invoice);
+        } catch (Exception e) {
+            log.error("Lỗi khi tạo hoặc tải lên PDF hóa đơn: {}", e.getMessage());
+        }
 
         transaction.setInvoice(invoice);
         transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);
