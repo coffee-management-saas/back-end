@@ -1,12 +1,10 @@
 package com.futurenbetter.saas.modules.auth.controller;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
-import com.futurenbetter.saas.modules.auth.dto.request.ChangePasswordRequest;
-import com.futurenbetter.saas.modules.auth.dto.request.CustomerRegistrationRequest;
-import com.futurenbetter.saas.modules.auth.dto.request.LoginRequest;
-import com.futurenbetter.saas.modules.auth.dto.request.TokenRequest;
+import com.futurenbetter.saas.modules.auth.dto.request.*;
 import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.LoginResponse;
+import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminRegistrationResponse;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
@@ -57,5 +55,17 @@ public class AuthenticationController {
 
         authenticationService.changePassword(customer.getId(), request);
         return ResponseEntity.ok("Thay đổi mật khẩu thành công");
+    }
+
+    @PostMapping("/shop-admin/register")
+    public ResponseEntity<SystemAdminRegistrationResponse> registerShopAdmin(@RequestBody ShopAdminRegistrationRequest request) {
+        SystemAdminRegistrationResponse response = authenticationService.registerShopAdmin(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/shop-admin/login")
+    public ResponseEntity<LoginResponse> shopAdminLogin(@RequestBody LoginRequest request) {
+        LoginResponse response = authenticationService.loginShopAdmin(request);
+        return ResponseEntity.ok(response);
     }
 }
