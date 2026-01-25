@@ -68,7 +68,10 @@ public class Shop {
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
     private List<BillingInvoice> billingInvoices;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "owner_user_id")
-//    private UserProfile owner;
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<Customer> customers;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    private UserProfile owner;
 }
