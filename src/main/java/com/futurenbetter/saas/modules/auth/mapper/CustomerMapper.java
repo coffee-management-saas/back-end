@@ -12,9 +12,9 @@ import org.mapstruct.MappingTarget;
 public interface CustomerMapper {
     Customer toEntity(CustomerRegistrationRequest request);
 
-    @Mapping(target = "customerId", source = "customer.id")
-    @Mapping(target = "status", source = "customer.status")
-    @Mapping(target = "rankId", source = "customer.membershipRank.id")
+    @Mapping(target = "customerId", source = "id") // Tự động convert Long sang String
+    @Mapping(target = "rankId", source = "membershipRank.id")
+    @Mapping(target = "dob", source = "dob", dateFormat = "dd/MM/yyyy")
     CustomerResponse toResponse(Customer customer);
 
     void updateCustomerRequest(
