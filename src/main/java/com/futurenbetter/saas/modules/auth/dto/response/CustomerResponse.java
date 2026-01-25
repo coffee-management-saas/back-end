@@ -5,20 +5,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class CustomerResponse {
-    private String customerId;
+    private Long customerId;
     private String username;
     private String fullname;
     private String rankId;
     private String email;
     private String phone;
     private String address;
-    private String dob;
+    private LocalDate dob;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String status;
