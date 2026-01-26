@@ -5,12 +5,13 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CategoryResponse {
     Long id;
     String name;
-    String description;
-    String image;
+    LocalDateTime createdAt;
     Status status;
 }

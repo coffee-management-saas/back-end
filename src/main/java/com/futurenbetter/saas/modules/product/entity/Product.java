@@ -35,17 +35,17 @@ public class Product {
     @Column(name = "combo_price")
     Double comboPrice;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     LocalDateTime updatedAt;
 
-    @Column(name = "has_variants", nullable = false)
+    @Column(name = "has_variants")
     Boolean hasVariants;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status")
     Status status;
 
     @PrePersist
