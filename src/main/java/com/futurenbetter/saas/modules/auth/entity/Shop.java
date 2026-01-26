@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.auth.entity;
 
 import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
+import com.futurenbetter.saas.modules.order.entity.Order;
 import com.futurenbetter.saas.modules.promotion.entity.Promotion;
 import com.futurenbetter.saas.modules.promotion.entity.PromotionTarget;
 import com.futurenbetter.saas.modules.promotion.entity.PromotionUsage;
@@ -70,6 +71,9 @@ public class Shop {
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
     private List<Customer> customers;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL)
+    private List<Order> orders;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id")
