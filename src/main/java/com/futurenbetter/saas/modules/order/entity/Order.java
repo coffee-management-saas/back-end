@@ -49,10 +49,10 @@ public class Order {
     OrderStatus orderStatus;
 
     @Column(name = "created_at")
-    LocalDateTime createdAt;
+    LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
-    LocalDateTime updatedAt;
+    LocalDateTime updatedAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     List<OrderItem> orderItems;

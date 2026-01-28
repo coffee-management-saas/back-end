@@ -2,6 +2,7 @@ package com.futurenbetter.saas.modules.promotion.service.impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.promotion.dto.request.PromotionRequest;
@@ -31,7 +32,8 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public PromotionResponse createPromotion(PromotionRequest promotionRequest) {
-        Shop shop = shopRepository.findById(promotionRequest.getShopId())
+        Long currentShopId = SecurityUtils.getCurrentShopId();
+        Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
         Promotion promotion = promotionMapper.toEntity(promotionRequest);

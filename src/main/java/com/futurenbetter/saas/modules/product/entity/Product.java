@@ -33,7 +33,7 @@ public class Product {
     String name;
 
     @Column(name = "combo_price")
-    Double comboPrice;
+    Long comboPrice;
 
     @Column(name = "created_at")
     LocalDateTime createdAt;
