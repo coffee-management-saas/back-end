@@ -29,27 +29,27 @@ public class ProductVariant {
     @JoinColumn(name = "size_id", nullable = false)
     Size size;
 
-    @Column(name = "sku_code", nullable = false, length = 50)
+    @Column(name = "sku_code", length = 50)
     String skuCode;
 
     @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(name = "product_id")
     Product product;
 
-    @Column(name = "price", nullable = false)
-    Double price;
+    @Column(name = "price")
+    Long price;
 
-    @Column(name = "cost_price", nullable = false)
-    Double costPrice;
+    @Column(name = "cost_price")
+    Long costPrice;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     LocalDateTime updatedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status")
     Status status;
 
     @PrePersist

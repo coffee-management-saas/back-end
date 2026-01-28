@@ -4,12 +4,15 @@ import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.dto.response.ApiResponse;
 import com.futurenbetter.saas.common.dto.response.PageMeta;
 import com.futurenbetter.saas.modules.product.dto.request.SizeRequest;
+import com.futurenbetter.saas.modules.product.dto.response.SizeResponse;
 import com.futurenbetter.saas.modules.product.entity.Size;
 import com.futurenbetter.saas.modules.product.service.inter.SizeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,19 +25,16 @@ public class SizeController {
     private final SizeService sizeService;
 
     @PostMapping
-    public ApiResponse<Size> create(
+    @Transactional
+    public ResponseEntity<SizeResponse> create(
             @RequestBody @Valid SizeRequest request
     ) {
-        Size response = sizeService.create(request);
-        return ApiResponse.success(
-                HttpStatus.CREATED,
-                "Create size successfully",
-                response,
-                null
-        );
+        SizeResponse response = sizeService.create(request);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("{id}")
+    @Transactional
     public ApiResponse<Size> update(
             @PathVariable Long id,
             @RequestBody @Valid SizeRequest request
@@ -49,6 +49,7 @@ public class SizeController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ApiResponse<List<Size>> getAll(
             @ModelAttribute BaseFilter filter
     ) {

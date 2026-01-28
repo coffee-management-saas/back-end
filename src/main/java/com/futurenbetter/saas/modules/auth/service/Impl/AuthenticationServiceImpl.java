@@ -105,7 +105,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtService.generateAccessToken(
                 customer.getUsername(),
                 currentShopId,
-                "SHOP");
+                "CUSTOMER");
         String refreshToken = jwtService.generateRefreshToken(customer.getUsername());
 
         customer.setRefreshToken(refreshToken);

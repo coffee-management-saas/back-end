@@ -31,7 +31,7 @@ public class Topping {
     String name;
 
     @Column(name = "price", nullable = false)
-    Double price;
+    Long price;
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;
