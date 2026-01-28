@@ -232,7 +232,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             byte[] pdfContent = pdfExportService.generateInvoicePdf(invoice);
             String fileName = "Invoice_" + invoice.getBillingInvoiceId();
 
-            String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
+            String pdfUrl = cloudinaryStorageService.uploadFile(pdfContent, fileName, "invoices");
             invoice.setPdfUrl(pdfUrl);
             billingInvoiceRepository.save(invoice);
         } catch (Exception e) {

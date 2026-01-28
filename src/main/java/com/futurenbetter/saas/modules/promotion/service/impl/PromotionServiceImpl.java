@@ -72,7 +72,7 @@ public class PromotionServiceImpl implements PromotionService {
 
         if (image != null && !image.isEmpty()) {
             String fileName = "promotion_" + promotionId + "_" + System.currentTimeMillis();
-            String imageUrl = cloudinaryStorageService.uploadInvoice(image.getBytes(), fileName); //
+            String imageUrl = cloudinaryStorageService.uploadFile(image.getBytes(), fileName, "promotions");
 
             promotion.setImageUrl(imageUrl);
             promotion.setUpdatedAt(LocalDateTime.now());
