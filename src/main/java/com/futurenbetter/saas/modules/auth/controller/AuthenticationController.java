@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -25,7 +23,6 @@ public class AuthenticationController {
 
     @PostMapping("/register")   
     public ResponseEntity<CustomerResponse> register(@RequestBody CustomerRegistrationRequest request) {
-        // Backend tự biết shopId là bao nhiêu, khách không cần truyền lên
         return ResponseEntity.ok(authenticationService.register(request));
     }
 
@@ -63,9 +60,4 @@ public class AuthenticationController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/shop-admin/login")
-    public ResponseEntity<LoginResponse> shopAdminLogin(@RequestBody LoginRequest request) {
-        LoginResponse response = authenticationService.loginShopAdmin(request);
-        return ResponseEntity.ok(response);
-    }
 }
