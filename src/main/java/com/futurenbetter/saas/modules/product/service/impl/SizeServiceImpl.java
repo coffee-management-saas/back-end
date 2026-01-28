@@ -2,6 +2,7 @@ package com.futurenbetter.saas.modules.product.service.impl;
 
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.exception.BusinessException;
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.product.dto.request.SizeRequest;
 import com.futurenbetter.saas.modules.product.dto.response.SizeResponse;
@@ -28,7 +29,7 @@ public class SizeServiceImpl implements SizeService {
     @Override
     @Transactional
     public SizeResponse create(SizeRequest request) {
-        Long shopId = SecurityUtils.getCurrentShopId();
+        Long shopId = TenantContext.getCurrentShopId();
         if (sizeRepository.existsByCodeAndShopId(request.getCode(), shopId)) {
             throw new BusinessException("Mã kích thước đã tồn tại");
         }
@@ -43,11 +44,11 @@ public class SizeServiceImpl implements SizeService {
     @Override
     @Transactional
     public Size update(Long id, SizeRequest request) {
-        Size size = sizeRepository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        Size size = sizeRepository.findByIdAndShopId(id, TenantContext.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Kích thước không tồn tại"));
 
         if (request.getCode() != null && !request.getCode().equals(size.getCode())) {
-            if (sizeRepository.existsByCodeAndShopId(request.getCode(), SecurityUtils.getCurrentShopId())) {
+            if (sizeRepository.existsByCodeAndShopId(request.getCode(), TenantContext.getCurrentShopId())) {
                 throw new BusinessException("Mã kích thước đã tồn tại");
             }
         }
@@ -69,7 +70,7 @@ public class SizeServiceImpl implements SizeService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Size size = sizeRepository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        Size size = sizeRepository.findByIdAndShopId(id, TenantContext.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Kích thước không tồn tại"));
 
         size.setStatus(Status.DELETED);
