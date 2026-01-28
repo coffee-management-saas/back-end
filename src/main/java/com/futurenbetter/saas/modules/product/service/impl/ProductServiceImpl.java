@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.product.service.impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.product.dto.filter.ProductFilter;
 import com.futurenbetter.saas.modules.product.dto.request.ProductRequest;
@@ -39,13 +40,13 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductResponse create(ProductRequest request) {
-        Long shopId = SecurityUtils.getCurrentShopId();
+        Long currentShopId = TenantContext.getCurrentShopId();
 
-        if (productRepository.existsByNameAndShopId(request.getName(), shopId)) {
+        if (productRepository.existsByNameAndShopId(request.getName(), currentShopId)) {
             throw new BusinessException("Tên sản phẩm đã tồn tại");
         }
 
-        Category category = categoryRepository.findByIdAndShopId(request.getCategoryId(), shopId)
+        Category category = categoryRepository.findByIdAndShopId(request.getCategoryId(), currentShopId)
                 .orElseThrow(() -> new BusinessException("Danh mục không tồn tại"));
 
         Product product = productMapper.toEntity(request);
@@ -59,12 +60,12 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductResponse update(Long id, ProductRequest request) {
-        Long shopId = SecurityUtils.getCurrentShopId();
-        Product product = productRepository.findByIdAndShopId(id, shopId)
+        Long currentShopId = TenantContext.getCurrentShopId();
+        Product product = productRepository.findByIdAndShopId(id, currentShopId)
                 .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
 
         if (request.getCategoryId() != null && !request.getCategoryId().equals(product.getCategory().getId())) {
-            Category newCategory = categoryRepository.findByIdAndShopId(request.getCategoryId(), shopId)
+            Category newCategory = categoryRepository.findByIdAndShopId(request.getCategoryId(), currentShopId)
                     .orElseThrow(() -> new BusinessException("Danh mục mới không tồn tại"));
             product.setCategory(newCategory);
         }
@@ -76,15 +77,17 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getDetail(Long id) {
-        return productRepository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        Long currentShopId = TenantContext.getCurrentShopId();
+        return productRepository.findByIdAndShopId(id, currentShopId)
                 .map(productMapper::toResponse)
                 .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
     }
 
     @Override
     public Page<ProductResponse> getAll(ProductFilter filter) {
+        Long currentShopId = TenantContext.getCurrentShopId();
         return productRepository.findAll(
-                ProductSpec.filter(filter, SecurityUtils.getCurrentShopId()),
+                ProductSpec.filter(filter, currentShopId),
                 filter.getPageable()
         ).map(productMapper::toResponse);
     }
@@ -92,8 +95,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void updateAllowToppings(Long productId, List<Long> toppingIds) {
-        Long shopId = SecurityUtils.getCurrentShopId();
-        Product product = productRepository.findByIdAndShopId(productId, shopId)
+        Long currentShopId = TenantContext.getCurrentShopId();
+        Product product = productRepository.findByIdAndShopId(productId, currentShopId)
                 .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
 
         allowToppingRepository.deleteByProductId(productId);
@@ -115,6 +118,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<Long> getAllowToppingIds(Long productId) {
+        Long currentShopId = TenantContext.getCurrentShopId();
         return allowToppingRepository.findByProductId(productId).stream()
                 .map(mapping -> mapping.getTopping().getId())
                 .collect(Collectors.toList());

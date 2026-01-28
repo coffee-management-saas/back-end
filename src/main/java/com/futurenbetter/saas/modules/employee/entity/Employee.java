@@ -27,6 +27,8 @@ public class Employee {
     @JoinColumn(name = "shop_id", nullable = false)
     Shop shop;
 
+
+
     @OneToOne
     @JoinColumn(name = "user_profile_id", nullable = false)
     UserProfile userProfile;
