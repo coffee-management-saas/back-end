@@ -2,7 +2,9 @@ package com.futurenbetter.saas.modules.product.service.impl;
 
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.exception.BusinessException;
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.product.dto.request.CategoryRequest;
 import com.futurenbetter.saas.modules.product.dto.response.CategoryResponse;
 import com.futurenbetter.saas.modules.product.entity.Category;
@@ -22,18 +24,19 @@ public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
+    private final ShopRepository shopRepository;
 
     @Override
     @Transactional
     public CategoryResponse create(CategoryRequest request) {
-        Long shopId = SecurityUtils.getCurrentShopId();
+        Long shopId = TenantContext.getCurrentShopId();
 
         if (categoryRepository.existsByNameAndShopId(request.getName(), shopId)) {
             throw new BusinessException("Tên danh mục đã tồn tại");
         }
 
         Category category = categoryMapper.toEntity(request);
-        category.setShop(SecurityUtils.getCurrentShop());
+        category.setShop(shopRepository.getReferenceById(TenantContext.getCurrentShopId()));
         category.setStatus(Status.ACTIVE);
 
         return categoryMapper.toResponse(categoryRepository.save(category));
@@ -42,7 +45,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public CategoryResponse update(Long id, CategoryRequest request) {
-        Long shopId = SecurityUtils.getCurrentShopId();
+        Long shopId = TenantContext.getCurrentShopId();
         Category category = categoryRepository.findByIdAndShopId(id, shopId)
                 .orElseThrow(() -> new BusinessException("Danh mục không tồn tại"));
 
@@ -58,21 +61,22 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponse getDetail(Long id) {
-        return categoryRepository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        return categoryRepository.findByIdAndShopId(id, TenantContext.getCurrentShopId())
                 .map(categoryMapper::toResponse)
                 .orElseThrow(() -> new BusinessException("Danh mục không tồn tại"));
     }
 
     @Override
     public Page<CategoryResponse> getAll(BaseFilter filter) {
-        return categoryRepository.findAll(filter.getPageable())
+        Long shopId = TenantContext.getCurrentShopId();
+        return categoryRepository.findAllByShopId(shopId, filter.getPageable())
                 .map(categoryMapper::toResponse);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        Category category = categoryRepository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        Category category = categoryRepository.findByIdAndShopId(id, TenantContext.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Danh mục không tồn tại"));
 
         category.setStatus(Status.DELETED);
