@@ -66,7 +66,11 @@ public class UserProfile {
     )
     private Set<Role> roles;
 
-//    @OneToMany(mappedBy = "owner")
-//    private List<Shop> ownedShops;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
+
+    @OneToMany(mappedBy = "owner")
+    private List<Shop> ownedShops;
 }
 

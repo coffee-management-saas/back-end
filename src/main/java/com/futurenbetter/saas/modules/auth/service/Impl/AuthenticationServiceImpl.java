@@ -7,20 +7,14 @@ import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.LoginResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminLoginResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminRegistrationResponse;
-import com.futurenbetter.saas.modules.auth.entity.Customer;
-import com.futurenbetter.saas.modules.auth.entity.MembershipRank;
-import com.futurenbetter.saas.modules.auth.entity.Role;
-import com.futurenbetter.saas.modules.auth.entity.UserProfile;
+import com.futurenbetter.saas.modules.auth.entity.*;
 import com.futurenbetter.saas.modules.auth.enums.ApplyStatus;
 import com.futurenbetter.saas.modules.auth.enums.CustomerStatus;
 import com.futurenbetter.saas.modules.auth.enums.RoleStatus;
 import com.futurenbetter.saas.modules.auth.enums.UserProfileEnum;
 import com.futurenbetter.saas.modules.auth.mapper.CustomerMapper;
 import com.futurenbetter.saas.modules.auth.mapper.UserProfileMapper;
-import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
-import com.futurenbetter.saas.modules.auth.repository.MembershipRankRepository;
-import com.futurenbetter.saas.modules.auth.repository.RoleRepository;
-import com.futurenbetter.saas.modules.auth.repository.UserProfileRepository;
+import com.futurenbetter.saas.modules.auth.repository.*;
 import com.futurenbetter.saas.modules.auth.service.AuthenticationService;
 import com.futurenbetter.saas.modules.auth.service.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +39,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserProfileRepository userProfileRepository;
     private final UserProfileMapper userProfileMapper;
     private final RoleRepository roleRepository;
+    private final ShopRepository shopRepository;
 
     @Override
     public CustomerResponse register(CustomerRegistrationRequest request) {
@@ -62,8 +57,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Tên đăng nhập đã tồn tại");
         }
 
+        Shop shop = shopRepository.findById(currentShopId)
+                .orElseThrow(() -> new BusinessException("Cửa hàng không hợp lệ"));
+
+
+
         Customer customer = customerMapper.toEntity(request);
+        customer.setShop(shop);
         String encodedPassword = passwordEncoder.encode(request.getPassword());
+        customer.setAddress(request.getAddress());
         customer.setPassword(encodedPassword);
         customer.setStatus(CustomerStatus.ACTIVE);
         customer = customerRepository.save(customer);
@@ -96,10 +98,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
         }
 
+        if (customer.getShop() == null || !customer.getShop().getId().equals(currentShopId)) {
+            throw new BusinessException("Tài khoản không thuộc cửa hàng này");
+        }
+
         String accessToken = jwtService.generateAccessToken(
                 customer.getUsername(),
                 currentShopId,
-                "SHOP");
+                "CUSTOMER");
         String refreshToken = jwtService.generateRefreshToken(customer.getUsername());
 
         customer.setRefreshToken(refreshToken);
@@ -109,6 +115,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .shopId(customer.getShop().getId())
                 .build();
     }
 
@@ -233,6 +240,69 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         UserProfile savedAdmin = userProfileRepository.save(admin);
         return userProfileMapper.toAdminResponse(savedAdmin);
 
+    }
+
+    @Override
+    public LoginResponse loginShopAdmin(LoginRequest loginRequest) {
+        UserProfile admin = profileRepository.findByUsernameWithRoles(loginRequest.getUsername())
+                .orElseThrow(() -> new BusinessException("Tài khoản không tồn tại"));
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), admin.getPassword())) {
+            throw new BusinessException("Mật khẩu không chính xác");
+        }
+
+        boolean isShopUser = admin.getRoles().stream()
+                .anyMatch(role -> ApplyStatus.SHOP.equals(role.getRole()));
+
+        if (!isShopUser) {
+            throw new BusinessException("Tài khoản không có quyền truy cập quản trị quán");
+        }
+
+        if (admin.getShop() == null) {
+            throw new BusinessException("Tài khoản chưa được gán vào cửa hàng cụ thể");
+        }
+
+        Long shopId = admin.getShop().getId();
+
+        String accessToken = jwtService.generateAccessToken(
+                admin.getUsername(),
+                shopId,
+                "SHOP");
+
+        String refreshToken = jwtService.generateRefreshToken(admin.getUsername());
+
+        admin.setRefreshToken(refreshToken);
+        admin.setUpdatedAt(LocalDateTime.now());
+        userProfileRepository.save(admin);
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .shopId(shopId)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public SystemAdminRegistrationResponse registerShopAdmin(ShopAdminRegistrationRequest request) {
+        if (userProfileRepository.existsByUsername(request.getUsername())) {
+            throw new BusinessException("Tên đăng nhập đã tồn tại");
+        }
+
+        Shop shop = shopRepository.findById(request.getShopId())
+                .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
+
+        UserProfile admin = userProfileMapper.toEntity(request);
+        admin.setPassword(passwordEncoder.encode(request.getPassword()));
+        admin.setStatus(UserProfileEnum.ACTIVE);
+        admin.setShop(shop);
+
+        Role shopRole = roleRepository.findByRole(ApplyStatus.SHOP)
+                .orElseThrow(() -> new BusinessException("Role quản trị quán chưa được cấu hình"));
+        admin.setRoles(Set.of(shopRole));
+
+        UserProfile savedAdmin = userProfileRepository.save(admin);
+        return userProfileMapper.toAdminResponse(savedAdmin);
     }
 
     @Override

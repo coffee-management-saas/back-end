@@ -119,6 +119,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         SubscriptionTransaction pendingTransaction = SubscriptionTransaction.builder()
                 .orderId(orderId)
                 .amount(amount)
+                .plan(plan)
+                .billingCycle(request.getBillingCycle())
                 .paymentGateway(PaymentGatewayEnum.MOMO)
                 .status(SubscriptionTransactionEnum.PENDING)
                 .isIncome(true)
@@ -239,6 +241,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         //4. Lưu giao dịch
         SubscriptionTransaction transaction = existingTask.orElse(new SubscriptionTransaction());
                     transaction.setInvoice(invoice);
+                    transaction.setShop(shop);
+                    transaction.setPlan(plan);
+                    transaction.setBillingCycle(shopData.getBillingCycle());
                     transaction.setAmount(transaction.getAmount() + sub.getPrice());
                     transaction.setIsIncome(true);
                     transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);

@@ -8,19 +8,25 @@ import com.futurenbetter.saas.modules.auth.mapper.CustomerMapper;
 import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
 import com.futurenbetter.saas.modules.auth.service.CustomerService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public CustomerResponse getCustomer(Customer customer) {
+        return customerMapper.toResponse(customer);
+    }
 
     @Override
     public CustomerResponse updateProfile(Long customerId, UpdateProfileRequest request) {
