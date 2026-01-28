@@ -1,5 +1,7 @@
 package com.futurenbetter.saas.common.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +17,8 @@ public class BaseFilter {
     private int size = 10;
     private List<String> sort;
 
+    @JsonIgnore
+    @Schema(hidden = true)
     public Pageable getPageable() {
         return PageRequest.of(page, size, getSort());
     }
