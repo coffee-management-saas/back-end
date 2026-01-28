@@ -14,7 +14,6 @@ public class PromotionRequest {
     private PromotionTypeEnum promotionType;
     private int minimumSpent;
     private int quantity;
-    private String imageUrl;
     private DiscountTypeEnum discountType;
     private Float discountValue;
     private Float maxDiscountAmount;
@@ -22,6 +21,5 @@ public class PromotionRequest {
     private PromotionEnum status;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private Long shopId;
 //    private List<Long> productIds;
 }
