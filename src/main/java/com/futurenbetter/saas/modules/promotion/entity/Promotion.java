@@ -55,7 +55,7 @@ public class Promotion {
     @Column(name = "usage_limit_per_user")
     private int usageLimitPerUser;
 
-    @Column(name = "image_url")
+    @Column(name = "image_url", nullable = true)
     private String imageUrl;
 
     @Column(name = "start_date")

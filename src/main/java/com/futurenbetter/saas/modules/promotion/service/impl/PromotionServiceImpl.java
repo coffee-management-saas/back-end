@@ -12,10 +12,14 @@ import com.futurenbetter.saas.modules.promotion.enums.PromotionEnum;
 import com.futurenbetter.saas.modules.promotion.mapper.PromotionMapper;
 import com.futurenbetter.saas.modules.promotion.repository.PromotionRepository;
 import com.futurenbetter.saas.modules.promotion.service.PromotionService;
+import com.futurenbetter.saas.modules.subscription.service.CloudinaryStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.net.BindException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +32,7 @@ public class PromotionServiceImpl implements PromotionService {
     private final ShopRepository shopRepository;
     private final PromotionRepository promotionRepository;
     private final PromotionMapper promotionMapper;
+    private final CloudinaryStorageService cloudinaryStorageService;
 
 
     @Override
@@ -40,7 +45,6 @@ public class PromotionServiceImpl implements PromotionService {
 
         promotion.setShop(shop);
         promotion.setPromotionStatus(PromotionEnum.ACTIVE);
-        promotion.setImageUrl(promotionRequest.getImageUrl());
         promotion.setCreatedAt(LocalDateTime.now());
         promotion.setUpdatedAt(LocalDateTime.now());
 
@@ -57,6 +61,27 @@ public class PromotionServiceImpl implements PromotionService {
 
         Promotion savedPromotion = promotionRepository.save(promotion);
         return promotionMapper.toResponse(savedPromotion);
+    }
+
+    @Override
+    public PromotionResponse uploadImage(Long promotionId, MultipartFile image) throws IOException {
+        Long currentShopId = SecurityUtils.getCurrentShopId();
+        Promotion promotion = promotionRepository.findById(promotionId)
+                .filter(p -> p.getShop().getId().equals(currentShopId))
+                .orElseThrow(() -> new BusinessException("Mã khuyến mãi không tồn tại"));
+
+        if (image != null && !image.isEmpty()) {
+            String fileName = "promotion_" + promotionId + "_" + System.currentTimeMillis();
+            String imageUrl = cloudinaryStorageService.uploadInvoice(image.getBytes(), fileName); //
+
+            promotion.setImageUrl(imageUrl);
+            promotion.setUpdatedAt(LocalDateTime.now());
+
+            Promotion savedPromotion = promotionRepository.save(promotion);
+            return promotionMapper.toResponse(savedPromotion);
+        } else {
+            throw new BusinessException("Vui lòng chọn file ảnh để upload");
+        }
     }
 
     @Transactional(readOnly = true)
