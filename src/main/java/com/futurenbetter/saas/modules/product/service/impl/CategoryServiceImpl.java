@@ -3,7 +3,6 @@ package com.futurenbetter.saas.modules.product.service.impl;
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
-import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.product.dto.request.CategoryRequest;
