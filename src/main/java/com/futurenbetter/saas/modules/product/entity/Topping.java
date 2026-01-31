@@ -1,12 +1,14 @@
 package com.futurenbetter.saas.modules.product.entity;
 
 import com.futurenbetter.saas.modules.auth.entity.Shop;
+import com.futurenbetter.saas.modules.order.entity.ToppingPerOrderItem;
 import com.futurenbetter.saas.modules.product.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "toppings")
@@ -29,7 +31,7 @@ public class Topping {
     String name;
 
     @Column(name = "price", nullable = false)
-    Double price;
+    Long price;
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;
@@ -54,4 +56,7 @@ public class Topping {
     public void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    @OneToMany(mappedBy = "topping", cascade = CascadeType.ALL)
+    List<ToppingPerOrderItem> toppingPerOrderItems;
 }

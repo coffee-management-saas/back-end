@@ -20,7 +20,8 @@ public class CustomerController {
 
     @GetMapping("/me")
     public ResponseEntity<CustomerResponse> getMyProfile(@AuthenticationPrincipal Customer customer) {
-        return ResponseEntity.ok(customerMapper.toResponse(customer));
+        CustomerResponse response = customerService.getCustomer(customer);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/me")

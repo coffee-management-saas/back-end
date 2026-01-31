@@ -4,6 +4,7 @@ import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.product.dto.request.SizeRequest;
+import com.futurenbetter.saas.modules.product.dto.response.SizeResponse;
 import com.futurenbetter.saas.modules.product.entity.Size;
 import com.futurenbetter.saas.modules.product.enums.Status;
 import com.futurenbetter.saas.modules.product.mapper.SizeMapper;
@@ -26,16 +27,17 @@ public class SizeServiceImpl implements SizeService {
 
     @Override
     @Transactional
-    public Size create(SizeRequest request) {
+    public SizeResponse create(SizeRequest request) {
         Long shopId = SecurityUtils.getCurrentShopId();
         if (sizeRepository.existsByCodeAndShopId(request.getCode(), shopId)) {
             throw new BusinessException("Mã kích thước đã tồn tại");
         }
 
         Size size = sizeMapper.toEntity(request);
+
         size.setShop(SecurityUtils.getCurrentShop());
 
-        return sizeRepository.save(size);
+        return sizeMapper.toResponse(sizeRepository.save(size));
     }
 
     @Override

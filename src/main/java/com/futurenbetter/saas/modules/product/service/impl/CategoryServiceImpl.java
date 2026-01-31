@@ -4,6 +4,7 @@ import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.product.dto.request.CategoryRequest;
 import com.futurenbetter.saas.modules.product.dto.response.CategoryResponse;
@@ -36,7 +37,9 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         Category category = categoryMapper.toEntity(request);
-        category.setShop(shopRepository.getReferenceById(TenantContext.getCurrentShopId()));
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
+        category.setShop(shop);
         category.setStatus(Status.ACTIVE);
 
         return categoryMapper.toResponse(categoryRepository.save(category));

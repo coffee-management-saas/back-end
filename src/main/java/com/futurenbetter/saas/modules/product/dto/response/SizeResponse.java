@@ -1,17 +1,18 @@
 package com.futurenbetter.saas.modules.product.dto.response;
 
 import com.futurenbetter.saas.modules.product.enums.Status;
-import lombok.AccessLevel;
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
-
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CategoryResponse {
-    Long id;
-    String name;
-    LocalDateTime createdAt;
+public class SizeResponse {
+
+    Long sizeId;
+    String code;
     Status status;
+
 }
