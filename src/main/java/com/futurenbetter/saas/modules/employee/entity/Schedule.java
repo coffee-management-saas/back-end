@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.modules.employee.entity;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -32,8 +33,8 @@ public class Schedule {
     Employee employee;
     // có thể thêm các field: dayOfWeek, Month phục vụ cho select.
 
-    @Column(name = "date") // nullable = false
-    LocalDate date;
+    @Column(name = "day_of_week") // nullable = false
+    DayOfWeek dayOfWeek;
 
     @Column(name = "start_time") // nullable = false
     LocalDateTime startTime;
