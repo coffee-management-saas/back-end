@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.order.entity;
 
 import com.futurenbetter.saas.modules.order.enums.OrderItemStatus;
+import com.futurenbetter.saas.modules.product.entity.ProductVariant;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -44,6 +45,10 @@ public class OrderItem {
     @JoinColumn(name = "order_id")
     Order order;
 
-    @OneToMany(mappedBy = "orderItem")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_variant_id")
+    ProductVariant productVariant;
+
+    @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL)
     List<ToppingPerOrderItem> toppingPerOrderItems;
 }

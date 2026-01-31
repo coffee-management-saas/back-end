@@ -1,6 +1,5 @@
 package com.futurenbetter.saas.modules.promotion.entity;
 
-
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.promotion.enums.DiscountTypeEnum;
 import com.futurenbetter.saas.modules.promotion.enums.PromotionEnum;
@@ -74,7 +73,7 @@ public class Promotion {
     @Column(name = "promotion_status")
     private PromotionEnum promotionStatus;
 
-    @OneToMany(mappedBy = "promotion", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "promotion", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PromotionTarget> promotionTargets;
 
     @OneToMany(mappedBy = "promotion", cascade = CascadeType.ALL)

@@ -29,7 +29,8 @@ public class PromotionUsage {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "promotion_usage_status")
+    @Column(name = "promotion_usage_status", columnDefinition = "varchar(255)")
+    @Enumerated(EnumType.STRING)
     private PromotionUsageEnum promotionUsageStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -6,6 +6,7 @@ import com.futurenbetter.saas.modules.promotion.enums.PromotionTypeEnum;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class PromotionRequest {
@@ -21,5 +22,5 @@ public class PromotionRequest {
     private PromotionEnum status;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-//    private List<Long> productIds;
+    private List<Long> productIds;
 }
