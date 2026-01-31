@@ -220,8 +220,13 @@ public class OrderServiceImpl implements OrderService {
                 throw new BusinessException("Lỗi chuẩn bị dữ liệu thanh toán");
             }
 
-            String finalRedirectUrl = redirectUrl + "/callback";
-            String finalIpn = redirectUrl + "/ipn";
+            String finalRedirectUrl = redirectUrl + "/momo/callback";
+            String finalIpn = redirectUrl + "/momo/ipn";
+
+            log.info("========== CREATING MOMO PAYMENT FOR ORDER ==========");
+            log.info("Base redirectUrl: {}", redirectUrl);
+            log.info("Final Redirect URL: {}", finalRedirectUrl);
+            log.info("Final IPN URL: {}", finalIpn);
 
             String paidAmountStr = String.valueOf(savedOrder.getPaidPrice());
             String rawHash = "accessKey=" + accessKey +
@@ -268,8 +273,13 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void handleMomoOrderIpn(Map<String, String> payload) {
+        log.info("========== HANDLING MOMO ORDER IPN ==========");
+        log.info("Payload: {}", payload);
+
         String momoOrderId = payload.get("orderId");
         String resultCode = payload.get("resultCode");
+
+        log.info("MoMo Order ID: {}, Result Code: {}", momoOrderId, resultCode);
 
         if (!"0".equals(resultCode)) {
             return;
@@ -347,23 +357,21 @@ public class OrderServiceImpl implements OrderService {
         Long shopId = order.getShop().getId();
 
         for (OrderItem item : order.getOrderItems()) {
-            //1. Trừ kho sản phẩm chính
+            // 1. Trừ kho sản phẩm chính
             inventoryInvoiceService.deductStock(
                     shopId,
                     item.getProductVariant().getId(),
                     null,
-                    Double.valueOf(item.getQuantity())
-            );
+                    Double.valueOf(item.getQuantity()));
 
-            //2. Trừ kho các topping đi kèm (nếu có)
+            // 2. Trừ kho các topping đi kèm (nếu có)
             if (item.getToppingPerOrderItems() != null) {
                 for (ToppingPerOrderItem topping : item.getToppingPerOrderItems()) {
                     inventoryInvoiceService.deductStock(
                             shopId,
                             null,
                             topping.getTopping().getId(),
-                            (double) topping.getQuantity()
-                    );
+                            (double) topping.getQuantity());
                 }
             }
         }
