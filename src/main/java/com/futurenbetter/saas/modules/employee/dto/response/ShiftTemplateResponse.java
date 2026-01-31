@@ -6,14 +6,15 @@ import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ShiftTemplateResponse {
     Long shiftTemplateId;
     String name;
-    String startTime;
-    String endTime;
+    LocalTime startTime;
+    LocalTime endTime;
     ShiftTemplateStatus status;
     LocalDateTime updatedAt;
 }

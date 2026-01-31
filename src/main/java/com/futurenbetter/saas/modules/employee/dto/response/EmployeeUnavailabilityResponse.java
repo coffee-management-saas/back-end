@@ -5,16 +5,18 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EmployeeUnavailabilityResponse {
-    Long unavailabilityId;
+    Long employeeUnavailabilityId;
     Long employeeId;
     String employeeName;
     String reason;
-    String startTime;
-    String endTime;
-    String specificDate;
+    LocalDateTime startTime;
+    LocalDateTime endTime;
+    LocalDateTime specificDate;
     Boolean isRecurring;
     UnavailabilityStatus status;
 }

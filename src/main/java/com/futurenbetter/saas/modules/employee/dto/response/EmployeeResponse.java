@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.modules.employee.dto.response;
 
+import com.futurenbetter.saas.modules.employee.enums.EmployeeType;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
@@ -12,7 +13,7 @@ public class EmployeeResponse {
     Long employeeId;
     Long shopId;
     Long userProfileId;
-    String employeeType;
+    EmployeeType employeeType;
     Double hourlyWage;
     Double weeklyHourLimit;
     LocalDateTime updatedAt;
