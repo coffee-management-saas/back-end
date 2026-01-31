@@ -5,6 +5,7 @@ import com.futurenbetter.saas.common.utils.MomoUtils;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
+import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceService;
 import com.futurenbetter.saas.modules.order.dto.request.OrderItemRequest;
 import com.futurenbetter.saas.modules.order.dto.request.OrderRequest;
 import com.futurenbetter.saas.modules.order.dto.request.ToppingItemRequest;
@@ -49,6 +50,7 @@ public class OrderServiceImpl implements OrderService {
     private final ProductVariantRepository productVariantRepository;
     private final ToppingRepository toppingRepository;
     private final OrderRepository orderRepository;
+    private final InventoryInvoiceService inventoryInvoiceService;
     private final MomoUtils momoUtils;
     private final ObjectMapper objectMapper;
     private final PromotionService promotionService;
@@ -188,12 +190,16 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
 
         // 7. Ghi nhận promotion usage nếu thanh toán bằng CASH
-        if (request.getPaymentGateway() == PaymentGateway.CASH && promotion != null) {
-            promotionService.recordPromotionUsage(
-                    promotion.getPromotionId(),
-                    currentUserId,
-                    currentShopId,
-                    discountAmount);
+        if (request.getPaymentGateway() == PaymentGateway.CASH) {
+            triggerStockDeduction(savedOrder);
+
+            if (promotion != null) {
+                promotionService.recordPromotionUsage(
+                        promotion.getPromotionId(),
+                        currentUserId,
+                        currentShopId,
+                        discountAmount);
+            }
         }
 
         if (request.getPaymentGateway() == PaymentGateway.MOMO) {
@@ -297,6 +303,7 @@ public class OrderServiceImpl implements OrderService {
             });
         }
         orderRepository.save(order);
+        triggerStockDeduction(order);
 
         if (order.getPromotion() != null) {
             Long customerId = null;
@@ -334,5 +341,31 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         return discountAmount;
+    }
+
+    private void triggerStockDeduction(Order order) {
+        Long shopId = order.getShop().getId();
+
+        for (OrderItem item : order.getOrderItems()) {
+            //1. Trừ kho sản phẩm chính
+            inventoryInvoiceService.deductStock(
+                    shopId,
+                    item.getProductVariant().getId(),
+                    null,
+                    Double.valueOf(item.getQuantity())
+            );
+
+            //2. Trừ kho các topping đi kèm (nếu có)
+            if (item.getToppingPerOrderItems() != null) {
+                for (ToppingPerOrderItem topping : item.getToppingPerOrderItems()) {
+                    inventoryInvoiceService.deductStock(
+                            shopId,
+                            null,
+                            topping.getTopping().getId(),
+                            (double) topping.getQuantity()
+                    );
+                }
+            }
+        }
     }
 }

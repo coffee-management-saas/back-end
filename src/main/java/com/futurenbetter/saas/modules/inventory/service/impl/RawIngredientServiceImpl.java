@@ -6,7 +6,7 @@ import com.futurenbetter.saas.modules.inventory.dto.filter.RawIngredientFilter;
 import com.futurenbetter.saas.modules.inventory.dto.request.RawIngredientRequest;
 import com.futurenbetter.saas.modules.inventory.dto.response.RawIngredientResponse;
 import com.futurenbetter.saas.modules.inventory.entity.RawIngredient;
-import com.futurenbetter.saas.modules.inventory.enums.Status;
+import com.futurenbetter.saas.modules.inventory.enums.InventoryStatus;
 import com.futurenbetter.saas.modules.inventory.mapper.RawIngredientMapper;
 import com.futurenbetter.saas.modules.inventory.repository.IngredientBatchRepository;
 import com.futurenbetter.saas.modules.inventory.repository.RawIngredientRepository;
@@ -31,7 +31,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
     public RawIngredientResponse create(RawIngredientRequest request) {
         RawIngredient entity = mapper.toEntity(request);
         entity.setShop(SecurityUtils.getCurrentShop());
-        entity.setStatus(Status.ACTIVE);
+        entity.setInventoryStatus(InventoryStatus.ACTIVE);
 
         return toFullResponse(repository.save(entity));
     }
@@ -40,7 +40,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
     @Override
     @Transactional
     public RawIngredientResponse update(Long id, RawIngredientRequest request) {
-        RawIngredient entity = repository.findByIdAndId(id, SecurityUtils.getCurrentShopId())
+        RawIngredient entity = repository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại"));
 
         mapper.updateFromRequest(entity, request);
@@ -62,7 +62,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
     @Override
     @Transactional(readOnly = true)
     public RawIngredientResponse getDetail(Long id) {
-        RawIngredient entity = repository.findByIdAndId(id, SecurityUtils.getCurrentShopId())
+        RawIngredient entity = repository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại"));
         return toFullResponse(entity);
     }
@@ -71,7 +71,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
     private RawIngredientResponse toFullResponse(RawIngredient entity) {
         var res = mapper.toResponse(entity);
         // Tính tổng tồn kho từ Batch (Logic tính toán không thuộc về Mapper)
-        Double totalStock = batchRepository.sumQuantityByIngredientIdAndStatus(entity.getId(), Status.ACTIVE);
+        Double totalStock = batchRepository.sumQuantityByIngredientIdAndStatus(entity.getId(), InventoryStatus.ACTIVE);
         res.setTotalStockQuantity(totalStock != null ? totalStock : 0.0);
         return res;
     }

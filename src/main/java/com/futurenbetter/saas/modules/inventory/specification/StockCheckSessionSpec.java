@@ -37,8 +37,8 @@ public class StockCheckSessionSpec {
                 predicates.add(cb.equal(root.get("isApproved"), filter.getIsApproved()));
             }
 
-            if (filter.getStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
+            if (filter.getInventoryStatus() != null) {
+                predicates.add(cb.equal(root.get("inventoryStatus"), filter.getInventoryStatus()));
             }
 
             query.distinct(true);
