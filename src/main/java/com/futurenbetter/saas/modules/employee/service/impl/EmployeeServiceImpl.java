@@ -32,7 +32,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public EmployeeResponse getById(Long employeeId) {
 
-        Employee employee = getCurrentEmployee(employeeId);
+        Employee employee = getEmployeeById(employeeId);
 
         return employeeMapper.toResponse(employee);
     }
@@ -59,7 +59,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Transactional
     public EmployeeResponse updateEmployee(Long employeeId, EmployeeRequest request) {
 
-        Employee employee = getCurrentEmployee(employeeId);
+        Employee employee = getEmployeeById(employeeId);
 
         employeeMapper.updateFromRequest(request, employee);
 
@@ -73,7 +73,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Transactional
     public void deleteEmployee(Long employeeId) {
 
-        Employee employee = getCurrentEmployee(employeeId);
+        Employee employee = getEmployeeById(employeeId);
 
         employee.setStatus(EmployeeStatus.INACTIVE);
 
@@ -109,8 +109,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         return userProfile;
     }
 
-
-    private Employee getCurrentEmployee(Long employeeId) {
+    @Override
+    public Employee getEmployeeById(Long employeeId) {
 
         Long shopId = TenantContext.getCurrentShopId();
         Employee employee = employeeRepository.findByIdAndShopId(employeeId, shopId)
