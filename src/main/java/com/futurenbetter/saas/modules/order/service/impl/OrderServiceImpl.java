@@ -22,6 +22,10 @@ import com.futurenbetter.saas.modules.product.entity.ProductVariant;
 import com.futurenbetter.saas.modules.product.entity.Topping;
 import com.futurenbetter.saas.modules.product.repository.ProductVariantRepository;
 import com.futurenbetter.saas.modules.product.repository.ToppingRepository;
+import com.futurenbetter.saas.modules.promotion.entity.Promotion;
+import com.futurenbetter.saas.modules.promotion.enums.DiscountTypeEnum;
+import com.futurenbetter.saas.modules.promotion.enums.PromotionTypeEnum;
+import com.futurenbetter.saas.modules.promotion.service.PromotionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +37,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -46,6 +51,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final MomoUtils momoUtils;
     private final ObjectMapper objectMapper;
+    private final PromotionService promotionService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -70,6 +76,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse createOrder(OrderRequest request) {
         // 1. Lấy ShopId từ SecurityUtils
         Long currentShopId = SecurityUtils.getCurrentShopId();
+        Long currentUserId = SecurityUtils.getCurrentUserId();
         Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
@@ -94,6 +101,7 @@ public class OrderServiceImpl implements OrderService {
 
             ProductVariant variant = productVariantRepository.findById(itemReq.getProductVariantId())
                     .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
+            item.setProductVariant(variant);
             item.setUnitPrice(variant.getPrice());
 
             long itemTotal = variant.getPrice() * itemReq.getQuantity();
@@ -106,7 +114,6 @@ public class OrderServiceImpl implements OrderService {
                             .orElseThrow(() -> new BusinessException("Topping không tồn tại"));
 
                     ToppingPerOrderItem topEntity = orderMapper.toToppingEntity(topReq);
-                    topEntity.setToppingPerOrderItemId(topping.getId());
                     topEntity.setPrice(topping.getPrice());
                     topEntity.setOrderItem(item);
                     topEntity.setTopping(topping);
@@ -122,11 +129,57 @@ public class OrderServiceImpl implements OrderService {
             items.add(item);
         }
 
-        // 5. Cập nhật thông tin tổng quát và lưu trữ
+        // 5. Áp dụng promotion (nếu có)
+        Long discountAmount = 0L;
+        Promotion promotion = null;
+        if (request.getPromotionCode() != null && !request.getPromotionCode().trim().isEmpty()) {
+            promotion = promotionService.validatePromotion(
+                    request.getPromotionCode(),
+                    currentShopId,
+                    currentUserId,
+                    totalBasePrice);
+
+            if (promotion.getPromotionType() == PromotionTypeEnum.ORDER) {
+                discountAmount = calculateDiscount(promotion, totalBasePrice);
+            } else if (promotion.getPromotionType() == PromotionTypeEnum.PRODUCT) {
+                if (promotion.getPromotionTargets() == null || promotion.getPromotionTargets().isEmpty()) {
+                    throw new BusinessException("Mã khuyến mãi không có sản phẩm áp dụng");
+                }
+
+                Set<Long> targetProductIds = promotion.getPromotionTargets().stream()
+                        .map(target -> target.getProduct().getId())
+                        .collect(Collectors.toSet());
+
+                long eligibleAmount = 0L;
+                for (OrderItem item : items) {
+                    Long productId = item.getProductVariant().getProduct().getId();
+
+                    if (targetProductIds.contains(productId)) {
+                        long itemPrice = item.getUnitPrice() * item.getQuantity();
+                        if (item.getToppingPerOrderItems() != null) {
+                            for (ToppingPerOrderItem topping : item.getToppingPerOrderItems()) {
+                                itemPrice += topping.getPrice() * topping.getQuantity();
+                            }
+                        }
+                        eligibleAmount += itemPrice;
+                    }
+                }
+
+                if (eligibleAmount == 0) {
+                    throw new BusinessException("Đơn hàng không có sản phẩm áp dụng mã khuyến mãi này");
+                }
+
+                discountAmount = calculateDiscount(promotion, eligibleAmount);
+            }
+        }
+
+        // 6. Cập nhật thông tin tổng quát và lưu trữ
         order.setOrderItems(items);
         order.setBasePrice(totalBasePrice);
-        // order.setPaidPrice(totalBasePrice);
+        order.setDiscountAmount(discountAmount);
+        order.setPaidPrice(totalBasePrice - discountAmount);
         order.setProductQuantity(items.size());
+        order.setPromotion(promotion);
 
         if (request.getPaymentGateway() == PaymentGateway.CASH) {
             order.setOrderStatus(OrderStatus.PAID);
@@ -134,10 +187,18 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
+        // 7. Ghi nhận promotion usage nếu thanh toán bằng CASH
+        if (request.getPaymentGateway() == PaymentGateway.CASH && promotion != null) {
+            promotionService.recordPromotionUsage(
+                    promotion.getPromotionId(),
+                    currentUserId,
+                    currentShopId,
+                    discountAmount);
+        }
+
         if (request.getPaymentGateway() == PaymentGateway.MOMO) {
             String orderIdMomo = "ORD_" + savedOrder.getOrderId() + "_" + System.currentTimeMillis();
             String requestId = String.valueOf(System.currentTimeMillis());
-            String amountStr = String.valueOf(savedOrder.getBasePrice());
             String orderInfo = "Thanh toan don hang #" + savedOrder.getOrderId();
             String requestType = "captureWallet";
 
@@ -156,8 +217,9 @@ public class OrderServiceImpl implements OrderService {
             String finalRedirectUrl = redirectUrl + "/callback";
             String finalIpn = redirectUrl + "/ipn";
 
+            String paidAmountStr = String.valueOf(savedOrder.getPaidPrice());
             String rawHash = "accessKey=" + accessKey +
-                    "&amount=" + amountStr +
+                    "&amount=" + paidAmountStr +
                     "&extraData=" + extraData +
                     "&ipnUrl=" + finalIpn +
                     "&orderId=" + orderIdMomo +
@@ -171,7 +233,7 @@ public class OrderServiceImpl implements OrderService {
             Map<String, Object> body = new HashMap<>();
             body.put("partnerCode", partnerCode);
             body.put("requestId", requestId);
-            body.put("amount", savedOrder.getBasePrice());
+            body.put("amount", savedOrder.getPaidPrice());
             body.put("orderId", orderIdMomo);
             body.put("orderInfo", orderInfo);
             body.put("redirectUrl", finalRedirectUrl);
@@ -235,5 +297,42 @@ public class OrderServiceImpl implements OrderService {
             });
         }
         orderRepository.save(order);
+
+        if (order.getPromotion() != null) {
+            Long customerId = null;
+            Long shopId = null;
+            try {
+                customerId = SecurityUtils.getCurrentUserId();
+                shopId = SecurityUtils.getCurrentShopId();
+            } catch (Exception e) {
+            }
+
+            promotionService.recordPromotionUsage(
+                    order.getPromotion().getPromotionId(),
+                    customerId,
+                    shopId,
+                    order.getDiscountAmount());
+        }
+    }
+
+    private Long calculateDiscount(Promotion promotion, Long baseAmount) {
+        Long discountAmount = 0L;
+
+        if (promotion.getDiscountType() == DiscountTypeEnum.PERCENTAGE) {
+            discountAmount = (long) (baseAmount * promotion.getDiscountValue() / 100);
+
+            if (promotion.getMaxDiscountAmount() != null && promotion.getMaxDiscountAmount() > 0) {
+                long maxDiscount = promotion.getMaxDiscountAmount().longValue();
+                if (discountAmount > maxDiscount) {
+                    discountAmount = maxDiscount;
+                }
+            }
+        } else if (promotion.getDiscountType() == DiscountTypeEnum.FIXED_AMOUNT) {
+            discountAmount = promotion.getDiscountValue().longValue();
+            if (discountAmount > baseAmount) {
+                discountAmount = baseAmount;
+            }
+        }
+        return discountAmount;
     }
 }
