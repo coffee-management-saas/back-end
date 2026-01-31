@@ -5,10 +5,7 @@ import com.futurenbetter.saas.modules.inventory.dto.response.RecipeResponse;
 import com.futurenbetter.saas.modules.inventory.entity.Recipe;
 import org.mapstruct.*;
 
-@Mapper(
-        componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE
-)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface RecipeMapper {
 
     @Mapping(source = "rawIngredient.id", target = "ingredientId")
@@ -19,7 +16,7 @@ public interface RecipeMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "shop", ignore = true)
     @Mapping(target = "rawIngredient", ignore = true)
-    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "inventoryStatus", ignore = true)
     Recipe toEntity(RecipeRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

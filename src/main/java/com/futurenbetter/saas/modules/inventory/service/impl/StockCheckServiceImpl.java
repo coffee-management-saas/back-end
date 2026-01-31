@@ -11,7 +11,7 @@ import com.futurenbetter.saas.modules.inventory.dto.response.StockCheckSessionRe
 import com.futurenbetter.saas.modules.inventory.entity.RawIngredient;
 import com.futurenbetter.saas.modules.inventory.entity.StockCheckDetail;
 import com.futurenbetter.saas.modules.inventory.entity.StockCheckSession;
-import com.futurenbetter.saas.modules.inventory.enums.Status;
+import com.futurenbetter.saas.modules.inventory.enums.InventoryStatus;
 import com.futurenbetter.saas.modules.inventory.mapper.StockCheckMapper;
 import com.futurenbetter.saas.modules.inventory.repository.IngredientBatchRepository;
 import com.futurenbetter.saas.modules.inventory.repository.RawIngredientRepository;
@@ -47,21 +47,21 @@ public class StockCheckServiceImpl implements StockCheckService {
         StockCheckSession session = mapper.toSessionEntity(request);
         session.setShop(shop);
         session.setCreatedBy(SecurityUtils.getCurrentUserId());
-        session.setStatus(Status.ACTIVE);
+        session.setInventoryStatus(InventoryStatus.ACTIVE);
 
         session = sessionRepository.save(session);
 
         // 2. Xác định danh sách nguyên liệu cần kiểm
         List<RawIngredient> ingredients;
         if (request.getIngredientIds() == null || request.getIngredientIds().isEmpty()) {
-            ingredients = ingredientRepository.findAllById(shop.getId());
+            ingredients = ingredientRepository.findAllByShopId(shop.getId());
         } else {
             ingredients = ingredientRepository.findAllById(request.getIngredientIds());
         }
 
         // 3. Snapshot tồn kho
         for (RawIngredient ing : ingredients) {
-            Double systemStock = batchRepository.sumQuantityByIngredientIdAndStatus(ing.getId(), Status.ACTIVE);
+            Double systemStock = batchRepository.sumQuantityByIngredientIdAndStatus(ing.getId(), InventoryStatus.ACTIVE);
             if (systemStock == null) systemStock = 0.0;
 
             StockCheckDetail detail = new StockCheckDetail();
@@ -70,7 +70,7 @@ public class StockCheckServiceImpl implements StockCheckService {
             detail.setSnapshotQuantity(systemStock);
             detail.setActualQuantity(0.0);
             detail.setDiffQuantity(0.0);
-            detail.setStatus(Status.ACTIVE);
+            detail.setInventoryStatus(InventoryStatus.ACTIVE);
 
             detailRepository.save(detail);
         }
@@ -82,7 +82,7 @@ public class StockCheckServiceImpl implements StockCheckService {
     @Override
     @Transactional
     public StockCheckSessionResponse updateCount(StockCheckUpdateRequest request) {
-        StockCheckSession session = sessionRepository.findByIdAndId(request.getSessionId(), SecurityUtils.getCurrentShopId())
+        StockCheckSession session = sessionRepository.findByIdAndShopId(request.getSessionId(), SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Phiếu kiểm kê không tồn tại"));
 
         if (Boolean.TRUE.equals(session.getIsApproved())) {
@@ -111,7 +111,7 @@ public class StockCheckServiceImpl implements StockCheckService {
     @Override
     @Transactional
     public StockCheckSessionResponse approveSession(StockCheckApproveRequest request) {
-        StockCheckSession session = sessionRepository.findByIdAndId(request.getSessionId(), SecurityUtils.getCurrentShopId())
+        StockCheckSession session = sessionRepository.findByIdAndShopId(request.getSessionId(), SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Phiếu không tồn tại"));
 
         if (Boolean.TRUE.equals(request.getIsApproved())) {
@@ -119,12 +119,12 @@ public class StockCheckServiceImpl implements StockCheckService {
             session.setApprovedBy(SecurityUtils.getCurrentUserId());
             session.setCompletedAt(LocalDateTime.now());
             session.setNote(request.getNote());
-            session.setStatus(Status.ACTIVE);
+            session.setInventoryStatus(InventoryStatus.ACTIVE);
 
             // Logic Cân bằng kho (Adjustment) sẽ thực hiện ở đây...
             // (Như đã thảo luận, ta sẽ ghi nhận transaction log hoặc gọi service xử lý batch)
         } else {
-            session.setStatus(Status.INACTIVE); // Cancel phiếu
+            session.setInventoryStatus(InventoryStatus.INACTIVE); // Cancel phiếu
         }
 
         return getFullResponse(sessionRepository.save(session));

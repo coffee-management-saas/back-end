@@ -1,7 +1,7 @@
 package com.futurenbetter.saas.modules.inventory.entity;
 
 import com.futurenbetter.saas.modules.auth.entity.Shop;
-import com.futurenbetter.saas.modules.inventory.enums.Status;
+import com.futurenbetter.saas.modules.inventory.enums.InventoryStatus;
 import com.futurenbetter.saas.modules.inventory.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -10,7 +10,14 @@ import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "inventory_transactions")
+@Table(name = "inventory_transactions", indexes = {
+        @Index(name = "idx_inv_trans_shop_ingredient_date",
+                columnList = "shop_id, ingredient_id, created_at"),
+        @Index(name = "idx_inv_trans_shop_batch", columnList = "shop_id, batch_id"),
+        @Index(name = "idx_inv_trans_shop_order", columnList = "shop_id, order_id"),
+        @Index(name = "idx_inv_trans_shop_type_date", columnList = "shop_id, transaction_type, created_at"),
+        @Index(name = "idx_inv_trans_created_at", columnList = "created_at")
+})
 @Getter
 @Setter
 @AllArgsConstructor
@@ -42,7 +49,7 @@ public class InventoryTransaction {
     @JoinColumn(name = "stock_check_detail_id")
     StockCheckDetail stockCheckDetail;
 
-    //@ManyToOne
+    // @ManyToOne
     @Column(name = "order_id")
     Long orderId;
 
@@ -60,7 +67,7 @@ public class InventoryTransaction {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    Status status;
+    InventoryStatus inventoryStatus;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "transaction_type", nullable = false)
@@ -68,8 +75,8 @@ public class InventoryTransaction {
 
     @PrePersist
     public void onCreate() {
-        if (status == null) {
-            status = Status.ACTIVE;
+        if (inventoryStatus == null) {
+            inventoryStatus = InventoryStatus.ACTIVE;
         }
         createdAt = LocalDateTime.now();
         updatedAt = createdAt;

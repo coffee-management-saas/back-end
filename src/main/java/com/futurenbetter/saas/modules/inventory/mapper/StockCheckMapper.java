@@ -10,10 +10,7 @@ import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(
-        componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE
-)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface StockCheckMapper {
 
     @Mapping(target = "createdByName", ignore = true)
@@ -23,7 +20,7 @@ public interface StockCheckMapper {
     @Mapping(target = "shop", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "isApproved", constant = "false")
-    @Mapping(target = "status", constant = "ACTIVE") // Hoặc DRAFT
+    @Mapping(target = "inventoryStatus", constant = "ACTIVE") // Hoặc DRAFT
     StockCheckSession toSessionEntity(StockCheckStartRequest request);
 
     @Mapping(source = "ingredient.id", target = "ingredientId")
