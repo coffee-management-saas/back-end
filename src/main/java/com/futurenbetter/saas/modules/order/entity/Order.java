@@ -4,6 +4,7 @@ import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.order.enums.OrderStatus;
 import com.futurenbetter.saas.modules.order.enums.OrderType;
 import com.futurenbetter.saas.modules.order.enums.PaymentGateway;
+import com.futurenbetter.saas.modules.promotion.entity.Promotion;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -61,4 +62,10 @@ public class Order {
     @JoinColumn(name = "shop_id")
     Shop shop;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_id")
+    Promotion promotion;
+
+    @Column(name = "discount_amount")
+    Long discountAmount;
 }

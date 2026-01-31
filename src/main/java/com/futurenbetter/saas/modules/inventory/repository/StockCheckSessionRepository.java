@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface StockCheckSessionRepository extends JpaRepository<StockCheckSession, Long>, JpaSpecificationExecutor<StockCheckSession> {
-    Optional<StockCheckSession> findByIdAndId(Long id, Long shopId);
+public interface StockCheckSessionRepository
+        extends JpaRepository<StockCheckSession, Long>, JpaSpecificationExecutor<StockCheckSession> {
+    Optional<StockCheckSession> findByIdAndShopId(Long id, Long shopId);
 }

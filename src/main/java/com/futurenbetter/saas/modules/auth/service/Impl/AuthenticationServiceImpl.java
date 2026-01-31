@@ -10,7 +10,6 @@ import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminRegistrationR
 import com.futurenbetter.saas.modules.auth.entity.*;
 import com.futurenbetter.saas.modules.auth.enums.ApplyStatus;
 import com.futurenbetter.saas.modules.auth.enums.CustomerStatus;
-import com.futurenbetter.saas.modules.auth.enums.RoleStatus;
 import com.futurenbetter.saas.modules.auth.enums.UserProfileEnum;
 import com.futurenbetter.saas.modules.auth.mapper.CustomerMapper;
 import com.futurenbetter.saas.modules.auth.mapper.UserProfileMapper;
@@ -84,38 +83,67 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Long currentShopId = TenantContext.getCurrentShopId();
 
         if (currentShopId == null) {
-            throw new BusinessException("Cửa hàng không hợp lệ");
+            throw new BusinessException("Cửa hàng không tồn tại");
         }
 
         if (request.getUsername() == null || request.getPassword() == null) {
             throw new BusinessException("Thiếu thông tin đăng nhập");
         }
 
-        Customer customer = customerRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BusinessException("Tên đăng nhập không tồn tại"));
+        String username = request.getUsername();
+        String password = request.getPassword();
 
-        if (!passwordEncoder.matches(request.getPassword(), customer.getPassword())) {
+        var customerOpt = customerRepository.findByUsername(username);
+        if (customerOpt.isPresent()) {
+            Customer customer = customerOpt.get();
+            validateLogin(password, customer.getPassword(), customer.getShop(), currentShopId);
+            return generateLoginResponse(customer.getUsername(), currentShopId, "CUSTOMER", customer);
+        }
+
+        var adminOpt = profileRepository.findByUsernameWithRoles(username);
+        if (adminOpt.isPresent()) {
+            UserProfile admin = adminOpt.get();
+            boolean isShopUser = admin.getRoles().stream()
+                    .anyMatch(role -> ApplyStatus.SHOP.equals(role.getRole()));
+
+            if (!isShopUser) {
+                throw new BusinessException("Tài khoản này không có quyền truy cập cửa hàng");
+            }
+
+            validateLogin(password, admin.getPassword(), admin.getShop(), currentShopId);
+            return generateLoginResponse(admin.getUsername(), currentShopId, "SHOP", admin);
+        }
+        throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
+    }
+
+    private void validateLogin(String rawPassword, String encodedPassword, Shop userShop, Long currentShopId) {
+        if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
             throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
         }
-
-        if (customer.getShop() == null || !customer.getShop().getId().equals(currentShopId)) {
+        if (userShop == null || !userShop.getId().equals(currentShopId)) {
             throw new BusinessException("Tài khoản không thuộc cửa hàng này");
         }
+    }
 
-        String accessToken = jwtService.generateAccessToken(
-                customer.getUsername(),
-                currentShopId,
-                "CUSTOMER");
-        String refreshToken = jwtService.generateRefreshToken(customer.getUsername());
+    private LoginResponse generateLoginResponse(String username, Long shopId, String role, Object entity) {
+        String accessToken = jwtService.generateAccessToken(username, shopId, role);
+        String refreshToken = jwtService.generateRefreshToken(username);
 
-        customer.setRefreshToken(refreshToken);
-        customer.setUpdatedAt(LocalDateTime.now());
-        customerRepository.save(customer);
+        if (entity instanceof Customer customer) {
+            customer.setRefreshToken(refreshToken);
+            customer.setUpdatedAt(LocalDateTime.now());
+            customerRepository.save(customer);
+        } else if (entity instanceof UserProfile shop) {
+            shop.setRefreshToken(refreshToken);
+            shop.setUpdatedAt(LocalDateTime.now());
+            userProfileRepository.save(shop);
+        }
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .shopId(customer.getShop().getId())
+                .shopId(shopId)
+                .role(role)
                 .build();
     }
 
@@ -191,8 +219,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         boolean isSystemUser = admin.getRoles().stream()
                 .anyMatch(role -> ApplyStatus.SYSTEM.equals(role.getRole()));
 
-        //System.out.println(admin.getRoles());
-
         if (!isSystemUser) {
             throw new BusinessException("Bạn không có quyền truy cập");
         }
@@ -212,15 +238,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public SystemAdminRegistrationResponse registerSystemAdmin(SystemAdminRegistrationRequest request) {
-
-        // dùng để tạo role do chưa có api (dùng tạm)
-//        Role role = new Role();
-//        role.setName("Admin System");
-//        role.setRole(ApplyStatus.SYSTEM);
-//        role.setStatus(RoleStatus.ACTIVE);
-//
-//         roleRepository.save(role);
-
         if (userProfileRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException("Tên đăng nhập đã tồn tại");
         }
@@ -240,46 +257,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         UserProfile savedAdmin = userProfileRepository.save(admin);
         return userProfileMapper.toAdminResponse(savedAdmin);
 
-    }
-
-    @Override
-    public LoginResponse loginShopAdmin(LoginRequest loginRequest) {
-        UserProfile admin = profileRepository.findByUsernameWithRoles(loginRequest.getUsername())
-                .orElseThrow(() -> new BusinessException("Tài khoản không tồn tại"));
-
-        if (!passwordEncoder.matches(loginRequest.getPassword(), admin.getPassword())) {
-            throw new BusinessException("Mật khẩu không chính xác");
-        }
-
-        boolean isShopUser = admin.getRoles().stream()
-                .anyMatch(role -> ApplyStatus.SHOP.equals(role.getRole()));
-
-        if (!isShopUser) {
-            throw new BusinessException("Tài khoản không có quyền truy cập quản trị quán");
-        }
-
-        if (admin.getShop() == null) {
-            throw new BusinessException("Tài khoản chưa được gán vào cửa hàng cụ thể");
-        }
-
-        Long shopId = admin.getShop().getId();
-
-        String accessToken = jwtService.generateAccessToken(
-                admin.getUsername(),
-                shopId,
-                "SHOP");
-
-        String refreshToken = jwtService.generateRefreshToken(admin.getUsername());
-
-        admin.setRefreshToken(refreshToken);
-        admin.setUpdatedAt(LocalDateTime.now());
-        userProfileRepository.save(admin);
-
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .shopId(shopId)
-                .build();
     }
 
     @Override

@@ -7,7 +7,7 @@ import com.futurenbetter.saas.modules.inventory.dto.request.InventoryInvoiceRequ
 import com.futurenbetter.saas.modules.inventory.dto.request.InvoiceItemRequest;
 import com.futurenbetter.saas.modules.inventory.dto.response.InventoryInvoiceResponse;
 import com.futurenbetter.saas.modules.inventory.entity.*;
-import com.futurenbetter.saas.modules.inventory.enums.Status;
+import com.futurenbetter.saas.modules.inventory.enums.InventoryStatus;
 import com.futurenbetter.saas.modules.inventory.enums.TransactionType;
 import com.futurenbetter.saas.modules.inventory.mapper.InventoryInvoiceMapper;
 import com.futurenbetter.saas.modules.inventory.mapper.InvoiceItemMapper;
@@ -16,15 +16,18 @@ import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceSe
 import com.futurenbetter.saas.modules.inventory.service.inter.UnitConversionService;
 import com.futurenbetter.saas.modules.inventory.specification.InventoryInvoiceSpec;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
 
     private final InventoryInvoiceRepository invoiceRepository;
@@ -32,6 +35,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
     private final IngredientBatchRepository batchRepository;
     private final InventoryTransactionRepository transactionRepository;
     private final RawIngredientRepository ingredientRepository;
+    private final RecipeRepository recipeRepository;
 
     private final UnitConversionService conversionService;
     private final InventoryInvoiceMapper invoiceMapper;
@@ -46,7 +50,8 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
         InventoryInvoice invoice = invoiceMapper.toEntity(request);
         invoice.setShop(shop);
         invoice.setCreatedBy(SecurityUtils.getCurrentUserId());
-        invoice.setStatus(Status.ACTIVE);
+        invoice.setInventoryStatus(InventoryStatus.ACTIVE);
+        invoice.setTotalAmount(0.0);
 
         // Lưu tạm để có ID
         invoice = invoiceRepository.save(invoice);
@@ -56,15 +61,15 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
 
         // 2. Loop Items
         for (InvoiceItemRequest itemReq : request.getItems()) {
-            RawIngredient ingredient = ingredientRepository.findByIdAndId(itemReq.getIngredientId(), shop.getId())
-                    .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại: " + itemReq.getIngredientId()));
+            RawIngredient ingredient = ingredientRepository.findByIdAndShopId(itemReq.getIngredientId(), shop.getId())
+                    .orElseThrow(
+                            () -> new BusinessException("Nguyên liệu không tồn tại: " + itemReq.getIngredientId()));
 
             // Tính toán quy đổi
             Double convertedQty = conversionService.convertToBaseUnit(
                     ingredient.getId(),
                     itemReq.getInputUnit(),
-                    Double.valueOf(itemReq.getInputQuantity())
-            );
+                    Double.valueOf(itemReq.getInputQuantity()));
 
             // Tạo Batch (Logic FIFO)
             IngredientBatch batch = new IngredientBatch();
@@ -79,7 +84,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
             // Tính giá vốn: Giá nhập / Số lượng đã quy đổi
             Double costPerBaseUnit = itemReq.getUnitPrice() / (convertedQty / itemReq.getInputQuantity());
             batch.setImportPrice(costPerBaseUnit);
-            batch.setStatus(Status.ACTIVE);
+            batch.setInventoryStatus(InventoryStatus.ACTIVE);
 
             batch = batchRepository.save(batch);
 
@@ -92,7 +97,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
             trans.setTransactionType(TransactionType.IMPORT);
             trans.setQuantityChange(convertedQty);
             trans.setQuantityAfter(convertedQty);
-            trans.setStatus(Status.ACTIVE);
+            trans.setInventoryStatus(InventoryStatus.ACTIVE);
             transactionRepository.save(trans);
 
             // Tạo Detail dùng Mapper
@@ -101,7 +106,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
             detail.setRawIngredient(ingredient);
             detail.setConvertedQuantity(convertedQty);
             detail.setSupplierName(request.getSupplierName()); // Denormalize
-            detail.setStatus(Status.ACTIVE);
+            detail.setInventoryStatus(InventoryStatus.ACTIVE);
 
             details.add(detailRepository.save(detail));
 
@@ -122,14 +127,63 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
     public Page<InventoryInvoiceResponse> getAll(InventoryInvoiceFilter filter) {
         return invoiceRepository.findAll(
                 InventoryInvoiceSpec.filter(filter, SecurityUtils.getCurrentShopId()),
-                filter.getPageable()
-        ).map(invoiceMapper::toResponse);
+                filter.getPageable()).map(invoiceMapper::toResponse);
     }
 
     @Override
     public InventoryInvoiceResponse getDetail(Long id) {
-        return invoiceRepository.findByIdAndId(id, SecurityUtils.getCurrentShopId())
+        return invoiceRepository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
                 .map(invoiceMapper::toResponse)
                 .orElseThrow(() -> new BusinessException("Phiếu nhập không tồn tại"));
+    }
+
+    @Override
+    @Transactional
+    public void deductStock(Long shopId, Long variantId, Long toppingId, Double quantity) {
+        // 1. Tìm recipes cho sản phẩm or topping
+        List<Recipe> recipes;
+        if (variantId != null) {
+            recipes = recipeRepository.findByVariantIdAndShopId(variantId, shopId);
+        } else if (toppingId != null) {
+            recipes = recipeRepository.findByToppingIdAndShopId(toppingId, shopId);
+        } else {
+            return;
+        }
+
+        for (Recipe recipe : recipes) {
+            double totalQuantityNeeded = recipe.getQuantityRequired() * quantity;
+
+            // 2. Lấy danh sách lô hàng còn hạn (FEFO)
+            List<IngredientBatch> batches = batchRepository.findAllAvailableBatchesForDeduction(
+                    shopId, recipe.getRawIngredient().getId(), InventoryStatus.ACTIVE);
+
+            for (IngredientBatch batch : batches) {
+                if (totalQuantityNeeded <= 0)
+                    break;
+
+                double currentStock = batch.getCurrentQuantity();
+                double takeAmount = Math.min(currentStock, totalQuantityNeeded);
+
+                // 3. Trừ số lượng lô hàng
+                batch.setCurrentQuantity(currentStock - takeAmount);
+                totalQuantityNeeded -= takeAmount;
+
+                // 4. Ghi transaction log
+                InventoryTransaction trans = new InventoryTransaction();
+                trans.setShop(batch.getShop());
+                trans.setIngredient(batch.getRawIngredient());
+                trans.setBatch(batch);
+                trans.setTransactionType(TransactionType.SALE_DEDUCT);
+                trans.setQuantityChange(-takeAmount);
+                trans.setQuantityAfter(batch.getCurrentQuantity());
+                trans.setInventoryStatus(InventoryStatus.ACTIVE);
+                transactionRepository.save(trans);
+            }
+
+            if (totalQuantityNeeded > 0) {
+                log.warn("Shop {}: Nguyên liệu {} không đủ để trừ kho. Còn thiếu: {}",
+                        shopId, recipe.getRawIngredient().getName(), totalQuantityNeeded);
+            }
+        }
     }
 }

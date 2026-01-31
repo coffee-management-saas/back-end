@@ -1,6 +1,6 @@
 package com.futurenbetter.saas.modules.inventory.dto.response;
 
-import com.futurenbetter.saas.modules.inventory.enums.Status;
+import com.futurenbetter.saas.modules.inventory.enums.InventoryStatus;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,5 +23,5 @@ public class IngredientBatchResponse {
     Integer initialQuantity;
     Integer currentQuantity;
     Double importPrice;
-    Status status;
+    InventoryStatus inventoryStatus;
 }
