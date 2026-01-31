@@ -34,8 +34,8 @@ momo:
   redirect-url: ${MOMO_REDIRECT_URL}
   ipn-url: ${MOMO_IPN_URL}
 
-  online-redirect-url: ${MOMO_ONLINE_REDIRECT_URL:${MOMO_REDIRECT_URL}}
-  online-ipn-url: ${MOMO_ONLINE_IPN_URL:${MOMO_IPN_URL}}
+#  online-redirect-url: ${MOMO_ONLINE_REDIRECT_URL:${MOMO_REDIRECT_URL}}
+#  online-ipn-url: ${MOMO_ONLINE_IPN_URL:${MOMO_IPN_URL}}
 
 cloudinary:
   cloud-name: ${CLOUD_NAME}
