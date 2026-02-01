@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.modules.order.entity;
 
+import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.order.enums.OrderStatus;
 import com.futurenbetter.saas.modules.order.enums.OrderType;
@@ -65,6 +66,10 @@ public class Order {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "promotion_id")
     Promotion promotion;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    Customer customer;
 
     @Column(name = "discount_amount")
     Long discountAmount;

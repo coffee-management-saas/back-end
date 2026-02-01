@@ -31,8 +31,8 @@ momo:
   access-key: ${MOMO_ACCESS_KEY}
   secret-key: ${MOMO_SECRET_KEY}
   api-url: ${MOMO_API_URL}
-  redirect-url: ${MOMO_REDIRECT_URL}
-  ipn-url: ${MOMO_IPN_URL}
+  redirect-url: ${MOMO_REDIRECT_URL:https://protozoological-nonrateably-elena.ngrok-free.dev/api/momo/callback}
+  ipn-url: ${MOMO_IPN_URL:https://protozoological-nonrateably-elena.ngrok-free.dev/api/momo/ipn}
 
 #  online-redirect-url: ${MOMO_ONLINE_REDIRECT_URL:${MOMO_REDIRECT_URL}}
 #  online-ipn-url: ${MOMO_ONLINE_IPN_URL:${MOMO_IPN_URL}}

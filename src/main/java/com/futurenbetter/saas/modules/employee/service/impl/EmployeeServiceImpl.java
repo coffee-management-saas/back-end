@@ -113,7 +113,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     public Employee getEmployeeById(Long employeeId) {
 
         Long shopId = TenantContext.getCurrentShopId();
-        Employee employee = employeeRepository.findByIdAndShopId(employeeId, shopId)
+        Employee employee = employeeRepository.findByEmployeeIdAndShopId(employeeId, shopId)
                 .orElseThrow(() -> new RuntimeException("Employee not found with id: " + employeeId + " for shop id: " + shopId));
 
         return employee;
