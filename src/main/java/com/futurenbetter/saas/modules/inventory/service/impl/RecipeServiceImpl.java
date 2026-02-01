@@ -22,55 +22,55 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class RecipeServiceImpl implements RecipeService {
 
-    private final RecipeRepository repository;
+    private final RecipeRepository recipeRepository;
     private final RawIngredientRepository ingredientRepository;
-    private final RecipeMapper mapper;
-
-
-    @Override
-    @Transactional
-    public RecipeResponse create(RecipeRequest request) {
-        var ingredient = ingredientRepository.findByIdAndShopId(request.getIngredientId(), SecurityUtils.getCurrentShopId())
-                .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại"));
-
-        Recipe entity = mapper.toEntity(request);
-        entity.setShop(SecurityUtils.getCurrentShop());
-        entity.setRawIngredient(ingredient);
-        entity.setInventoryStatus(InventoryStatus.ACTIVE);
-
-        return mapper.toResponse(repository.save(entity));
-    }
-
+    private final RecipeMapper recipeMapper;
 
     @Override
     @Transactional
-    public RecipeResponse update(Long id, RecipeRequest request) {
-        Recipe entity = repository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
-                .orElseThrow(() -> new BusinessException("Công thức không tồn tại"));
+    public List<RecipeResponse> create(RecipeRequest request) {
+        Long shopId = SecurityUtils.getCurrentShopId();
+        var shop = SecurityUtils.getCurrentShop();
 
-        // 1. Update các field cơ bản (quantity, note...)
-        mapper.updateFromRequest(entity, request);
-
-        // 2. Nếu đổi nguyên liệu, cần set lại quan hệ thủ công
-        if (request.getIngredientId() != null && !request.getIngredientId().equals(entity.getRawIngredient().getId())) {
-            var newIngredient = ingredientRepository.findByIdAndShopId(request.getIngredientId(), SecurityUtils.getCurrentShopId())
-                    .orElseThrow(() -> new BusinessException("Nguyên liệu mới không tồn tại"));
-            entity.setRawIngredient(newIngredient);
+        if (request.getVariantId() != null) {
+            recipeRepository.deleteByVariantIdAndShopId(request.getVariantId(), shopId);
+        } else if (request.getToppingId() != null) {
+            recipeRepository.deleteByToppingIdAndShopId(request.getToppingId(), shopId);
+        } else {
+            throw new BusinessException("Phải chỉ định variantId hoặc toppingId");
         }
 
-        return mapper.toResponse(repository.save(entity));
+        List<Recipe> entities = request.getItems().stream().map(item -> {
+            var ingredient = ingredientRepository.findByIdAndShopId(item.getIngredientId(), shopId)
+                    .orElseThrow(() -> new BusinessException("Nguyên liệu không tồn tại: " + item.getIngredientId()));
+
+            Recipe recipe = new Recipe();
+            recipe.setShop(shop);
+            recipe.setRawIngredient(ingredient);
+            recipe.setVariantId(request.getVariantId());
+            recipe.setToppingId(request.getToppingId());
+            recipe.setQuantityRequired(item.getQuantityRequired());
+            recipe.setNote(item.getNote());
+            recipe.setInventoryStatus(InventoryStatus.ACTIVE);
+            return recipe;
+        }).collect(Collectors.toList());
+
+        return recipeRepository.saveAll(entities).stream()
+                .map(recipeMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
-
     @Override
+    @Transactional(readOnly = true)
     public List<RecipeResponse> getByVariant(Long variantId) {
-        return repository.findByVariantIdAndShopId(variantId, SecurityUtils.getCurrentShopId())
-                .stream().map(mapper::toResponse).collect(Collectors.toList());
+        return recipeRepository.findByVariantIdAndShopId(variantId, SecurityUtils.getCurrentShopId())
+                .stream().map(recipeMapper::toResponse).collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<RecipeResponse> getByTopping(Long toppingId) {
-        return repository.findByToppingIdAndShopId(toppingId, SecurityUtils.getCurrentShopId())
-                .stream().map(mapper::toResponse).collect(Collectors.toList());
+        return recipeRepository.findByToppingIdAndShopId(toppingId, SecurityUtils.getCurrentShopId())
+                .stream().map(recipeMapper::toResponse).collect(Collectors.toList());
     }
 }

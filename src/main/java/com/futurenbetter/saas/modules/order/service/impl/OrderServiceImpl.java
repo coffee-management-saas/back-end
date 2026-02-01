@@ -5,6 +5,7 @@ import com.futurenbetter.saas.common.utils.MomoUtils;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
+import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceService;
 import com.futurenbetter.saas.modules.order.dto.request.OrderItemRequest;
@@ -59,6 +60,7 @@ public class OrderServiceImpl implements OrderService {
     private final PromotionService promotionService;
     private final PdfExportService pdfExportService;
     private final CloudinaryStorageService cloudinaryStorageService;
+    private final CustomerRepository customerRepository;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -84,14 +86,16 @@ public class OrderServiceImpl implements OrderService {
         // 1. Lấy ShopId và Customer từ SecurityUtils
         Long currentShopId = SecurityUtils.getCurrentShopId();
         Long currentUserId = SecurityUtils.getCurrentUserId();
-        Customer currentCustomer = SecurityUtils.getCurrentCustomer();
         Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
+
+        Customer currentCustomer = customerRepository.findById(currentUserId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy thông tin khách hàng"));
 
         // 2. Khởi tạo Entity Order từ Request
         Order order = orderMapper.toOrder(request);
         order.setShop(shop);
-        order.setCustomer(currentCustomer); // Set customer cho order
+        order.setCustomer(currentCustomer);
 
         OrderItemStatus initialItemStatus = (request.getPaymentGateway() == PaymentGateway.CASH)
                 ? OrderItemStatus.PAID

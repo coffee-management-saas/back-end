@@ -1,12 +1,14 @@
 package com.futurenbetter.saas.modules.inventory.dto.request;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -14,15 +16,10 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RecipeRequest {
 
-    @NotNull(message = "Nguyên liệu ID là bắt buộc")
-    Long ingredientId;
-
     Long variantId;
     Long toppingId;
 
-    @NotNull(message = "Định lượng là bắt buộc")
-    @Min(value = 1, message = "Định lượng phải lớn hơn 0")
-    Double quantityRequired;
-
-    String note;
+    @NotEmpty(message = "Công thức phải có ít nhất một nguyên liệu")
+    @Valid
+    List<RecipeItemRequest> items;
 }
