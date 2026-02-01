@@ -28,6 +28,8 @@ import com.futurenbetter.saas.modules.promotion.entity.Promotion;
 import com.futurenbetter.saas.modules.promotion.enums.DiscountTypeEnum;
 import com.futurenbetter.saas.modules.promotion.enums.PromotionTypeEnum;
 import com.futurenbetter.saas.modules.promotion.service.PromotionService;
+import com.futurenbetter.saas.modules.subscription.service.CloudinaryStorageService;
+import com.futurenbetter.saas.modules.subscription.service.PdfExportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,6 +57,8 @@ public class OrderServiceImpl implements OrderService {
     private final MomoUtils momoUtils;
     private final ObjectMapper objectMapper;
     private final PromotionService promotionService;
+    private final PdfExportService pdfExportService;
+    private final CloudinaryStorageService cloudinaryStorageService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -203,6 +207,7 @@ public class OrderServiceImpl implements OrderService {
                         currentShopId,
                         discountAmount);
             }
+            generateUploadInvoice(savedOrder);
         }
 
         if (request.getPaymentGateway() == PaymentGateway.MOMO) {
@@ -222,10 +227,6 @@ public class OrderServiceImpl implements OrderService {
             } catch (Exception e) {
                 throw new BusinessException("Lỗi chuẩn bị dữ liệu thanh toán");
             }
-
-            log.info("========== CREATING MOMO PAYMENT FOR ORDER ==========");
-            log.info("Using Redirect URL (from config): {}", redirectUrl);
-            log.info("Using IPN URL (from config): {}", ipnUrl);
 
             String paidAmountStr = String.valueOf(savedOrder.getPaidPrice());
             String rawHash = "accessKey=" + accessKey +
@@ -258,7 +259,6 @@ public class OrderServiceImpl implements OrderService {
 
             if (response.getBody() != null && response.getBody().get("payUrl") != null) {
                 String payUrl = (String) response.getBody().get("payUrl");
-                // Gán payUrl vào OrderResponse để trả về cho Frontend
                 OrderResponse orderResponse = orderMapper.toOrderResponse(savedOrder);
                 orderResponse.setPayUrl(payUrl);
                 return orderResponse;
@@ -272,13 +272,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void handleMomoOrderIpn(Map<String, String> payload) {
-        log.info("========== HANDLING MOMO ORDER IPN ==========");
-        log.info("Payload: {}", payload);
-
         String momoOrderId = payload.get("orderId");
         String resultCode = payload.get("resultCode");
-
-        log.info("MoMo Order ID: {}, Result Code: {}", momoOrderId, resultCode);
 
         if (!"0".equals(resultCode)) {
             return;
@@ -322,6 +317,7 @@ public class OrderServiceImpl implements OrderService {
                     order.getShop().getId(),
                     order.getDiscountAmount());
         }
+        generateUploadInvoice(order);
     }
 
     private Long calculateDiscount(Promotion promotion, Long baseAmount) {
@@ -354,7 +350,8 @@ public class OrderServiceImpl implements OrderService {
                     shopId,
                     item.getProductVariant().getId(),
                     null,
-                    Double.valueOf(item.getQuantity()));
+                    Double.valueOf(item.getQuantity()),
+                    order.getOrderId());
 
             // 2. Trừ kho các topping đi kèm (nếu có)
             if (item.getToppingPerOrderItems() != null) {
@@ -363,9 +360,22 @@ public class OrderServiceImpl implements OrderService {
                             shopId,
                             null,
                             topping.getTopping().getId(),
-                            (double) topping.getQuantity());
+                            (double) topping.getQuantity(),
+                            order.getOrderId());
                 }
             }
+        }
+    }
+
+    private void generateUploadInvoice(Order order) {
+        try {
+            byte[] pdfData = pdfExportService.generateOrderPdf(order);
+            String fileName = "INV_" + order.getOrderId() + "_" + System.currentTimeMillis();
+            String invoiceUrl = cloudinaryStorageService.uploadFile(pdfData, fileName, "order_invoices");
+            order.setInvoiceUrl(invoiceUrl);
+            orderRepository.save(order);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
