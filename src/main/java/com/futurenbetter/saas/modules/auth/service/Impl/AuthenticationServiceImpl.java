@@ -2,11 +2,9 @@ package com.futurenbetter.saas.modules.auth.service.Impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
+import com.futurenbetter.saas.common.utils.PasswordUtils;
 import com.futurenbetter.saas.modules.auth.dto.request.*;
-import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
-import com.futurenbetter.saas.modules.auth.dto.response.LoginResponse;
-import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminLoginResponse;
-import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminRegistrationResponse;
+import com.futurenbetter.saas.modules.auth.dto.response.*;
 import com.futurenbetter.saas.modules.auth.entity.*;
 import com.futurenbetter.saas.modules.auth.enums.ApplyStatus;
 import com.futurenbetter.saas.modules.auth.enums.CustomerStatus;
@@ -17,6 +15,10 @@ import com.futurenbetter.saas.modules.auth.mapper.UserProfileMapper;
 import com.futurenbetter.saas.modules.auth.repository.*;
 import com.futurenbetter.saas.modules.auth.service.AuthenticationService;
 import com.futurenbetter.saas.modules.auth.service.JwtService;
+import com.futurenbetter.saas.modules.employee.dto.request.EmployeeRequest;
+import com.futurenbetter.saas.modules.employee.dto.response.EmployeeResponse;
+import com.futurenbetter.saas.modules.employee.entity.Employee;
+import com.futurenbetter.saas.modules.employee.service.inter.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -40,6 +42,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserProfileMapper userProfileMapper;
     private final RoleRepository roleRepository;
     private final ShopRepository shopRepository;
+    private final EmployeeService employeeService;
 
     @Override
     public CustomerResponse register(CustomerRegistrationRequest request) {
@@ -309,5 +312,43 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return (UserDetails) customerRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+
+
+    @Override
+    @Transactional
+    public ShopEmployeeRegistrationResponse createShopEmployee(ShopEmployeeRegistrationRequest request) {
+
+        if (userProfileRepository.existsByUsername(request.getUsername())) {
+            throw new BusinessException("Tên đăng nhập đã tồn tại");
+        }
+
+        Shop shop = shopRepository.findById(request.getShopId())
+                .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
+
+        // tạo pass ngẫu nhiên và trả ve để employee tự đổi pass lần sau
+        String password = PasswordUtils.generateRandomPassword();
+
+        UserProfile employeeProfile = userProfileMapper.toEntity(request);
+        employeeProfile.setPassword(passwordEncoder.encode(password));
+        employeeProfile.setStatus(UserProfileEnum.ACTIVE);
+        employeeProfile.setShop(shop);
+
+        // set tạm role, sẽ phân quyền động sau
+        Role shopRole = roleRepository.findByRole(ApplyStatus.SHOP)
+                .orElseThrow(() -> new BusinessException("Role quản trị quán chưa được cấu hình"));
+        employeeProfile.setRoles(Set.of(shopRole));
+        // tạo profile trc
+        UserProfile savedEmployee = userProfileRepository.save(employeeProfile);
+        // sau đó dùng profile để tạo employee
+        EmployeeResponse employee = employeeService.createEmployee(EmployeeRequest.builder()
+                .employeeType(request.getEmployeeType())
+                .hourlyWage(request.getHourlyWage())
+                .userProfileId(savedEmployee.getUserProfileId())
+                .weeklyHourLimit(request.getWeeklyHourLimit())
+                .build()
+        );
+        // trả về password cho shop-admin lưu lại gửi cho nhân viên
+        return userProfileMapper.toEmployeeResponse(savedEmployee, employee, password);
     }
 }

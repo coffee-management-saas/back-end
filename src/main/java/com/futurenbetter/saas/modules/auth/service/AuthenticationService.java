@@ -1,10 +1,7 @@
 package com.futurenbetter.saas.modules.auth.service;
 
 import com.futurenbetter.saas.modules.auth.dto.request.*;
-import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
-import com.futurenbetter.saas.modules.auth.dto.response.LoginResponse;
-import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminLoginResponse;
-import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminRegistrationResponse;
+import com.futurenbetter.saas.modules.auth.dto.response.*;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 public interface AuthenticationService extends UserDetailsService {
@@ -17,4 +14,5 @@ public interface AuthenticationService extends UserDetailsService {
     SystemAdminRegistrationResponse registerSystemAdmin(SystemAdminRegistrationRequest request);
     LoginResponse loginShopAdmin(LoginRequest loginRequest);
     SystemAdminRegistrationResponse registerShopAdmin(ShopAdminRegistrationRequest request);
+    ShopEmployeeRegistrationResponse createShopEmployee(ShopEmployeeRegistrationRequest request);
 }
