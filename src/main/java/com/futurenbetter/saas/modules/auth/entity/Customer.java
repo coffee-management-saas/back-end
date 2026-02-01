@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.auth.entity;
 
 import com.futurenbetter.saas.modules.auth.enums.CustomerStatus;
+import com.futurenbetter.saas.modules.order.entity.Order;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,6 +10,7 @@ import lombok.ToString;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "customers")
@@ -64,4 +66,8 @@ public class Customer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shop_id")
     private Shop shop;
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<Order> orders;
 }

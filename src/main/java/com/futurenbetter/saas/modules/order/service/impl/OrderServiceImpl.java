@@ -3,6 +3,7 @@ package com.futurenbetter.saas.modules.order.service.impl;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.utils.MomoUtils;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceService;
@@ -76,15 +77,17 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
-        // 1. Lấy ShopId từ SecurityUtils
+        // 1. Lấy ShopId và Customer từ SecurityUtils
         Long currentShopId = SecurityUtils.getCurrentShopId();
         Long currentUserId = SecurityUtils.getCurrentUserId();
+        Customer currentCustomer = SecurityUtils.getCurrentCustomer();
         Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
         // 2. Khởi tạo Entity Order từ Request
         Order order = orderMapper.toOrder(request);
         order.setShop(shop);
+        order.setCustomer(currentCustomer); // Set customer cho order
 
         OrderItemStatus initialItemStatus = (request.getPaymentGateway() == PaymentGateway.CASH)
                 ? OrderItemStatus.PAID
@@ -220,23 +223,19 @@ public class OrderServiceImpl implements OrderService {
                 throw new BusinessException("Lỗi chuẩn bị dữ liệu thanh toán");
             }
 
-            String finalRedirectUrl = redirectUrl + "/momo/callback";
-            String finalIpn = redirectUrl + "/momo/ipn";
-
             log.info("========== CREATING MOMO PAYMENT FOR ORDER ==========");
-            log.info("Base redirectUrl: {}", redirectUrl);
-            log.info("Final Redirect URL: {}", finalRedirectUrl);
-            log.info("Final IPN URL: {}", finalIpn);
+            log.info("Using Redirect URL (from config): {}", redirectUrl);
+            log.info("Using IPN URL (from config): {}", ipnUrl);
 
             String paidAmountStr = String.valueOf(savedOrder.getPaidPrice());
             String rawHash = "accessKey=" + accessKey +
                     "&amount=" + paidAmountStr +
                     "&extraData=" + extraData +
-                    "&ipnUrl=" + finalIpn +
+                    "&ipnUrl=" + ipnUrl +
                     "&orderId=" + orderIdMomo +
                     "&orderInfo=" + orderInfo +
                     "&partnerCode=" + partnerCode +
-                    "&redirectUrl=" + finalRedirectUrl +
+                    "&redirectUrl=" + redirectUrl +
                     "&requestId=" + requestId +
                     "&requestType=" + requestType;
             String signature = momoUtils.hmacSha256(rawHash, secretKey);
@@ -247,8 +246,8 @@ public class OrderServiceImpl implements OrderService {
             body.put("amount", savedOrder.getPaidPrice());
             body.put("orderId", orderIdMomo);
             body.put("orderInfo", orderInfo);
-            body.put("redirectUrl", finalRedirectUrl);
-            body.put("ipnUrl", finalIpn);
+            body.put("redirectUrl", redirectUrl);
+            body.put("ipnUrl", ipnUrl);
             body.put("requestType", requestType);
             body.put("extraData", extraData);
             body.put("signature", signature);
@@ -316,18 +315,11 @@ public class OrderServiceImpl implements OrderService {
         triggerStockDeduction(order);
 
         if (order.getPromotion() != null) {
-            Long customerId = null;
-            Long shopId = null;
-            try {
-                customerId = SecurityUtils.getCurrentUserId();
-                shopId = SecurityUtils.getCurrentShopId();
-            } catch (Exception e) {
-            }
-
+            Long customerId = (order.getCustomer() != null) ? order.getCustomer().getId() : null;
             promotionService.recordPromotionUsage(
                     order.getPromotion().getPromotionId(),
                     customerId,
-                    shopId,
+                    order.getShop().getId(),
                     order.getDiscountAmount());
         }
     }
