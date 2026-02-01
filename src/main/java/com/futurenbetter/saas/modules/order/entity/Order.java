@@ -73,4 +73,7 @@ public class Order {
 
     @Column(name = "discount_amount")
     Long discountAmount;
+
+    @Column(name = "invoice_url")
+    String invoiceUrl;
 }

@@ -139,7 +139,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
 
     @Override
     @Transactional
-    public void deductStock(Long shopId, Long variantId, Long toppingId, Double quantity) {
+    public void deductStock(Long shopId, Long variantId, Long toppingId, Double quantity, Long orderId) {
         // 1. Tìm recipes cho sản phẩm or topping
         List<Recipe> recipes;
         if (variantId != null) {
@@ -170,6 +170,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
 
                 // 4. Ghi transaction log
                 InventoryTransaction trans = new InventoryTransaction();
+                trans.setOrderId(orderId);
                 trans.setShop(batch.getShop());
                 trans.setIngredient(batch.getRawIngredient());
                 trans.setBatch(batch);
