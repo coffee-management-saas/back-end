@@ -4,8 +4,10 @@ import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.utils.MomoUtils;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
+import com.futurenbetter.saas.modules.auth.entity.MembershipRank;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
+import com.futurenbetter.saas.modules.auth.repository.MembershipRankRepository;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceService;
 import com.futurenbetter.saas.modules.order.dto.request.OrderItemRequest;
@@ -61,6 +63,7 @@ public class OrderServiceImpl implements OrderService {
     private final PdfExportService pdfExportService;
     private final CloudinaryStorageService cloudinaryStorageService;
     private final CustomerRepository customerRepository;
+    private final MembershipRankRepository membershipRankRepository;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -203,6 +206,7 @@ public class OrderServiceImpl implements OrderService {
         // 7. Ghi nhận promotion usage nếu thanh toán bằng CASH
         if (request.getPaymentGateway() == PaymentGateway.CASH) {
             triggerStockDeduction(savedOrder);
+            processCustomerPoints(savedOrder);
 
             if (promotion != null) {
                 promotionService.recordPromotionUsage(
@@ -312,6 +316,7 @@ public class OrderServiceImpl implements OrderService {
         }
         orderRepository.save(order);
         triggerStockDeduction(order);
+        processCustomerPoints(order);
 
         if (order.getPromotion() != null) {
             Long customerId = (order.getCustomer() != null) ? order.getCustomer().getId() : null;
@@ -380,6 +385,35 @@ public class OrderServiceImpl implements OrderService {
             orderRepository.save(order);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void processCustomerPoints(Order order) {
+        Customer customer = order.getCustomer();
+        if (customer == null)
+            return;
+
+        MembershipRank currentRank = customer.getMembershipRank();
+        int earnedPoints = (int) (order.getPaidPrice() * currentRank.getPointRate());
+
+        double newTotalPoints = (customer.getTotalPoint() != null ? customer.getTotalPoint() : 0) + earnedPoints;
+        newTotalPoints = Math.round(newTotalPoints * 10.0) / 10.0;
+        customer.setTotalPoint(newTotalPoints);
+
+        updateMemberShipRank(customer, (int) newTotalPoints, order.getShop().getId());
+        customerRepository.save(customer);
+    }
+
+    private void updateMemberShipRank(Customer customer, int totalPoints, Long shopId) {
+        List<MembershipRank> ranks = membershipRankRepository.findByShopIdOrderByRequiredPointsDesc(shopId);
+
+        for (MembershipRank rank : ranks) {
+            if (totalPoints >= rank.getRequiredPoints()) {
+                if (!rank.getId().equals(customer.getMembershipRank().getId())) {
+                    customer.setMembershipRank(rank);
+                }
+                break;
+            }
         }
     }
 }
