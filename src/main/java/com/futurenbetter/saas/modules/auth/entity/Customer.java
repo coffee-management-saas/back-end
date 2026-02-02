@@ -72,4 +72,8 @@ public class Customer {
     @ToString.Exclude
     @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Order> orders;
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "customer")
+    private List<PointHistory> pointHistories;
 }
