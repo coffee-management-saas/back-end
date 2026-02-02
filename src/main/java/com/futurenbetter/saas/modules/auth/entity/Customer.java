@@ -47,6 +47,9 @@ public class Customer {
     @Column(name = "status")
     private CustomerStatus status;
 
+    @Column(name = "total_point")
+    private Double totalPoint;
+
     @Column(name = "refresh_token")
     private String refreshToken;
 
