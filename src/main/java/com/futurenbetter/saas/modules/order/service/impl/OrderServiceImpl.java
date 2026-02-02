@@ -5,7 +5,10 @@ import com.futurenbetter.saas.common.utils.MomoUtils;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.entity.MembershipRank;
+import com.futurenbetter.saas.modules.auth.entity.PointHistory;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
+import com.futurenbetter.saas.modules.auth.enums.PointHistoryEnum;
+import com.futurenbetter.saas.modules.auth.mapper.PointHistoryMapper;
 import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
 import com.futurenbetter.saas.modules.auth.repository.MembershipRankRepository;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
@@ -22,6 +25,7 @@ import com.futurenbetter.saas.modules.order.enums.OrderStatus;
 import com.futurenbetter.saas.modules.order.enums.PaymentGateway;
 import com.futurenbetter.saas.modules.order.mapper.OrderMapper;
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
+import com.futurenbetter.saas.modules.order.repository.PointHistoryRepository;
 import com.futurenbetter.saas.modules.order.service.OrderService;
 import com.futurenbetter.saas.modules.product.entity.ProductVariant;
 import com.futurenbetter.saas.modules.product.entity.Topping;
@@ -64,6 +68,8 @@ public class OrderServiceImpl implements OrderService {
     private final CloudinaryStorageService cloudinaryStorageService;
     private final CustomerRepository customerRepository;
     private final MembershipRankRepository membershipRankRepository;
+    private final PointHistoryMapper pointHistoryMapper;
+    private final PointHistoryRepository pointHistoryRepository;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -390,17 +396,31 @@ public class OrderServiceImpl implements OrderService {
 
     private void processCustomerPoints(Order order) {
         Customer customer = order.getCustomer();
-        if (customer == null)
-            return;
+        if (customer == null) return;
 
         MembershipRank currentRank = customer.getMembershipRank();
-        int earnedPoints = (int) (order.getPaidPrice() * currentRank.getPointRate());
+        if (currentRank == null || currentRank.getPointRate() == null) return;
 
-        double newTotalPoints = (customer.getTotalPoint() != null ? customer.getTotalPoint() : 0) + earnedPoints;
-        newTotalPoints = Math.round(newTotalPoints * 10.0) / 10.0;
-        customer.setTotalPoint(newTotalPoints);
+        int earnedPoints = (int) Math.floor(order.getPaidPrice() * currentRank.getPointRate());
+        if (earnedPoints <= 0) return;
 
-        updateMemberShipRank(customer, (int) newTotalPoints, order.getShop().getId());
+        int beforePoints = (customer.getTotalPoint() != null) ? customer.getTotalPoint().intValue() : 0;
+        int afterPoints = beforePoints + earnedPoints;
+
+        customer.setTotalPoint((double) afterPoints);
+
+        PointHistory history = PointHistory.builder()
+                .customer(customer)
+                .beforePoints(beforePoints)
+                .pointChange(earnedPoints)
+                .afterPoints(afterPoints)
+                .pointHistoryStatus(PointHistoryEnum.EARNED)
+                .order(order)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        pointHistoryRepository.save(history);
+        updateMemberShipRank(customer, afterPoints, order.getShop().getId());
         customerRepository.save(customer);
     }
 
