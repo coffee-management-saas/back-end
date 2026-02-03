@@ -18,7 +18,7 @@ public class RecipeItemRequest {
     Long ingredientId;
 
     @NotNull(message = "Định lượng là bắt buộc")
-    @Min(value = 0, message = "Định lượng phải lớn hơn hoặc bằng 0")
+    @Min(value = 1, message = "Định lượng phải lớn hơn 0")
     Double quantityRequired;
 
     String note;
