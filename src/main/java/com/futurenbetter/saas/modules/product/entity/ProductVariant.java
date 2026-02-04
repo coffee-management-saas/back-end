@@ -37,10 +37,10 @@ public class ProductVariant {
     Product product;
 
     @Column(name = "price")
-    Long price;
+    Double price;
 
     @Column(name = "cost_price")
-    Long costPrice;
+    Double costPrice;
 
     @Column(name = "created_at")
     LocalDateTime createdAt;

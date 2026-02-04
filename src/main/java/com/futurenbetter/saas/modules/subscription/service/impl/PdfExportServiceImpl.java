@@ -216,10 +216,10 @@ public class PdfExportServiceImpl implements PdfExportService {
                 addReceiptBodyCell(table, productName, fontNormal, Element.ALIGN_LEFT, mainRowBorder);
                 addReceiptBodyCell(table, String.valueOf(item.getQuantity()), fontNormal, Element.ALIGN_CENTER,
                         mainRowBorder);
-                addReceiptBodyCell(table, String.format("%,d", item.getUnitPrice()), fontNormal, Element.ALIGN_RIGHT,
+                addReceiptBodyCell(table, String.format("%,.2f", item.getUnitPrice()), fontNormal, Element.ALIGN_RIGHT,
                         mainRowBorder);
                 addReceiptBodyCell(table, "0", fontNormal, Element.ALIGN_RIGHT, mainRowBorder);
-                addReceiptBodyCell(table, String.format("%,d", item.getUnitPrice() * item.getQuantity()), fontNormal,
+                addReceiptBodyCell(table, String.format("%,.2f", item.getUnitPrice() * item.getQuantity()), fontNormal,
                         Element.ALIGN_RIGHT, mainRowBorder);
 
                 if (hasToppings) {
@@ -237,10 +237,10 @@ public class PdfExportServiceImpl implements PdfExportService {
                                 toppingBorder);
                         addReceiptBodyCell(table, String.valueOf(topping.getQuantity()), fontSmall,
                                 Element.ALIGN_CENTER, toppingBorder);
-                        addReceiptBodyCell(table, String.format("%,d", topping.getPrice()), fontSmall,
+                        addReceiptBodyCell(table, String.format("%,.2f", topping.getPrice()), fontSmall,
                                 Element.ALIGN_RIGHT, toppingBorder);
                         addReceiptBodyCell(table, "0", fontSmall, Element.ALIGN_RIGHT, toppingBorder);
-                        addReceiptBodyCell(table, String.format("%,d", topping.getPrice() * topping.getQuantity()),
+                        addReceiptBodyCell(table, String.format("%,.2f", topping.getPrice() * topping.getQuantity()),
                                 fontSmall, Element.ALIGN_RIGHT, toppingBorder);
                     }
                 }
@@ -248,11 +248,11 @@ public class PdfExportServiceImpl implements PdfExportService {
 
             document.add(table);
             // 5. Totals Section
-            long basePrice = order.getBasePrice() != null ? order.getBasePrice() : 0L;
-            long discountAmount = order.getDiscountAmount() != null ? order.getDiscountAmount() : 0L;
-            long paidPrice = order.getPaidPrice() != null ? order.getPaidPrice() : 0L;
+            double basePrice = order.getBasePrice() != null ? order.getBasePrice() : 0L;
+            double discountAmount = order.getDiscountAmount() != null ? order.getDiscountAmount() : 0L;
+            double paidPrice = order.getPaidPrice() != null ? order.getPaidPrice() : 0L;
 
-            Paragraph pDiscount = new Paragraph("Tổng giảm giá món: " + String.format("%,d đ", discountAmount),
+            Paragraph pDiscount = new Paragraph("Tổng giảm giá món: " + String.format("%,.2f đ", discountAmount),
                     fontNormal);
             document.add(pDiscount);
 
@@ -260,13 +260,13 @@ public class PdfExportServiceImpl implements PdfExportService {
             footerTable.setWidthPercentage(100);
             footerTable.setWidths(new float[] { 1f, 1f });
 
-            addTotalRow(footerTable, "Thành tiền:", String.format("%,d đ", basePrice), fontNormal, fontNormal);
-            addTotalRow(footerTable, "Tổng tiền:", String.format("%,d đ", paidPrice), fontBold, fontBold);
+            addTotalRow(footerTable, "Thành tiền:", String.format("%,.2f đ", basePrice), fontNormal, fontNormal);
+            addTotalRow(footerTable, "Tổng tiền:", String.format("%,.2f đ", paidPrice), fontBold, fontBold);
 
             String paymentGateway = (order.getPaymentGateway() != null ? order.getPaymentGateway().toString()
                     : "TIỀN MẶT");
 
-            addTotalRow(footerTable, "+Thanh toán (" + paymentGateway + ")", String.format("%,d đ", paidPrice),
+            addTotalRow(footerTable, "+Thanh toán (" + paymentGateway + ")", String.format("%,.2f đ", paidPrice),
                     fontNormal, fontNormal);
 
             document.add(footerTable);

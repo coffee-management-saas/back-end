@@ -21,7 +21,7 @@ public interface PromotionService {
 
     void deletePromotion(Long promotionId);
 
-    Promotion validatePromotion(String promotionCode, Long shopId, Long customerId, Long orderAmount);
+    Promotion validatePromotion(String promotionCode, Long shopId, Long customerId, Double orderAmount);
 
-    void recordPromotionUsage(Long promotionId, Long customerId, Long shopId, Long discountAmount);
+    void recordPromotionUsage(Long promotionId, Long customerId, Long shopId, Double discountAmount);
 }
