@@ -46,10 +46,10 @@ public class Promotion {
     private DiscountTypeEnum discountType;
 
     @Column(name = "discount_value")
-    private Double discountValue;
+    private Long discountValue;
 
     @Column(name = "max_discount_amount")
-    private Double maxDiscountAmount;
+    private Long maxDiscountAmount;
 
     @Column(name = "usage_limit_per_user")
     private int usageLimitPerUser;

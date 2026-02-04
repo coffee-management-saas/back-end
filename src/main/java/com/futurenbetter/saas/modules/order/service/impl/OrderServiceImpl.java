@@ -110,7 +110,7 @@ public class OrderServiceImpl implements OrderService {
                 ? OrderItemStatus.PAID
                 : OrderItemStatus.PENDING;
 
-        double totalBasePrice = 0;
+        Double totalBasePrice = 0.0;
         List<OrderItem> items = new ArrayList<>();
 
         // 3. Xử lý từng Item trong đơn hàng
@@ -124,9 +124,9 @@ public class OrderServiceImpl implements OrderService {
             ProductVariant variant = productVariantRepository.findById(itemReq.getProductVariantId())
                     .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
             item.setProductVariant(variant);
-            item.setUnitPrice(variant.getPrice());
+            item.setUnitPrice(variant.getPrice().longValue());
 
-            double itemTotal = variant.getPrice() * itemReq.getQuantity();
+            long itemTotal = variant.getPrice().longValue() * itemReq.getQuantity();
 
             // 4. Xử lý Toppings đi kèm
             if (itemReq.getToppingItems() != null && !itemReq.getToppingItems().isEmpty()) {
@@ -152,17 +152,17 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 5. Áp dụng promotion (nếu có)
-        Double discountAmount = 0.0;
+        Long discountAmount = 0L;
         Promotion promotion = null;
         if (request.getPromotionCode() != null && !request.getPromotionCode().trim().isEmpty()) {
             promotion = promotionService.validatePromotion(
                     request.getPromotionCode(),
                     currentShopId,
                     currentUserId,
-                    totalBasePrice);
+                    totalBasePrice.longValue());
 
             if (promotion.getPromotionType() == PromotionTypeEnum.ORDER) {
-                discountAmount = calculateDiscount(promotion, totalBasePrice);
+                discountAmount = calculateDiscount(promotion, totalBasePrice.longValue());
             } else if (promotion.getPromotionType() == PromotionTypeEnum.PRODUCT) {
                 if (promotion.getPromotionTargets() == null || promotion.getPromotionTargets().isEmpty()) {
                     throw new BusinessException("Mã khuyến mãi không có sản phẩm áp dụng");
@@ -172,15 +172,15 @@ public class OrderServiceImpl implements OrderService {
                         .map(target -> target.getProduct().getId())
                         .collect(Collectors.toSet());
 
-                double eligibleAmount = 0.0;
+                long eligibleAmount = 0L;
                 for (OrderItem item : items) {
                     Long productId = item.getProductVariant().getProduct().getId();
 
                     if (targetProductIds.contains(productId)) {
-                        double itemPrice = item.getUnitPrice() * (double) item.getQuantity();
+                        long itemPrice = item.getUnitPrice() * item.getQuantity();
                         if (item.getToppingPerOrderItems() != null) {
                             for (ToppingPerOrderItem topping : item.getToppingPerOrderItems()) {
-                                itemPrice += topping.getPrice() * (double) topping.getQuantity();
+                                itemPrice += topping.getPrice() * topping.getQuantity();
                             }
                         }
                         eligibleAmount += itemPrice;
@@ -197,9 +197,9 @@ public class OrderServiceImpl implements OrderService {
 
         // 6. Cập nhật thông tin tổng quát và lưu trữ
         order.setOrderItems(items);
-        order.setBasePrice(totalBasePrice);
+        order.setBasePrice(totalBasePrice.longValue());
         order.setDiscountAmount(discountAmount);
-        order.setPaidPrice(totalBasePrice - discountAmount);
+        order.setPaidPrice(totalBasePrice.longValue() - discountAmount.longValue());
         order.setProductQuantity(items.size());
         order.setPromotion(promotion);
 
@@ -335,20 +335,20 @@ public class OrderServiceImpl implements OrderService {
         generateUploadInvoice(order);
     }
 
-    private Double calculateDiscount(Promotion promotion, Double baseAmount) {
-        Double discountAmount = 0.0;
+    private Long calculateDiscount(Promotion promotion, Long baseAmount) {
+        Long discountAmount = 0L;
 
         if (promotion.getDiscountType() == DiscountTypeEnum.PERCENTAGE) {
-            discountAmount = (baseAmount * promotion.getDiscountValue() / 100);
+            discountAmount = (long) (baseAmount * promotion.getDiscountValue() / 100);
 
             if (promotion.getMaxDiscountAmount() != null && promotion.getMaxDiscountAmount() > 0) {
-                double maxDiscount = promotion.getMaxDiscountAmount();
+                long maxDiscount = promotion.getMaxDiscountAmount();
                 if (discountAmount > maxDiscount) {
                     discountAmount = maxDiscount;
                 }
             }
         } else if (promotion.getDiscountType() == DiscountTypeEnum.FIXED_AMOUNT) {
-            discountAmount = promotion.getDiscountValue();
+            discountAmount = promotion.getDiscountValue().longValue();
             if (discountAmount > baseAmount) {
                 discountAmount = baseAmount;
             }

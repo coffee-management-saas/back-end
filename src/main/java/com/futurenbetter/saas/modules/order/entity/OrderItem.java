@@ -26,7 +26,7 @@ public class OrderItem {
     Long orderItemId;
 
     @Column(name = "unit_price")
-    Double unitPrice;
+    Long unitPrice;
 
     @Column(name = "order_item_status")
     @Enumerated(EnumType.STRING)
