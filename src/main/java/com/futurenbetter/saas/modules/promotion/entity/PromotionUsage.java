@@ -24,7 +24,7 @@ public class PromotionUsage {
     private Long promotionUsageId;
 
     @Column(name = "discount_amount")
-    private Float discountAmount;
+    private Double discountAmount;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

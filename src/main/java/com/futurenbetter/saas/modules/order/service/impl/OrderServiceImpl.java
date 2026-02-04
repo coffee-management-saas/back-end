@@ -110,7 +110,7 @@ public class OrderServiceImpl implements OrderService {
                 ? OrderItemStatus.PAID
                 : OrderItemStatus.PENDING;
 
-        long totalBasePrice = 0;
+        double totalBasePrice = 0;
         List<OrderItem> items = new ArrayList<>();
 
         // 3. Xử lý từng Item trong đơn hàng
@@ -126,7 +126,7 @@ public class OrderServiceImpl implements OrderService {
             item.setProductVariant(variant);
             item.setUnitPrice(variant.getPrice());
 
-            long itemTotal = variant.getPrice() * itemReq.getQuantity();
+            double itemTotal = variant.getPrice() * itemReq.getQuantity();
 
             // 4. Xử lý Toppings đi kèm
             if (itemReq.getToppingItems() != null && !itemReq.getToppingItems().isEmpty()) {
@@ -152,7 +152,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 5. Áp dụng promotion (nếu có)
-        Long discountAmount = 0L;
+        Double discountAmount = 0.0;
         Promotion promotion = null;
         if (request.getPromotionCode() != null && !request.getPromotionCode().trim().isEmpty()) {
             promotion = promotionService.validatePromotion(
@@ -172,15 +172,15 @@ public class OrderServiceImpl implements OrderService {
                         .map(target -> target.getProduct().getId())
                         .collect(Collectors.toSet());
 
-                long eligibleAmount = 0L;
+                double eligibleAmount = 0.0;
                 for (OrderItem item : items) {
                     Long productId = item.getProductVariant().getProduct().getId();
 
                     if (targetProductIds.contains(productId)) {
-                        long itemPrice = item.getUnitPrice() * item.getQuantity();
+                        double itemPrice = item.getUnitPrice() * (double) item.getQuantity();
                         if (item.getToppingPerOrderItems() != null) {
                             for (ToppingPerOrderItem topping : item.getToppingPerOrderItems()) {
-                                itemPrice += topping.getPrice() * topping.getQuantity();
+                                itemPrice += topping.getPrice() * (double) topping.getQuantity();
                             }
                         }
                         eligibleAmount += itemPrice;
@@ -335,20 +335,20 @@ public class OrderServiceImpl implements OrderService {
         generateUploadInvoice(order);
     }
 
-    private Long calculateDiscount(Promotion promotion, Long baseAmount) {
-        Long discountAmount = 0L;
+    private Double calculateDiscount(Promotion promotion, Double baseAmount) {
+        Double discountAmount = 0.0;
 
         if (promotion.getDiscountType() == DiscountTypeEnum.PERCENTAGE) {
-            discountAmount = (long) (baseAmount * promotion.getDiscountValue() / 100);
+            discountAmount = (baseAmount * promotion.getDiscountValue() / 100);
 
             if (promotion.getMaxDiscountAmount() != null && promotion.getMaxDiscountAmount() > 0) {
-                long maxDiscount = promotion.getMaxDiscountAmount().longValue();
+                double maxDiscount = promotion.getMaxDiscountAmount();
                 if (discountAmount > maxDiscount) {
                     discountAmount = maxDiscount;
                 }
             }
         } else if (promotion.getDiscountType() == DiscountTypeEnum.FIXED_AMOUNT) {
-            discountAmount = promotion.getDiscountValue().longValue();
+            discountAmount = promotion.getDiscountValue();
             if (discountAmount > baseAmount) {
                 discountAmount = baseAmount;
             }
