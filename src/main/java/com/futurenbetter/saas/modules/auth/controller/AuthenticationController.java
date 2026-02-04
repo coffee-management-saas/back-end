@@ -4,6 +4,7 @@ import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.modules.auth.dto.request.*;
 import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.LoginResponse;
+import com.futurenbetter.saas.modules.auth.dto.response.ShopEmployeeRegistrationResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminRegistrationResponse;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.service.AuthenticationService;
@@ -60,4 +61,15 @@ public class AuthenticationController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/shop-admin/login")
+    public ResponseEntity<LoginResponse> shopAdminLogin(@RequestBody LoginRequest request) {
+        LoginResponse response = authenticationService.loginShopAdmin(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/shop-employee/create")
+    public ResponseEntity<ShopEmployeeRegistrationResponse> createShopEmployee(@RequestBody ShopEmployeeRegistrationRequest request) {
+        ShopEmployeeRegistrationResponse response = authenticationService.createShopEmployee(request);
+        return ResponseEntity.ok(response);
+    }
 }
