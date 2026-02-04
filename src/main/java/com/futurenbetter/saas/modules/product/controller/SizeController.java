@@ -1,15 +1,13 @@
 package com.futurenbetter.saas.modules.product.controller;
 
-import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.dto.response.ApiResponse;
-import com.futurenbetter.saas.common.dto.response.PageMeta;
 import com.futurenbetter.saas.modules.product.dto.request.SizeRequest;
 import com.futurenbetter.saas.modules.product.dto.response.SizeResponse;
 import com.futurenbetter.saas.modules.product.entity.Size;
+import com.futurenbetter.saas.modules.product.enums.SizeStatus;
 import com.futurenbetter.saas.modules.product.service.inter.SizeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,24 +48,10 @@ public class SizeController {
 
     @GetMapping
     @Transactional(readOnly = true)
-    public ApiResponse<List<Size>> getAll(
-            @ModelAttribute BaseFilter filter
+    public List<SizeResponse> getAll(
+            @RequestParam(required = false) SizeStatus status
     ) {
-        Page<Size> page = sizeService.getAll(filter);
-
-        PageMeta meta = PageMeta.builder()
-                .currentPage(page.getNumber() + 1)
-                .size(page.getSize())
-                .lastPage(page.getTotalPages())
-                .totalElements(page.getTotalElements())
-                .build();
-
-        return ApiResponse.success(
-                HttpStatus.OK,
-                "Get sizes successfully",
-                page.getContent(),
-                meta
-        );
+        return sizeService.getAll(status);
     }
 
     @GetMapping("active")
