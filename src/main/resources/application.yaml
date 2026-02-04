@@ -6,9 +6,9 @@ spring:
     name: ${APPLICATION_NAME}
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?options=-c%20TimeZone=UTC
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?options=-c%20TimeZone=Asia/Ho_Chi_Minh
     username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -31,11 +31,11 @@ momo:
   access-key: ${MOMO_ACCESS_KEY}
   secret-key: ${MOMO_SECRET_KEY}
   api-url: ${MOMO_API_URL}
-  redirect-url: ${MOMO_REDIRECT_URL}
-  ipn-url: ${MOMO_IPN_URL}
+  redirect-url: ${MOMO_REDIRECT_URL:https://protozoological-nonrateably-elena.ngrok-free.dev/api/momo/callback}
+  ipn-url: ${MOMO_IPN_URL:https://protozoological-nonrateably-elena.ngrok-free.dev/api/momo/ipn}
 
-  online-redirect-url: ${MOMO_ONLINE_REDIRECT_URL:${MOMO_REDIRECT_URL}}
-  online-ipn-url: ${MOMO_ONLINE_IPN_URL:${MOMO_IPN_URL}}
+#  online-redirect-url: ${MOMO_ONLINE_REDIRECT_URL:${MOMO_REDIRECT_URL}}
+#  online-ipn-url: ${MOMO_ONLINE_IPN_URL:${MOMO_IPN_URL}}
 
 cloudinary:
   cloud-name: ${CLOUD_NAME}

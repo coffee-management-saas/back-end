@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.product.service.impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.product.dto.filter.ProductVariantFilter;
 import com.futurenbetter.saas.modules.product.dto.request.ProductVariantRequest;
@@ -92,7 +93,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     @Override
     public Page<ProductVariantResponse> getAll(ProductVariantFilter filter) {
         return variantRepository.findAll(
-                ProductVariantSpec.filter(filter, SecurityUtils.getCurrentShopId()),
+                ProductVariantSpec.filter(filter, TenantContext.getCurrentShopId()),
                 filter.getPageable()
         ).map(variantMapper::toResponse);
     }

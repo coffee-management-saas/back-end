@@ -2,7 +2,8 @@ package com.futurenbetter.saas.modules.product.service.impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
-import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.auth.entity.Shop;
+import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.product.dto.filter.ProductFilter;
 import com.futurenbetter.saas.modules.product.dto.request.ProductRequest;
 import com.futurenbetter.saas.modules.product.dto.response.ProductResponse;
@@ -34,6 +35,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductAllowToppingRepository allowToppingRepository;
+    private final ShopRepository shopRepository;
     private final ToppingRepository toppingRepository;
     private final ProductMapper productMapper;
 
@@ -46,11 +48,14 @@ public class ProductServiceImpl implements ProductService {
             throw new BusinessException("Tên sản phẩm đã tồn tại");
         }
 
+        Shop shop = shopRepository.findById(currentShopId)
+                .orElseThrow(() -> new BusinessException("Shop không tồn tại"));
+
         Category category = categoryRepository.findByIdAndShopId(request.getCategoryId(), currentShopId)
                 .orElseThrow(() -> new BusinessException("Danh mục không tồn tại"));
 
         Product product = productMapper.toEntity(request);
-        product.setShop(SecurityUtils.getCurrentShop());
+        product.setShop(shop);
         product.setCategory(category);
         product.setStatus(Status.ACTIVE);
 

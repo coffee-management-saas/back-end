@@ -27,19 +27,21 @@ public class IngredientBatchSpec {
             }
 
             if (StringUtils.hasText(filter.getBatchCode())) {
-                predicates.add(cb.like(cb.lower(root.get("batchCode")), "%" + filter.getBatchCode().toLowerCase() + "%"));
+                predicates
+                        .add(cb.like(cb.lower(root.get("batchCode")), "%" + filter.getBatchCode().toLowerCase() + "%"));
             }
 
             if (filter.getExpiredBeforeDate() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("expiredAt").as(java.time.LocalDate.class), filter.getExpiredBeforeDate()));
+                predicates.add(cb.lessThanOrEqualTo(root.get("expiredAt").as(java.time.LocalDate.class),
+                        filter.getExpiredBeforeDate()));
             }
 
             if (Boolean.TRUE.equals(filter.getHasRemainingQuantity())) {
                 predicates.add(cb.greaterThan(root.get("currentQuantity"), 0));
             }
 
-            if (filter.getStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
+            if (filter.getInventoryStatus() != null) {
+                predicates.add(cb.equal(root.get("inventoryStatus"), filter.getInventoryStatus()));
             }
 
             query.distinct(true);

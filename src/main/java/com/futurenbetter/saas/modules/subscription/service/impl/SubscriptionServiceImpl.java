@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.subscription.service.impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
+import com.futurenbetter.saas.common.utils.MomoUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
@@ -48,6 +49,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private final BillingInvoiceRepository billingInvoiceRepository;
     private final PdfExportService pdfExportService;
     private final CloudinaryStorageService cloudinaryStorageService;
+    private final MomoUtils momoUtils;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -86,6 +88,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Long amount = request.getBillingCycle() == BillingCycleEnum.MONTHLY
                 ? plan.getPriceMonthly() : plan.getPriceYearly();
 
+        Map<String, Object> extraDataMap = new HashMap<>();
+        extraDataMap.put("shopData", request);
+        extraDataMap.put("type", "SUBSCRIPTION");
+
         //3. Đóng gói thông tin shop vào extra data (Base64 JSON)
         String extraData = "";
         try {
@@ -114,7 +120,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 "&redirectUrl=" + redirectUrl +
                 "&requestId=" + requestId +
                 "&requestType=" + requestType;
-        String signature = hmacSha256(rawHash, secretKey);
+        String signature = momoUtils.hmacSha256(rawHash, secretKey);
 
         SubscriptionTransaction pendingTransaction = SubscriptionTransaction.builder()
                 .orderId(orderId)
@@ -232,7 +238,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             byte[] pdfContent = pdfExportService.generateInvoicePdf(invoice);
             String fileName = "Invoice_" + invoice.getBillingInvoiceId();
 
-            String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
+            String pdfUrl = cloudinaryStorageService.uploadFile(pdfContent, fileName, "invoices");
             invoice.setPdfUrl(pdfUrl);
             billingInvoiceRepository.save(invoice);
         } catch (Exception e) {
@@ -264,7 +270,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 "&partnerCode=" + partnerCode +
                 "&requestId=" + requestId +
                 "&requestType=" + requestType;
-        String signature = hmacSha256(rawHash, secretKey);
+        String signature = momoUtils.hmacSha256(rawHash, secretKey);
 
         Map<String, Object> body = new HashMap<>();
         body.put("partnerCode", partnerCode);

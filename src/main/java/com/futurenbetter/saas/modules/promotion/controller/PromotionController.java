@@ -6,9 +6,12 @@ import com.futurenbetter.saas.modules.promotion.service.PromotionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -22,6 +25,14 @@ public class PromotionController {
     public ResponseEntity<PromotionResponse> createPromotion(@Valid @RequestBody PromotionRequest promotionRequest) {
         PromotionResponse response = promotionService.createPromotion(promotionRequest);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PatchMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PromotionResponse> uploadPromotionImage(
+            @PathVariable("id") Long id,
+            @RequestParam("image") MultipartFile image) throws IOException {
+        PromotionResponse response = promotionService.uploadImage(id, image);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("")

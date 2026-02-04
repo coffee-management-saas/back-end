@@ -41,6 +41,12 @@ public class Product {
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
 
+    @Column(name = "description", columnDefinition = "TEXT")
+    String description;
+
+    @Column(name = "image")
+    String image;
+
     @Column(name = "has_variants")
     Boolean hasVariants;
 

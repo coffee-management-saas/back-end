@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.List;
 import java.util.Optional;
 
-public interface RawIngredientRepository extends JpaRepository<RawIngredient, Long>, JpaSpecificationExecutor<RawIngredient> {
+public interface RawIngredientRepository
+        extends JpaRepository<RawIngredient, Long>, JpaSpecificationExecutor<RawIngredient> {
+    Optional<RawIngredient> findByIdAndShopId(Long id, Long shopId);
 
-    Optional<RawIngredient> findByIdAndId(Long id, Long shopId);
-
-    List<RawIngredient> findAllById(Long shopId);
+    List<RawIngredient> findAllByShopId(Long shopId);
 }

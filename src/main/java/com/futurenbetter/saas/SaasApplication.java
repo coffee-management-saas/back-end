@@ -11,7 +11,7 @@ import java.util.TimeZone;
 @EnableScheduling
 public class SaasApplication {
     public static void main(String[] args) {
-        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         DotEnvConfig.loadEnv();
         SpringApplication.run(SaasApplication.class, args);
     }

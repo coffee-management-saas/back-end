@@ -8,8 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface EmployeeRepository extends JpaRepository<Employee,Long> {
-    //Optional<Employee> findByIdAndShopId(Long employeeId, Long shopId);
-
     Optional<Employee> findByEmployeeIdAndShopId(Long employeeId, Long shopId);
 
     Page<Employee> findAllByShopId(Long shopId, Pageable pageable);

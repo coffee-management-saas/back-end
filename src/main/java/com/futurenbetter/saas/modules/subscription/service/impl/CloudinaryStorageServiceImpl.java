@@ -17,17 +17,22 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
 
     @Override
     public String uploadInvoice(byte[] data, String fileName) {
-        try {
-            String publicId = "invoices/" + fileName;
+        return uploadFile(data, fileName, "invoices");
+    }
 
-            Map uploadResult = cloudinary.uploader().upload(data, ObjectUtils.asMap(
-                   "public_id", publicId,
-                    "resources_type", "raw",
-                    "flags", "attachment"
-            ));
+    @Override
+    public String uploadFile(byte[] data, String fileName, String folder) {
+        try {
+            Map uploadParams = ObjectUtils.asMap(
+                    "folder", folder,
+                    "public_id", fileName,
+                    "resource_type", "auto"
+            );
+
+            Map uploadResult = cloudinary.uploader().upload(data, uploadParams);
             return (String) uploadResult.get("secure_url");
         } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi upload lên Cloudinary", e);
+            throw new RuntimeException("Lỗi khi upload hình ảnh");
         }
     }
 }

@@ -16,6 +16,5 @@ public class OrderItemRequest {
 
     Long productVariantId;
     Integer quantity;
-    Long sizeId;
     List<ToppingItemRequest> toppingItems;
 }
