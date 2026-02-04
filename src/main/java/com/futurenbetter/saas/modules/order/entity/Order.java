@@ -31,10 +31,10 @@ public class Order {
     Long orderId;
 
     @Column(name = "base_price")
-    Double basePrice;
+    Long basePrice;
 
     @Column(name = "paid_price")
-    Double paidPrice;
+    Long paidPrice;
 
     @Column(name = "product_quantity")
     int productQuantity;
@@ -76,7 +76,7 @@ public class Order {
     private List<PointHistory> pointHistories;
 
     @Column(name = "discount_amount")
-    Double discountAmount;
+    Long discountAmount;
 
     @Column(name = "invoice_url")
     String invoiceUrl;

@@ -164,7 +164,7 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     @Transactional(readOnly = true)
-    public Promotion validatePromotion(String promotionCode, Long shopId, Long customerId, Double orderAmount) {
+    public Promotion validatePromotion(String promotionCode, Long shopId, Long customerId, Long orderAmount) {
         Promotion promotion = promotionRepository.findByPromotionCodeAndShopIdWithTargets(promotionCode, shopId)
                 .orElseThrow(() -> new BusinessException("Mã khuyến mãi không hợp lệ"));
 
@@ -201,7 +201,7 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     @Override
-    public void recordPromotionUsage(Long promotionId, Long customerId, Long shopId, Double discountAmount) {
+    public void recordPromotionUsage(Long promotionId, Long customerId, Long shopId, Long discountAmount) {
         Promotion promotion = promotionRepository.findById(promotionId)
                 .orElseThrow(() -> new BusinessException("Mã khuyến mãi không tồn tại"));
 
@@ -218,7 +218,7 @@ public class PromotionServiceImpl implements PromotionService {
                 .promotion(promotion)
                 .customer(customer)
                 .shop(shop)
-                .discountAmount(discountAmount)
+                .discountAmount(discountAmount.floatValue())
                 .promotionUsageStatus(PromotionUsageEnum.USED)
                 .createdAt(LocalDateTime.now())
                 .build();
