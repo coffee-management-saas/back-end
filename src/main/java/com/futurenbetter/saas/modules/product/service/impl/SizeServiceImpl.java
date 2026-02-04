@@ -1,18 +1,18 @@
 package com.futurenbetter.saas.modules.product.service.impl;
 
-import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.product.dto.request.SizeRequest;
 import com.futurenbetter.saas.modules.product.dto.response.SizeResponse;
 import com.futurenbetter.saas.modules.product.entity.Size;
+
+import com.futurenbetter.saas.modules.product.enums.SizeStatus;
 import com.futurenbetter.saas.modules.product.enums.Status;
 import com.futurenbetter.saas.modules.product.mapper.SizeMapper;
 import com.futurenbetter.saas.modules.product.repository.SizeRepository;
 import com.futurenbetter.saas.modules.product.service.inter.SizeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,8 +58,20 @@ public class SizeServiceImpl implements SizeService {
     }
 
     @Override
-    public Page<Size> getAll(BaseFilter filter) {
-        return sizeRepository.findAll(filter.getPageable());
+    public List<SizeResponse> getAll(SizeStatus status) {
+        Long shopId = TenantContext.getCurrentShopId();
+        List<Size> sizes;
+        
+        if (status != null) {
+            Status entityStatus = Status.valueOf(status.name());
+            sizes = sizeRepository.findAllByShopIdAndStatus(shopId, entityStatus);
+        } else {
+            sizes = sizeRepository.findAllByShopId(shopId);
+        }
+
+        return sizes.stream()
+                .map(sizeMapper::toResponse)
+                .toList();
     }
 
     @Override
