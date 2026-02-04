@@ -300,6 +300,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Tên đăng nhập đã tồn tại");
         }
 
+        if (userProfileRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException("Email đã tồn tại");
+        }
+
         Shop shop = shopRepository.findById(request.getShopId())
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
