@@ -11,6 +11,7 @@ import org.mapstruct.*;
 )
 public interface EmployeeMapper {
 
+    @Mapping(target = "shopId", source = "shop.id")
     EmployeeResponse toResponse(Employee employee);
 
     @Mapping(target = "employeeId", ignore = true)
