@@ -328,4 +328,45 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // trả về password cho shop-admin lưu lại gửi cho nhân viên
         return userProfileMapper.toEmployeeResponse(savedEmployee, employee, password);
     }
+
+    @Override
+    public LoginResponse loginShopAdmin(LoginRequest loginRequest) {
+        UserProfile admin = profileRepository.findByUsernameWithRoles(loginRequest.getUsername())
+                .orElseThrow(() -> new BusinessException("Tài khoản không tồn tại"));
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), admin.getPassword())) {
+            throw new BusinessException("Mật khẩu không chính xác");
+        }
+
+        boolean isShopUser = admin.getRoles().stream()
+                .anyMatch(role -> ApplyStatus.SHOP.equals(role.getRole()));
+
+        if (!isShopUser) {
+            throw new BusinessException("Tài khoản không có quyền truy cập quản trị quán");
+        }
+
+        if (admin.getShop() == null) {
+            throw new BusinessException("Tài khoản chưa được gán vào cửa hàng cụ thể");
+        }
+
+        Long shopId = admin.getShop().getId();
+
+        String accessToken = jwtService.generateAccessToken(
+                admin.getUsername(),
+                shopId,
+                "SHOP");
+
+        String refreshToken = jwtService.generateRefreshToken(admin.getUsername());
+
+        admin.setRefreshToken(refreshToken);
+        admin.setUpdatedAt(LocalDateTime.now());
+        userProfileRepository.save(admin);
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .shopId(shopId)
+                .build();
+    }
+
 }

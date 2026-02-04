@@ -14,4 +14,5 @@ public interface AuthenticationService extends UserDetailsService {
     SystemAdminRegistrationResponse registerSystemAdmin(SystemAdminRegistrationRequest request);
     SystemAdminRegistrationResponse registerShopAdmin(ShopAdminRegistrationRequest request);
     ShopEmployeeRegistrationResponse createShopEmployee(ShopEmployeeRegistrationRequest request);
+    LoginResponse loginShopAdmin(LoginRequest loginRequest);
 }
