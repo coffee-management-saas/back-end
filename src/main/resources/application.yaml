@@ -21,6 +21,14 @@ spring:
       hibernate:
         format_sql: false
 
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: gemma3:12b
+          temperature: 0.7
+
 jwt:
   secret: ${JWT_SECRET}
   access-expiration: ${JWT_ACCESS_EXPIRATION:300000}
@@ -50,3 +58,4 @@ vnpay:
   version: "2.1.0"
   command: "pay"
   order-type: "other"
+
