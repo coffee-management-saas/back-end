@@ -7,9 +7,11 @@ import com.futurenbetter.saas.modules.chatbot.service.AIChatService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -65,5 +67,17 @@ public class AIChatServiceImpl implements AIChatService {
                 .build();
         chatHistoryRepository.save(history);
         return aiResponse;
+    }
+
+    @Override
+    @Transactional
+    public void ingestData(String content) {
+        if (content == null || content.isBlank()) return;
+        String sanitizedContent = content.replace("\u0000", "");
+        Document fullDoc = new Document(sanitizedContent);
+
+        TokenTextSplitter splitter = new TokenTextSplitter();
+        List<Document> chunks = splitter.split(List.of(fullDoc));
+        vectorStore.add(chunks);
     }
 }
