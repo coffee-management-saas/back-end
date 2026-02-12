@@ -3,6 +3,7 @@ package com.futurenbetter.saas.modules.auth.service.Impl;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.PasswordUtils;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.dto.request.*;
 import com.futurenbetter.saas.modules.auth.dto.response.*;
 import com.futurenbetter.saas.modules.auth.entity.*;
@@ -296,6 +297,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Transactional
     public ShopEmployeeRegistrationResponse createShopEmployee(ShopEmployeeRegistrationRequest request) {
 
+        Long shopId = SecurityUtils.getCurrentShopId();
+        System.out.println("shopId = " + shopId);
         if (userProfileRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException("Tên đăng nhập đã tồn tại");
         }
@@ -304,7 +307,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Email đã tồn tại");
         }
 
-        Shop shop = shopRepository.findById(request.getShopId())
+        Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
         // tạo pass ngẫu nhiên và trả ve để employee tự đổi pass lần sau
@@ -370,6 +373,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .shopId(shopId)
+                .role(admin.getRoles().iterator().next().getRole().name()) // sau này đổi lại, 1 user 1 role
                 .build();
     }
 
