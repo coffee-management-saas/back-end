@@ -129,7 +129,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private LoginResponse generateLoginResponse(String username, Long shopId, String role, Object entity) {
-        String accessToken = jwtService.generateAccessToken(username, shopId, role);
+        String accessToken = jwtService.generateAccessToken(username, shopId, role, entity instanceof Customer ? "CUSTOMER" : "USER_PROFILE"); // temporary
         String refreshToken = jwtService.generateRefreshToken(username);
 
         if (entity instanceof Customer customer) {
@@ -164,7 +164,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String newAccessToken = jwtService.generateAccessToken(
                 customer.getUsername(),
                 customer.getMembershipRank().getShop().getId(),
-                "SHOP");
+                "SHOP",
+                customer.getRole().getName());
         String newRefreshToken = jwtService.generateRefreshToken(customer.getUsername());
 
         customer.setRefreshToken(newRefreshToken);
@@ -226,7 +227,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Bạn không có quyền truy cập");
         }
 
-        String acccessToken = jwtService.generateAccessToken(admin.getUsername(), null, "SYSTEM");
+        String acccessToken = jwtService.generateAccessToken(admin.getUsername(), null, "SYSTEM", "USER_PROFILE");
         String refreshToken = jwtService.generateRefreshToken(admin.getUsername());
 
         admin.setRefreshToken(refreshToken);
@@ -354,7 +355,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtService.generateAccessToken(
                 admin.getUsername(),
                 shopId,
-                "SHOP");
+                "SHOP",
+                "USER_PROFILE");
 
         String refreshToken = jwtService.generateRefreshToken(admin.getUsername());
 
@@ -366,6 +368,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .shopId(shopId)
+                .roleName(admin.getRoles().stream().findFirst().map(Role::getName))
                 .build();
     }
 

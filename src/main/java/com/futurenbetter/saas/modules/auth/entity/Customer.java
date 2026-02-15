@@ -76,4 +76,9 @@ public class Customer {
     @ToString.Exclude
     @OneToMany(mappedBy = "customer")
     private List<PointHistory> pointHistories;
+
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id")
+    private Role role;
 }

@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import lombok.ToString;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -58,6 +59,7 @@ public class UserProfile {
     @Enumerated(EnumType.STRING)
     private UserProfileEnum status;
 
+    @ToString.Exclude
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_role",
@@ -66,10 +68,12 @@ public class UserProfile {
     )
     private Set<Role> roles;
 
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shop_id")
     private Shop shop;
 
+    @ToString.Exclude
     @OneToMany(mappedBy = "owner")
     private List<Shop> ownedShops;
 }

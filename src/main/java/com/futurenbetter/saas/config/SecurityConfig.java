@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -14,6 +15,7 @@ import org.springframework.web.cors.CorsUtils;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
         private final AuthenticationService authenticationService;
@@ -45,6 +47,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/subscriptions/vnpay-return").permitAll()
                                                 .requestMatchers("/api/system/**").hasAuthority("SYSTEM")
                                                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                                                .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                                                 .anyRequest().authenticated())
                                 .formLogin(AbstractHttpConfigurer::disable)
                                 .httpBasic(AbstractHttpConfigurer::disable)

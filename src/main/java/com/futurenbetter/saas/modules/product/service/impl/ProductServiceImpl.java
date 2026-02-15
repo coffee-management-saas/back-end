@@ -2,6 +2,7 @@ package com.futurenbetter.saas.modules.product.service.impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.product.dto.filter.ProductFilter;
@@ -90,7 +91,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Page<ProductResponse> getAll(ProductFilter filter) {
-        Long currentShopId = TenantContext.getCurrentShopId();
+        Long currentShopId = SecurityUtils.getCurrentShopId();
         return productRepository.findAll(
                 ProductSpec.filter(filter, currentShopId),
                 filter.getPageable()
