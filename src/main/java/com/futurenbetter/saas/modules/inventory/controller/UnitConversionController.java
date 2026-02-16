@@ -16,32 +16,32 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UnitConversionController {
 
-        private final UnitConversionService unitConversionService;
+    private final UnitConversionService unitConversionService;
 
-        @PostMapping
-        @PreAuthorize("hasAuthority('unit-conversion:create')")
-        public ApiResponse<UnitConversionResponse> create(
-                        @RequestBody @Valid UnitConversionRequest request) {
-                UnitConversionResponse response = unitConversionService.create(request);
+    @PostMapping
+    @PreAuthorize("hasAuthority('unit-conversion:create')")
+    public ApiResponse<UnitConversionResponse> create(
+            @RequestBody @Valid UnitConversionRequest request) {
+        UnitConversionResponse response = unitConversionService.create(request);
 
-                return ApiResponse.success(
-                                HttpStatus.CREATED,
-                                "Create unit conversion successfully",
-                                response,
-                                null);
-        }
+        return ApiResponse.success(
+                HttpStatus.CREATED,
+                "Create unit conversion successfully",
+                response,
+                null);
+    }
 
-        @PutMapping("{id}")
-        @PreAuthorize("hasAuthority('unit-conversion:update')")
-        public ApiResponse<UnitConversion> update(
-                        @PathVariable Long id,
-                        @RequestBody @Valid UnitConversionRequest request) {
-                UnitConversion response = unitConversionService.update(id, request);
+    @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('unit-conversion:update')")
+    public ApiResponse<UnitConversion> update(
+            @PathVariable Long id,
+            @RequestBody @Valid UnitConversionRequest request) {
+        UnitConversion response = unitConversionService.update(id, request);
 
-                return ApiResponse.success(
-                                HttpStatus.OK,
-                                "Update unit conversion successfully",
-                                response,
-                                null);
-        }
+        return ApiResponse.success(
+                HttpStatus.OK,
+                "Update unit conversion successfully",
+                response,
+                null);
+    }
 }
