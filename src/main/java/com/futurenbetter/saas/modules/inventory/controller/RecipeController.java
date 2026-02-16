@@ -7,6 +7,7 @@ import com.futurenbetter.saas.modules.inventory.service.inter.RecipeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class RecipeController {
         private final RecipeService recipeService;
 
         @PostMapping
+        @PreAuthorize("hasAuthority('recipe:create')")
         public ApiResponse<List<RecipeResponse>> create(
                         @RequestBody @Valid RecipeRequest request) {
                 List<RecipeResponse> response = recipeService.create(request);
@@ -31,6 +33,7 @@ public class RecipeController {
         }
 
         @GetMapping("variant/{variantId}")
+        @PreAuthorize("hasAuthority('recipe:read-by-variant')")
         public ApiResponse<List<RecipeResponse>> getByVariant(
                         @PathVariable Long variantId) {
                 List<RecipeResponse> response = recipeService.getByVariant(variantId);
@@ -38,6 +41,7 @@ public class RecipeController {
         }
 
         @GetMapping("topping/{toppingId}")
+        @PreAuthorize("hasAuthority('recipe:read-by-topping')")
         public ApiResponse<List<RecipeResponse>> getByTopping(
                         @PathVariable Long toppingId) {
                 List<RecipeResponse> response = recipeService.getByTopping(toppingId);

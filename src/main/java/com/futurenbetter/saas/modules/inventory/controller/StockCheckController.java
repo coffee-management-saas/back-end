@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class StockCheckController {
     private final StockCheckService stockCheckService;
 
     @PostMapping("start")
+    @PreAuthorize("hasAuthority('stock-check:start-session')")
     public ApiResponse<StockCheckSessionResponse> startSession(
             @RequestBody @Valid StockCheckStartRequest request
     ) {
@@ -38,6 +40,7 @@ public class StockCheckController {
     }
 
     @PutMapping("update-count")
+    @PreAuthorize("hasAuthority('stock-check:update-count')")
     public ApiResponse<StockCheckSessionResponse> updateCount(
             @RequestBody @Valid StockCheckUpdateRequest request
     ) {
@@ -52,6 +55,7 @@ public class StockCheckController {
     }
 
     @PostMapping("approve")
+    @PreAuthorize("hasAuthority('stock-check:approve-session')")
     public ApiResponse<StockCheckSessionResponse> approveSession(
             @RequestBody @Valid StockCheckApproveRequest request
     ) {
@@ -66,6 +70,7 @@ public class StockCheckController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('stock-check:read-by-filter')")
     public ApiResponse<List<StockCheckSessionResponse>> getByFilter(
             @ModelAttribute StockCheckSessionFilter filter
     ) {

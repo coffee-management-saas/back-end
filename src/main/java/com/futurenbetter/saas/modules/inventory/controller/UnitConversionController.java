@@ -8,6 +8,7 @@ import com.futurenbetter.saas.modules.inventory.service.inter.UnitConversionServ
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +19,7 @@ public class UnitConversionController {
         private final UnitConversionService unitConversionService;
 
         @PostMapping
+        @PreAuthorize("hasAuthority('unit-conversion:create')")
         public ApiResponse<UnitConversionResponse> create(
                         @RequestBody @Valid UnitConversionRequest request) {
                 UnitConversionResponse response = unitConversionService.create(request);
@@ -30,6 +32,7 @@ public class UnitConversionController {
         }
 
         @PutMapping("{id}")
+        @PreAuthorize("hasAuthority('unit-conversion:update')")
         public ApiResponse<UnitConversion> update(
                         @PathVariable Long id,
                         @RequestBody @Valid UnitConversionRequest request) {

@@ -26,3 +26,29 @@
 - shift-template:read-detail
 - shift-template:update
 - shift-template:delete
+
+5. InventoryInvoice
+- inventory-invoice:import
+- inventory-invoice:read-by-filter
+- inventory-invoice:read-detail
+
+6. RawIngredient
+- raw-ingredient:create
+- raw-ingredient:read-by-filter
+- raw-ingredient:read-detail
+- raw-ingredient:update
+
+7. Recipe
+- recipe:create
+- recipe:read-by-variant
+- recipe:read-by-topping
+
+8. StockCheck
+- stock-check:start-session
+- stock-check:read-by-filter
+- stock-check:update-count
+- stock-check:approve-session
+
+9. UnitConversion
+- unit-conversion:create
+- unit-conversion:update

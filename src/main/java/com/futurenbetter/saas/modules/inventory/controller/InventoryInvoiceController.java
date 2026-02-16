@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class InventoryInvoiceController {
     private final InventoryInvoiceService invoiceService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('inventory-invoice:import')")
     public ApiResponse<InventoryInvoiceResponse> importStock(
             @RequestBody @Valid InventoryInvoiceRequest request
     ) {
@@ -36,6 +38,7 @@ public class InventoryInvoiceController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('inventory-invoice:read-by-filter')")
     public ApiResponse<List<InventoryInvoiceResponse>> getByFilter(
             @ModelAttribute InventoryInvoiceFilter filter
     ) {
@@ -57,6 +60,7 @@ public class InventoryInvoiceController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('inventory-invoice:read-detail')")
     public ApiResponse<InventoryInvoiceResponse> getDetail(
             @PathVariable Long id
     ) {
