@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('schedule:create')")
     public ApiResponse<ScheduleResponse> create(
             @RequestBody @Valid ScheduleRequest request
     ) {
@@ -35,6 +37,7 @@ public class ScheduleController {
     }
 
     @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('schedule:update')")
     public ApiResponse<ScheduleResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid ScheduleRequest request
@@ -49,6 +52,7 @@ public class ScheduleController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('schedule:read-detail')")
     public ApiResponse<ScheduleResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -62,6 +66,7 @@ public class ScheduleController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('schedule:read')")
     public ApiResponse<List<ScheduleResponse>> getAll(
             @ModelAttribute BaseFilter filter
     ) {
@@ -83,6 +88,7 @@ public class ScheduleController {
     }
 
     @GetMapping("{employeeId}")
+    @PreAuthorize("hasAuthority('schedule:read-by-employee')")
     public ApiResponse<List<ScheduleResponse>> getByEmployee(
             @PathVariable Long employeeId
     ) {
@@ -96,6 +102,7 @@ public class ScheduleController {
     }
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasAuthority('schedule:delete')")
     public ApiResponse<Void> delete(
             @PathVariable Long id
     ) {

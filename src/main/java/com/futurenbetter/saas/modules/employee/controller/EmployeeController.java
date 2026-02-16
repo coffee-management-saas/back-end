@@ -25,6 +25,7 @@ public class EmployeeController {
     private final EmployeeService employeeService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('employee:create')")
     public ApiResponse<EmployeeResponse> create(
             @RequestBody @Valid EmployeeRequest request
     ) {
@@ -38,6 +39,7 @@ public class EmployeeController {
     }
 
     @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('employee:update')")
     public ApiResponse<EmployeeResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid EmployeeRequest request
@@ -52,6 +54,7 @@ public class EmployeeController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('employee:read-detail')")
     public ApiResponse<EmployeeResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -87,6 +90,7 @@ public class EmployeeController {
     }
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasAuthority('employee:delete')")
     public ApiResponse<Void> delete(
             @PathVariable Long id
     ) {

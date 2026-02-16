@@ -1,0 +1,28 @@
+1. Employee
+- employee:create
+- employee:read
+- employee:read-detail
+- employee:update
+- employee:delete
+
+2. EmployeeUnavailability
+- employee-unavailability:create
+- employee-unavailability:read
+- employee-unavailability:read-detail
+- employee-unavailability:update
+- employee-unavailability:delete
+
+3. Schedule
+- schedule:create
+- schedule:read
+- schedule:read-detail
+- schedule:read-by-employee
+- schedule:update
+- schedule:delete
+
+4. ShiftTemplate
+- shift-template:create
+- shift-template:read
+- shift-template:read-detail
+- shift-template:update
+- shift-template:delete
