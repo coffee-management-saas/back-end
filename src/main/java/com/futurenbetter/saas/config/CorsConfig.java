@@ -13,8 +13,10 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:3000")
-//                         .allowedOrigins("") // Sau này hãy thay bằng URL thật của Frontend
+                        .allowedOrigins(
+                                "http://localhost:3000",
+                                "http://futurebetter.online",
+                                "https://futurebetter.online")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(false);
