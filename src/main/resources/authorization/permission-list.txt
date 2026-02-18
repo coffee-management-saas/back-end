@@ -90,3 +90,13 @@
 - topping:read-detail
 - topping:update
 - topping:delete
+
+16. Promotion
+- promotion:create
+- promotion:read
+- promotion:read-detail
+- promotion:update
+- promotion:delete
+- promotion: upload-image
+
+17. Subscription
