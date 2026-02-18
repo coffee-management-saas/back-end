@@ -30,7 +30,7 @@ spring:
       base-url: http://localhost:11434
       init:
         pull-model-strategy: when_missing
-        timeout: 60s
+        timeout: 300s
       chat:
         enabled: true
         options:

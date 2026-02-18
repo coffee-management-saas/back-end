@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.io.IOException;
 
@@ -20,7 +21,7 @@ public class AIController {
     private final AIChatService chatService;
 
     @PostMapping("/chat")
-    Object chat(ChatRequest request) {
+    Object chat(@RequestBody ChatRequest request) {
         return chatService.chat(request);
     }
 

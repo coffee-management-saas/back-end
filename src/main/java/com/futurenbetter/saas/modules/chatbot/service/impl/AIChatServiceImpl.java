@@ -2,14 +2,10 @@ package com.futurenbetter.saas.modules.chatbot.service.impl;
 
 import com.futurenbetter.saas.modules.chatbot.dto.request.ChatRequest;
 import com.futurenbetter.saas.modules.chatbot.dto.response.AIOrderResponse;
-import com.futurenbetter.saas.modules.chatbot.entity.AIChatHistory;
-import com.futurenbetter.saas.modules.chatbot.repository.AIChatHistoryRepository;
 import com.futurenbetter.saas.modules.chatbot.service.AIChatService;
-import com.futurenbetter.saas.modules.order.dto.response.OrderResponse;
-import com.futurenbetter.saas.modules.order.service.OrderService;
+import com.futurenbetter.saas.modules.chatbot.service.ChatHistoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.document.Document;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -24,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,35 +30,23 @@ public class AIChatServiceImpl implements AIChatService {
 
     private final ChatClient chatClient;
     private final PgVectorStore vectorStore;
-    private final AIChatHistoryRepository chatHistoryRepository;
-    private final OrderService orderService;
+    private final ChatHistoryService chatHistoryService;
 
     public AIChatServiceImpl(ChatClient.Builder builder,
             PgVectorStore vectorStore,
-            AIChatHistoryRepository chatHistoryRepository,
-            OrderService orderService) {
+            ChatHistoryService chatHistoryService) {
         this.chatClient = builder.build();
         this.vectorStore = vectorStore;
-        this.chatHistoryRepository = chatHistoryRepository;
-        this.orderService = orderService;
+        this.chatHistoryService = chatHistoryService;
     }
 
     @Override
     public Object chat(ChatRequest request) {
-        String intent = classifyIntent(request.message());
-        String filterExpression;
-
-        if ("SUMMARY".equals(intent)) {
-            filterExpression = "type == 'MENU_SUMMARY'";
-        } else {
-            filterExpression = "type == 'MENU_DETAIL'";
-        }
-
+        // Tối ưu: Giảm TopK xuống 3 để giảm lượng token đầu vào -> AI xử lý nhanh hơn
         List<Document> similarDocuments = vectorStore.similaritySearch(
                 SearchRequest.builder()
                         .query(request.message())
-                        .topK(5)
-                        .filterExpression(filterExpression)
+                        .topK(3)
                         .build());
 
         String context = similarDocuments.stream()
@@ -73,72 +56,51 @@ public class AIChatServiceImpl implements AIChatService {
         BeanOutputConverter<AIOrderResponse> converter = new BeanOutputConverter<>(AIOrderResponse.class);
 
         String systemPrompt = """
-                Bạn là trợ lý ảo của quán cà phê Future&Better.
-                Nhiệm vụ: Tư vấn menu và hỗ trợ đặt món dựa trên thông tin được cung cấp.
+                Bạn là NV Future&Better. Trả lời ngắn gọn, dùng emoji ☕.
 
-                QUY TẮC TRẢ LỜI:
-                1. Dựa hoàn toàn vào thông tin trong phần 'Ngữ cảnh' để trả lời.
-                2. Nếu khách muốn đặt món, hãy trích xuất thông tin món ăn và số lượng để tạo đơn hàng.
-                3. Nếu khách hỏi menu (tổng quan):
-                   - Hãy liệt kê một vài món tiêu biểu của từng loại (Category).
-                   - SAU ĐÓ, phải đặt câu hỏi ngược lại cho khách: "Bạn thích loại đồ uống nào (cà phê, trà, hay đá xay) để mình tư vấn thêm nhé?"
-                4. Nếu khách hỏi chi tiết hoặc chat bình thường, trả về action "INFO" và câu trả lời ngắn gọn, đúng trọng tâm.
-
-                NGỮ CẢNH:
+                MENU:
                 {context}
 
-                ĐỊNH DẠNG TRẢ VỀ (JSON):
-                {format}
+                QUY TẮC PHẢN HỒI:
+                1. Mặc định action="INFO".
+                2. Khi khách hỏi menu:
+                   - CHỈ liệt kê 1-2 món đặc trưng nhất của mỗi loại (Category).
+                   - KHÔNG liệt kê toàn bộ menu.
+                   - Sau đó hỏi khách thích loại nào để tư vấn thêm.
+                3. Từ chối trả lời nhg thông tin không liên quan đến cửa hàng.
+                3. KHÔNG trả về dữ liệu 'orderRequest' khi action="INFO".
+                4. CHỈ khi khách xác nhận "Chốt đơn" / "Đặt món này":
+                   - Mới trả về action="ORDER" và kèm 'orderRequest'.
+
+                OUTPUT JSON: {format}
                 """;
 
-        AIOrderResponse aiResult = chatClient.prompt()
-                .options(ChatOptions.builder().build())
-                .advisors(advisorSpec -> advisorSpec.param("headers", Map.of("ngrok-skip-browser-warning", true)))
+        String rawResponse = chatClient.prompt()
                 .system(s -> s.text(systemPrompt)
                         .param("context", context)
                         .param("format", converter.getFormat()))
                 .user(request.message())
                 .call()
-                .entity(converter);
-
-        if (aiResult != null && "ORDER".equals(aiResult.action()) && aiResult.orderRequest() != null) {
-            try {
-                OrderResponse orderResponse = orderService.createOrder(aiResult.orderRequest());
-
-                savedHistory(request.message(), aiResult.message(), context);
-                return orderResponse;
-            } catch (Exception e) {
-                return "Đã có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.";
-            }
-        }
-        savedHistory(request.message(), request.message(), context);
-        return aiResult.message();
-    }
-
-    private String classifyIntent(String message) {
-        String prompt = """
-                Phân loại câu hỏi của người dùng thành một trong hai loại sau:
-                - SUMMARY: Nếu người dùng hỏi tổng quát về menu, danh sách món, có những gì (Ví dụ: "Menu có gì?", "Quán có món gì?").
-                - DETAIL: Nếu người dùng hỏi chi tiết về giá, thành phần, hoặc muốn đặt món (Ví dụ: "Cà phê muối giá bao nhiêu?", "Cho tôi 1 trà đào").
-
-                Chỉ trả về đúng từ khóa: SUMMARY hoặc DETAIL.
-                Câu hỏi: {query}
-                """;
-
-        return chatClient.prompt()
-                .user(u -> u.text(prompt).param("query", message))
-                .call()
                 .content();
-    }
 
-    private void savedHistory(String userMsg, String aiRes, String context) {
-        AIChatHistory history = AIChatHistory.builder()
-                .userMessage(userMsg)
-                .aiResponse(aiRes)
-                .retrievedContext(context)
-                .createdAt(LocalDateTime.now())
-                .build();
-        chatHistoryRepository.save(history);
+        String sanitizedResponse = rawResponse.replaceAll("```json", "").replaceAll("```", "").trim();
+
+        AIOrderResponse aiResult;
+        try {
+            aiResult = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .configure(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS
+                            .mappedFeature(), true)
+                    .readValue(sanitizedResponse, AIOrderResponse.class);
+        } catch (Exception e) {
+            log.error("Error parsing AI response: {}", sanitizedResponse, e);
+            // Fallback nếu parse lỗi
+            aiResult = new AIOrderResponse("INFO", rawResponse, null);
+        }
+
+        // Lưu lịch sử (Async đã được handle bởi @Async trong ChatHistoryService)
+        chatHistoryService.saveHistory(request.message(), aiResult.message(), context);
+
+        return aiResult;
     }
 
     @Override
