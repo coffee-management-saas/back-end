@@ -35,9 +35,9 @@ public class Permission {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "role")
-    @Enumerated(EnumType.STRING)
-    private ApplyStatus role;
+//    @Column(name = "role")
+//    @Enumerated(EnumType.STRING)
+//    private ApplyStatus role;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
