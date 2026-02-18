@@ -58,11 +58,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Lấy toàn bộ claims để đọc user_type
                 Claims claims = jwtService.extractAllClaims(token);
                 String userType = claims.get("user_type", String.class);
+                String authenRole = claims.get("role", String.class);
 
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 Object principal = null;
 
-                if ("CUSTOMER".equals(userType)) {
+                if ("CUSTOMER".equals(authenRole)) { // apply status là customer
                     Customer customer = customerRepository.findByUsernameWithRoleAndPermissions(username).orElse(null);
                     if (customer != null) {
                         principal = customer;
@@ -79,7 +80,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         }
                     }
                 }
-                else if ("USER_PROFILE".equals(userType)) {
+                else if ("SHOP".equals(authenRole) || "SYSTEM".equals(authenRole)) { // apply cho shop và system
                     UserProfile userProfile = userProfileRepository.findByUsernameWithRoles(username).orElse(null);
                     if (userProfile != null) {
                         principal = userProfile;

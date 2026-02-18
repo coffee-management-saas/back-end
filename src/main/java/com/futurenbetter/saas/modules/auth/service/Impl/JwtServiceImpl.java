@@ -35,11 +35,10 @@ public class JwtServiceImpl implements JwtService {
 
 
     @Override
-    public String generateAccessToken(String username, Long shopId, String role, String userType) {
+    public String generateAccessToken(String username, Long shopId, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
         claims.put("shopId", shopId);
-        claims.put("user_type", userType);
         // dùng HashMap thay cho Map vì khi dùng với system admin thì shopId null.
         return builderToken(claims, username, accessExpiration);
     }

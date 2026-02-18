@@ -45,7 +45,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/momo/**").permitAll()
                                                 .requestMatchers("/api/subscriptions/momo-callback/**").permitAll()
                                                 .requestMatchers("/api/subscriptions/vnpay-return").permitAll()
-                                                .requestMatchers("/api/system/**").hasAuthority("SYSTEM")
+                                                .requestMatchers("/api/system/**").permitAll()//.hasAuthority("SYSTEM")
                                                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                                                 .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                                                 .anyRequest().authenticated())

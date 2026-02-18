@@ -13,5 +13,4 @@ public class LoginResponse {
     private String refreshToken;
     private Long shopId;
     private String role;
-    private Optional<String> roleName;
 }

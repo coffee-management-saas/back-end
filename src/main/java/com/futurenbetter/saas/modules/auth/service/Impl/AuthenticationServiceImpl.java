@@ -129,7 +129,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private LoginResponse generateLoginResponse(String username, Long shopId, String role, Object entity) {
-        String accessToken = jwtService.generateAccessToken(username, shopId, role, entity instanceof Customer ? "CUSTOMER" : "USER_PROFILE"); // temporary
+        String accessToken = jwtService.generateAccessToken(username, shopId, role);
         String refreshToken = jwtService.generateRefreshToken(username);
 
         if (entity instanceof Customer customer) {
@@ -164,8 +164,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String newAccessToken = jwtService.generateAccessToken(
                 customer.getUsername(),
                 customer.getMembershipRank().getShop().getId(),
-                "SHOP",
-                customer.getRole().getName());
+                "SHOP");
         String newRefreshToken = jwtService.generateRefreshToken(customer.getUsername());
 
         customer.setRefreshToken(newRefreshToken);
@@ -227,7 +226,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Bạn không có quyền truy cập");
         }
 
-        String acccessToken = jwtService.generateAccessToken(admin.getUsername(), null, "SYSTEM", "USER_PROFILE");
+        String acccessToken = jwtService.generateAccessToken(admin.getUsername(), null, "SYSTEM");
         String refreshToken = jwtService.generateRefreshToken(admin.getUsername());
 
         admin.setRefreshToken(refreshToken);
@@ -254,7 +253,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         admin.setDob(request.getDob());
         admin.setCreatedAt(request.getCreatedAt());
 
-        Role adminRole = roleRepository.findByRole(ApplyStatus.SYSTEM)
+        Role adminRole = roleRepository.findByName("SYSTEM_ADMIN")
                 .orElseThrow(() -> new BusinessException("Admin chưa được cấu hình"));
         admin.setRoles(Set.of(adminRole));
 
@@ -355,8 +354,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String accessToken = jwtService.generateAccessToken(
                 admin.getUsername(),
                 shopId,
-                "SHOP",
-                "USER_PROFILE");
+                "SHOP");
 
         String refreshToken = jwtService.generateRefreshToken(admin.getUsername());
 
@@ -368,7 +366,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .shopId(shopId)
-                .roleName(admin.getRoles().stream().findFirst().map(Role::getName))
                 .build();
     }
 
