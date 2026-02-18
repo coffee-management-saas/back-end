@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/product/categories")
+@RequestMapping("/api/categories")
 @RequiredArgsConstructor
 public class CategoryController {
 
-    private final CategoryService categoryService;
+        private final CategoryService categoryService;
 
     @PostMapping
     @PreAuthorize("hasAuthority('category:create')")
@@ -72,20 +72,19 @@ public class CategoryController {
     ) {
         Page<CategoryResponse> page = categoryService.getAll(filter);
 
-        PageMeta meta = PageMeta.builder()
-                .currentPage(page.getNumber() + 1)
-                .size(page.getSize())
-                .lastPage(page.getTotalPages())
-                .totalElements(page.getTotalElements())
-                .build();
+                PageMeta meta = PageMeta.builder()
+                                .currentPage(page.getNumber() + 1)
+                                .size(page.getSize())
+                                .lastPage(page.getTotalPages())
+                                .totalElements(page.getTotalElements())
+                                .build();
 
-        return ApiResponse.success(
-                HttpStatus.OK,
-                "Get categories successfully",
-                page.getContent(),
-                meta
-        );
-    }
+                return ApiResponse.success(
+                                HttpStatus.OK,
+                                "Get categories successfully",
+                                page.getContent(),
+                                meta);
+        }
 
     @DeleteMapping("{id}")
     @PreAuthorize("hasAuthority('category:delete')")

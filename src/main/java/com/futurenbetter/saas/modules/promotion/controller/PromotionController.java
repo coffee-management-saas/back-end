@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/promotions")
+@RequestMapping("/api/promotion")
 @RequiredArgsConstructor
 public class PromotionController {
 
@@ -55,7 +55,7 @@ public class PromotionController {
     @PutMapping("{promotionId}")
     @PreAuthorize("hasAuthority('promotion:update')")
     public ResponseEntity<PromotionResponse> updatePromotion(@PathVariable Long promotionId,
-                                                             @Valid @RequestBody PromotionRequest promotionRequest) {
+            @Valid @RequestBody PromotionRequest promotionRequest) {
         PromotionResponse response = promotionService.updatePromotion(promotionId, promotionRequest);
         return ResponseEntity.ok(response);
     }
