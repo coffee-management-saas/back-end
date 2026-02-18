@@ -4,6 +4,7 @@ import com.futurenbetter.saas.modules.auth.enums.ApplyStatus;
 import com.futurenbetter.saas.modules.auth.enums.RoleStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.ToString;
 
 import java.util.Set;
 
@@ -31,9 +32,11 @@ public class Role {
     @Enumerated(EnumType.STRING)
     private RoleStatus status;
 
+    @ToString.Exclude
     @ManyToMany(mappedBy = "roles")
     private Set<UserProfile> users;
 
+    @ToString.Exclude
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "role_permission",

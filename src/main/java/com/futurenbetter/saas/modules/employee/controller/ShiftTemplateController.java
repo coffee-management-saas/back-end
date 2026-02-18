@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class ShiftTemplateController {
     private final ShiftTemplateService shiftTemplateService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('shift-template:create')")
     public ApiResponse<ShiftTemplateResponse> create(
             @RequestBody @Valid ShiftTemplateRequest request
     ) {
@@ -35,6 +37,7 @@ public class ShiftTemplateController {
     }
 
     @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('shift-template:update')")
     public ApiResponse<ShiftTemplateResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid ShiftTemplateRequest request
@@ -49,6 +52,7 @@ public class ShiftTemplateController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('shift-template:read-detail')")
     public ApiResponse<ShiftTemplateResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -62,6 +66,7 @@ public class ShiftTemplateController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('shift-template:read')")
     public ApiResponse<List<ShiftTemplateResponse>> getAll(
             @ModelAttribute BaseFilter filter
     ) {
@@ -83,6 +88,7 @@ public class ShiftTemplateController {
     }
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasAuthority('shift-template:delete')")
     public ApiResponse<Void> delete(
             @PathVariable Long id
     ) {

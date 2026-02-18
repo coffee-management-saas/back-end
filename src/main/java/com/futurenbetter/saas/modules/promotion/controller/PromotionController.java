@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,12 +23,14 @@ public class PromotionController {
     private final PromotionService promotionService;
 
     @PostMapping("")
+    @PreAuthorize("hasAuthority('promotion:create')")
     public ResponseEntity<PromotionResponse> createPromotion(@Valid @RequestBody PromotionRequest promotionRequest) {
         PromotionResponse response = promotionService.createPromotion(promotionRequest);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PatchMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('promotion:upload-image')")
     public ResponseEntity<PromotionResponse> uploadPromotionImage(
             @PathVariable("id") Long id,
             @RequestParam("image") MultipartFile image) throws IOException {
@@ -36,18 +39,21 @@ public class PromotionController {
     }
 
     @GetMapping("")
+    @PreAuthorize("hasAuthority('promotion:read')")
     public ResponseEntity<List<PromotionResponse>> getAllPromotions() {
         List<PromotionResponse> response = promotionService.getAllPromotions();
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{promotionId}")
+    @PreAuthorize("hasAuthority('promotion:read-detail')")
     public ResponseEntity<PromotionResponse> getPromotionById(@PathVariable Long promotionId) {
         PromotionResponse response = promotionService.getPromotion(promotionId);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("{promotionId}")
+    @PreAuthorize("hasAuthority('promotion:update')")
     public ResponseEntity<PromotionResponse> updatePromotion(@PathVariable Long promotionId,
             @Valid @RequestBody PromotionRequest promotionRequest) {
         PromotionResponse response = promotionService.updatePromotion(promotionId, promotionRequest);
@@ -55,6 +61,7 @@ public class PromotionController {
     }
 
     @DeleteMapping("/{promotionId}")
+    @PreAuthorize("hasAuthority('promotion:delete')")
     public ResponseEntity<String> deletePromotionById(@PathVariable Long promotionId) {
         promotionService.deletePromotion(promotionId);
         return new ResponseEntity<>("Xóa mã khuyến mãi thành công", HttpStatus.OK);

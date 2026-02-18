@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('product:create')")
     public ApiResponse<ProductResponse> create(
             @RequestBody @Valid ProductRequest request
     ) {
@@ -35,6 +37,7 @@ public class ProductController {
     }
 
     @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('product:update')")
     public ApiResponse<ProductResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid ProductRequest request
@@ -49,6 +52,7 @@ public class ProductController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('product:read-detail')")
     public ApiResponse<ProductResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -62,6 +66,7 @@ public class ProductController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('product:read')")
     public ApiResponse<List<ProductResponse>> getAll(
             @ModelAttribute ProductFilter filter
     ) {
@@ -85,6 +90,7 @@ public class ProductController {
     // --- API cấu hình Topping cho Product ---
 
     @PostMapping("{id}/allow-toppings")
+    @PreAuthorize("hasAuthority('product:update-allow-topping')")
     public ApiResponse<Void> updateAllowToppings(
             @PathVariable Long id,
             @RequestBody List<Long> toppingIds
@@ -99,6 +105,7 @@ public class ProductController {
     }
 
     @GetMapping("{id}/allow-toppings")
+    @PreAuthorize("hasAuthority('product:read-allow-topping')")
     public ApiResponse<List<Long>> getAllowToppings(
             @PathVariable Long id
     ) {

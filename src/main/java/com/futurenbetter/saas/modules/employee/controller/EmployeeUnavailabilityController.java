@@ -10,18 +10,20 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("api/employee/unavailabilities")
+@RequestMapping("api/employee/unavailability")
 @RequiredArgsConstructor
 public class EmployeeUnavailabilityController {
 
     private final EmployeeUnavailabilityService unavailabilityService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('employee-unavailability:create')")
     public ApiResponse<EmployeeUnavailabilityResponse> create(
             @RequestBody @Valid EmployeeUnavailabilityRequest request
     ) {
@@ -35,6 +37,7 @@ public class EmployeeUnavailabilityController {
     }
 
     @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('employee-unavailability:update')")
     public ApiResponse<EmployeeUnavailabilityResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid EmployeeUnavailabilityRequest request
@@ -49,6 +52,7 @@ public class EmployeeUnavailabilityController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('employee-unavailability:read-detail')")
     public ApiResponse<EmployeeUnavailabilityResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -62,6 +66,7 @@ public class EmployeeUnavailabilityController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('employee-unavailability:read')")
     public ApiResponse<List<EmployeeUnavailabilityResponse>> getAll(
             @ModelAttribute BaseFilter filter
     ) {
@@ -83,6 +88,7 @@ public class EmployeeUnavailabilityController {
     }
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasAuthority('employee-unavailability:delete')")
     public ApiResponse<Void> delete(
             @PathVariable Long id
     ) {

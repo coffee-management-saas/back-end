@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class ProductVariantController {
     private final ProductVariantService variantService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('product-variant:create')")
     public ApiResponse<ProductVariantResponse> create(
             @RequestBody @Valid ProductVariantRequest request
     ) {
@@ -35,6 +37,7 @@ public class ProductVariantController {
     }
 
     @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('product-variant:update')")
     public ApiResponse<ProductVariantResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid ProductVariantRequest request
@@ -49,6 +52,7 @@ public class ProductVariantController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('product-variant:read-detail')")
     public ApiResponse<ProductVariantResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -62,6 +66,7 @@ public class ProductVariantController {
     }
 
     @GetMapping("by-product/{productId}")
+    @PreAuthorize("hasAuthority('product-variant:read-by-product')")
     public ApiResponse<List<ProductVariantResponse>> getByProduct(
             @PathVariable Long productId
     ) {
@@ -75,6 +80,7 @@ public class ProductVariantController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('product-variant:read')")
     public ApiResponse<List<ProductVariantResponse>> getAll(
             @ModelAttribute ProductVariantFilter filter
     ) {

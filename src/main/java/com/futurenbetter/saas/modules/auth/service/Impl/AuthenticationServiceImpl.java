@@ -3,6 +3,7 @@ package com.futurenbetter.saas.modules.auth.service.Impl;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.PasswordUtils;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.dto.request.*;
 import com.futurenbetter.saas.modules.auth.dto.response.*;
 import com.futurenbetter.saas.modules.auth.entity.*;
@@ -18,6 +19,7 @@ import com.futurenbetter.saas.modules.employee.dto.request.EmployeeRequest;
 import com.futurenbetter.saas.modules.employee.dto.response.EmployeeResponse;
 import com.futurenbetter.saas.modules.employee.entity.Employee;
 import com.futurenbetter.saas.modules.employee.service.inter.EmployeeService;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -45,7 +47,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public CustomerResponse register(CustomerRegistrationRequest request) {
-        Long currentShopId = TenantContext.getCurrentShopId();
+        Long currentShopId = SecurityUtils.getCurrentShopId();
 
         if (currentShopId == null) {
             throw new BusinessException("Cửa hàng không tồn tại");
@@ -70,6 +72,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         customer.setAddress(request.getAddress());
         customer.setPassword(encodedPassword);
         customer.setStatus(CustomerStatus.ACTIVE);
+        customer.setRole(roleRepository.findByName("CUSTOMER")
+                .orElseThrow(() -> new BusinessException("Role CUSTOMER chưa được cấu hình")));
         customer = customerRepository.save(customer);
 
         MembershipRank defaultRank = membershipRankRepository.findFirstByShop_IdOrderByRequiredPointsAsc(currentShopId)
@@ -83,7 +87,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        Long currentShopId = TenantContext.getCurrentShopId();
+        Long currentShopId = SecurityUtils.getCurrentShopId();
 
         if (currentShopId == null) {
             throw new BusinessException("Cửa hàng không tồn tại");
@@ -151,6 +155,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
+    // update lại lấy role từ claims
     public LoginResponse refreshToken(String refreshToken) {
         if (jwtService.isTokenExpired(refreshToken)) {
             throw new BusinessException("Refresh token expired");
@@ -161,10 +166,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Customer customer = customerRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException("Người dùng không tồn tại"));
 
+        Claims claims = jwtService.extractAllClaims(refreshToken);
+        String role = claims.get("role", String.class);
+
         String newAccessToken = jwtService.generateAccessToken(
                 customer.getUsername(),
                 customer.getMembershipRank().getShop().getId(),
-                "SHOP");
+                role);
         String newRefreshToken = jwtService.generateRefreshToken(customer.getUsername());
 
         customer.setRefreshToken(newRefreshToken);
@@ -253,7 +261,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         admin.setDob(request.getDob());
         admin.setCreatedAt(request.getCreatedAt());
 
-        Role adminRole = roleRepository.findByRole(ApplyStatus.SYSTEM)
+        Role adminRole = roleRepository.findByName("SYSTEM_ADMIN")
                 .orElseThrow(() -> new BusinessException("Admin chưa được cấu hình"));
         admin.setRoles(Set.of(adminRole));
 
@@ -277,7 +285,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         admin.setStatus(UserProfileEnum.ACTIVE);
         admin.setShop(shop);
 
-        Role shopRole = roleRepository.findByRole(ApplyStatus.SHOP)
+        Role shopRole = roleRepository.findByName("SHOP_ADMIN") // set tạm là manager, có thể tạo thêm shop-admin sau
                 .orElseThrow(() -> new BusinessException("Role quản trị quán chưa được cấu hình"));
         admin.setRoles(Set.of(shopRole));
 
@@ -312,8 +320,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         employeeProfile.setShop(shop);
 
         // set tạm role, sẽ phân quyền động sau
-        Role shopRole = roleRepository.findByRole(ApplyStatus.SHOP)
-                .orElseThrow(() -> new BusinessException("Role quản trị quán chưa được cấu hình"));
+        Role shopRole = roleRepository.findByName("SHOP_STAFF")
+                .orElseThrow(() -> new BusinessException("Role nhân viên quán chưa được cấu hình"));
         employeeProfile.setRoles(Set.of(shopRole));
         // tạo profile trc
         UserProfile savedEmployee = userProfileRepository.save(employeeProfile);
@@ -338,10 +346,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Mật khẩu không chính xác");
         }
 
-        boolean isShopUser = admin.getRoles().stream()
-                .anyMatch(role -> ApplyStatus.SHOP.equals(role.getRole()));
+        boolean isShopAdmin = admin.getRoles().stream()
+                .anyMatch(role -> "SHOP_ADMIN".equals(role.getName()));
 
-        if (!isShopUser) {
+        if (!isShopAdmin) {
             throw new BusinessException("Tài khoản không có quyền truy cập quản trị quán");
         }
 

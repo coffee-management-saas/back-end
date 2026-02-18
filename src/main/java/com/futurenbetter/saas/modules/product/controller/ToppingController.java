@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class ToppingController {
     private final ToppingService toppingService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('topping:create')")
     public ApiResponse<ToppingResponse> create(
             @RequestBody @Valid ToppingRequest request
     ) {
@@ -35,6 +37,7 @@ public class ToppingController {
     }
 
     @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('topping:update')")
     public ApiResponse<ToppingResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid ToppingRequest request
@@ -49,6 +52,7 @@ public class ToppingController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('topping:read-detail')")
     public ApiResponse<ToppingResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -62,6 +66,7 @@ public class ToppingController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('topping:read')")
     public ApiResponse<List<ToppingResponse>> getAll(
             @ModelAttribute BaseFilter filter
     ) {
@@ -83,6 +88,7 @@ public class ToppingController {
     }
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasAuthority('topping:delete')")
     public ApiResponse<Void> delete(
             @PathVariable Long id
     ) {
