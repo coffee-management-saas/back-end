@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ public class SizeController {
 
     @PostMapping
     @Transactional
+    @PreAuthorize("hasAuthority('product-size:create')")
     public ResponseEntity<SizeResponse> create(
             @RequestBody @Valid SizeRequest request
     ) {
@@ -33,6 +35,7 @@ public class SizeController {
 
     @PutMapping("{id}")
     @Transactional
+    @PreAuthorize("hasAuthority('product-size:update')")
     public ApiResponse<Size> update(
             @PathVariable Long id,
             @RequestBody @Valid SizeRequest request
@@ -48,6 +51,7 @@ public class SizeController {
 
     @GetMapping
     @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('product-size:read')")
     public List<SizeResponse> getAll(
             @RequestParam(required = false) SizeStatus status
     ) {
@@ -55,6 +59,7 @@ public class SizeController {
     }
 
     @GetMapping("active")
+    @PreAuthorize("hasAuthority('product-size:read-active')")
     public ApiResponse<List<Size>> getActive() {
         return ApiResponse.success(
                 HttpStatus.OK,
@@ -65,6 +70,7 @@ public class SizeController {
     }
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasAuthority('product-size:delete')")
     public ApiResponse<Void> delete(
             @PathVariable Long id
     ) {

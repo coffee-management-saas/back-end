@@ -52,3 +52,41 @@
 9. UnitConversion
 - unit-conversion:create
 - unit-conversion:update
+
+10. Order
+- order:create
+
+11. Category
+- category:create
+- category:read
+- category:read-detail
+- category:update
+- category:delete
+
+12. Product
+- product:create
+- product:read
+- product:read-detail
+- product:update
+- product:update-allow-topping
+- product:read-allow-topping
+
+13. ProductVariant
+- product-variant:create
+- product-variant:read
+- product-variant:read-detail
+- product-variant:read-by-product
+
+14. Size
+- product-size:create
+- product-size:read
+- product-size:read-active
+- product-size:update
+- product-size:delete
+
+15. Topping
+- topping:create
+- topping:read
+- topping:read-detail
+- topping:update
+- topping:delete

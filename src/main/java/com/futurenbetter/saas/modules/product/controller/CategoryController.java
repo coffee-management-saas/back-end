@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('category:create')")
     public ApiResponse<CategoryResponse> create(
             @RequestBody @Valid CategoryRequest request
     ) {
@@ -35,6 +37,7 @@ public class CategoryController {
     }
 
     @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('category:update')")
     public ApiResponse<CategoryResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid CategoryRequest request
@@ -49,6 +52,7 @@ public class CategoryController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('category:read-detail')")
     public ApiResponse<CategoryResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -62,6 +66,7 @@ public class CategoryController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('category:read')")
     public ApiResponse<List<CategoryResponse>> getAll(
             @ModelAttribute BaseFilter filter
     ) {
@@ -83,6 +88,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasAuthority('category:delete')")
     public ApiResponse<Void> delete(
             @PathVariable Long id
     ) {
