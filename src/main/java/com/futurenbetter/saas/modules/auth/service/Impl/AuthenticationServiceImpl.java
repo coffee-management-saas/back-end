@@ -308,7 +308,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Tên đăng nhập đã tồn tại");
         }
 
-        Shop shop = shopRepository.findById(request.getShopId())
+        Shop shop = shopRepository.findById(SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
         // tạo pass ngẫu nhiên và trả ve để employee tự đổi pass lần sau

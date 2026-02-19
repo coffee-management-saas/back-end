@@ -51,7 +51,7 @@ public class ScheduleController {
         );
     }
 
-    @GetMapping("{id}")
+    @GetMapping("/detail/{id}")
     @PreAuthorize("hasAuthority('schedule:read-detail')")
     public ApiResponse<ScheduleResponse> getDetail(
             @PathVariable Long id

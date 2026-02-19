@@ -1,7 +1,7 @@
 package com.futurenbetter.saas.modules.employee.service.impl;
 
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
-import com.futurenbetter.saas.common.multitenancy.TenantContext;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.entity.UserProfile;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
@@ -84,7 +84,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Page<EmployeeResponse> getAll(BaseFilter filter) {
 
-        Long shopId = TenantContext.getCurrentShopId();
+        Long shopId = SecurityUtils.getCurrentShopId();
 
         return employeeRepository.findAllByShopId(shopId, filter.getPageable())
                 .map(employeeMapper::toResponse);
@@ -93,7 +93,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private Shop getCurrentShop() {
 
-        Long shopId = TenantContext.getCurrentShopId();
+        Long shopId = SecurityUtils.getCurrentShopId();
         Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new RuntimeException("Shop not found with id: " + shopId));
 
@@ -112,7 +112,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Employee getEmployeeById(Long employeeId) {
 
-        Long shopId = TenantContext.getCurrentShopId();
+        Long shopId = SecurityUtils.getCurrentShopId();
         Employee employee = employeeRepository.findByEmployeeIdAndShopId(employeeId, shopId)
                 .orElseThrow(() -> new RuntimeException("Employee not found with id: " + employeeId + " for shop id: " + shopId));
 
