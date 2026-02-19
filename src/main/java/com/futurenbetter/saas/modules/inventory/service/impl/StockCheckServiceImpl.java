@@ -48,6 +48,7 @@ public class StockCheckServiceImpl implements StockCheckService {
         session.setShop(shop);
         session.setCreatedBy(SecurityUtils.getCurrentUserId());
         session.setInventoryStatus(InventoryStatus.ACTIVE);
+        session.setCompletedAt(LocalDateTime.now()); // temporary, sẽ update sau khi approve
 
         session = sessionRepository.save(session);
 
