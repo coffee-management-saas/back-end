@@ -4,6 +4,7 @@ import com.futurenbetter.saas.modules.chatbot.dto.request.ChatRequest;
 import com.futurenbetter.saas.modules.chatbot.dto.response.AIOrderResponse;
 import com.futurenbetter.saas.modules.chatbot.service.AIChatService;
 import com.futurenbetter.saas.modules.chatbot.service.ChatHistoryService;
+import com.futurenbetter.saas.modules.order.service.OrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -31,32 +32,35 @@ public class AIChatServiceImpl implements AIChatService {
     private final ChatClient chatClient;
     private final PgVectorStore vectorStore;
     private final ChatHistoryService chatHistoryService;
+    private final OrderService orderService;
 
     public AIChatServiceImpl(ChatClient.Builder builder,
             PgVectorStore vectorStore,
-            ChatHistoryService chatHistoryService) {
+            ChatHistoryService chatHistoryService, OrderService orderService) {
         this.chatClient = builder.build();
         this.vectorStore = vectorStore;
         this.chatHistoryService = chatHistoryService;
+        this.orderService = orderService;
     }
 
     @Override
     public Object chat(ChatRequest request) {
-        // Tối ưu: Giảm TopK xuống 3 để giảm lượng token đầu vào -> AI xử lý nhanh hơn
+        // 1. Tìm kiếm ngữ cảnh từ Vector Database
         List<Document> similarDocuments = vectorStore.similaritySearch(
                 SearchRequest.builder()
                         .query(request.message())
-                        .topK(3)
+                        .topK(3) // Giảm TopK để tối ưu tốc độ và chi phí
                         .build());
 
         String context = similarDocuments.stream()
                 .map(Document::getText)
                 .collect(Collectors.joining("\n"));
 
+        // 2. Cấu hình Converter và Prompt
         BeanOutputConverter<AIOrderResponse> converter = new BeanOutputConverter<>(AIOrderResponse.class);
 
-        String systemPrompt = """
-                Bạn là NV Future&Better. Trả lời ngắn gọn, dùng emoji ☕.
+                String systemPrompt = """
+                Bạn là NV Future&Better. Trả lời ngắn gọn.
 
                 MENU:
                 {context}
@@ -65,15 +69,13 @@ public class AIChatServiceImpl implements AIChatService {
                 1. Mặc định action="INFO".
                 2. Khi khách hỏi menu:
                    - CHỈ liệt kê 1-2 món đặc trưng nhất của mỗi loại (Category).
-                   - KHÔNG liệt kê toàn bộ menu.
                    - Sau đó hỏi khách thích loại nào để tư vấn thêm.
                 3. Từ chối trả lời nhg thông tin không liên quan đến cửa hàng.
                 3. KHÔNG trả về dữ liệu 'orderRequest' khi action="INFO".
-                4. CHỈ khi khách xác nhận "Chốt đơn" / "Đặt món này":
-                   - Mới trả về action="ORDER" và kèm 'orderRequest'.
+                4. Chỉ trả về action="ORDER" khi khách xác nhận "Chốt đơn" hoặc "Đặt món".
 
-                OUTPUT JSON: {format}
-                """;
+            CHỈ TRẢ VỀ JSON THEO ĐỊNH DẠNG: {format}
+            """;
 
         String rawResponse = chatClient.prompt()
                 .system(s -> s.text(systemPrompt)
@@ -83,24 +85,35 @@ public class AIChatServiceImpl implements AIChatService {
                 .call()
                 .content();
 
-        String sanitizedResponse = rawResponse.replaceAll("```json", "").replaceAll("```", "").trim();
-
         AIOrderResponse aiResult;
         try {
-            aiResult = new com.fasterxml.jackson.databind.ObjectMapper()
-                    .configure(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS
-                            .mappedFeature(), true)
-                    .readValue(sanitizedResponse, AIOrderResponse.class);
+            String jsonContent = rawResponse;
+            if (jsonContent != null) {
+                int start = jsonContent.indexOf("{");
+                int end = jsonContent.lastIndexOf("}");
+                if (start != -1 && end != -1) {
+                    jsonContent = jsonContent.substring(start, end + 1);
+                }
+            }
+
+            aiResult = converter.convert(jsonContent);
+
         } catch (Exception e) {
-            log.error("Error parsing AI response: {}", sanitizedResponse, e);
-            // Fallback nếu parse lỗi
             aiResult = new AIOrderResponse("INFO", rawResponse, null);
         }
 
-        // Lưu lịch sử (Async đã được handle bởi @Async trong ChatHistoryService)
-        chatHistoryService.saveHistory(request.message(), aiResult.message(), context);
+        if ("ORDER".equals(aiResult.action()) && aiResult.orderRequest() != null) {
+            try {
+                chatHistoryService.saveHistory(request.message(), aiResult.message(), context);
+                return orderService.createOrder(aiResult.orderRequest());
+            } catch (Exception e) {
+                log.error("Lỗi tạo đơn hàng: ", e);
+                return "Xin lỗi, đã có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại sau.";
+            }
+        }
 
-        return aiResult;
+        chatHistoryService.saveHistory(request.message(), aiResult.message(), context);
+        return aiResult.message();
     }
 
     @Override
