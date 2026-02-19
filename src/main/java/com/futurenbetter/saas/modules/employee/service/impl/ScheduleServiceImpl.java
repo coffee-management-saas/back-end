@@ -2,7 +2,7 @@ package com.futurenbetter.saas.modules.employee.service.impl;
 
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.exception.BusinessException;
-import com.futurenbetter.saas.common.multitenancy.TenantContext;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.employee.dto.request.ScheduleRequest;
 import com.futurenbetter.saas.modules.employee.dto.response.ScheduleResponse;
 import com.futurenbetter.saas.modules.employee.entity.Employee;
@@ -47,7 +47,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     @Transactional
     public ScheduleResponse update(Long id, ScheduleRequest request) {
-        Long shopId = TenantContext.getCurrentShopId();
+        Long shopId = SecurityUtils.getCurrentShopId();
 
         Schedule schedule = scheduleRepository.findByScheduleIdAndShopId(id, shopId)
                 .orElseThrow(() -> new BusinessException("Lịch làm việc không tồn tại"));
@@ -65,7 +65,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     public ScheduleResponse getDetail(Long id) {
 
-        Long shopId = TenantContext.getCurrentShopId();
+        Long shopId = SecurityUtils.getCurrentShopId();
 
         return scheduleRepository.findByScheduleIdAndShopId(id, shopId)
                 .map(scheduleMapper::toResponse)
@@ -77,7 +77,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Transactional
     public void delete(Long id) {
 
-        Long shopId = TenantContext.getCurrentShopId();
+        Long shopId = SecurityUtils.getCurrentShopId();
 
         Schedule schedule = scheduleRepository.findByScheduleIdAndShopId(id, shopId)
                 .orElseThrow(() -> new BusinessException("Lịch làm việc không tồn tại"));
@@ -91,7 +91,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     public Page<ScheduleResponse> getAll(BaseFilter filter) {
 
-        Long shopId = TenantContext.getCurrentShopId();
+        Long shopId = SecurityUtils.getCurrentShopId();
 
         return scheduleRepository.findAllByShopId(shopId, filter.getPageable())
                 .map(scheduleMapper::toResponse);
@@ -101,7 +101,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     public List<ScheduleResponse> getByEmployeeId(Long employeeId) {
 
-        Long shopId = TenantContext.getCurrentShopId();
+        Long shopId = SecurityUtils.getCurrentShopId();
 
         return scheduleRepository.findAllByEmployee_EmployeeIdAndShopId(employeeId, shopId)
                 .stream()
