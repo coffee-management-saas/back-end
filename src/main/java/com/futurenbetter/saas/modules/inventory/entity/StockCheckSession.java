@@ -43,7 +43,7 @@ public class StockCheckSession {
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;
 
-    @Column(name = "completed_at", nullable = false)
+    @Column(name = "completed_at")
     LocalDateTime completedAt;
 
     @Column(name = "updated_at", nullable = false)
