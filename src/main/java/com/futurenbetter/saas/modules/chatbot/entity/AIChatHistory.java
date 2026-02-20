@@ -21,6 +21,9 @@ public class AIChatHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long chatId;
 
+    @Column(name = "session_id")
+    private String sessionId;
+
     @Column(columnDefinition = "TEXT")
     private String userMessage;
 

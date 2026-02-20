@@ -1,9 +1,11 @@
 package com.futurenbetter.saas.modules.chatbot.service.impl;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.futurenbetter.saas.modules.chatbot.dto.request.ChatRequest;
 import com.futurenbetter.saas.modules.chatbot.dto.response.AIOrderResponse;
 import com.futurenbetter.saas.modules.chatbot.service.AIChatService;
-import com.futurenbetter.saas.modules.chatbot.service.ChatHistoryService;
 import com.futurenbetter.saas.modules.order.service.OrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -31,12 +33,12 @@ public class AIChatServiceImpl implements AIChatService {
 
     private final ChatClient chatClient;
     private final PgVectorStore vectorStore;
-    private final ChatHistoryService chatHistoryService;
+    private final ChatHistoryServiceImpl chatHistoryService;
     private final OrderService orderService;
 
     public AIChatServiceImpl(ChatClient.Builder builder,
-            PgVectorStore vectorStore,
-            ChatHistoryService chatHistoryService, OrderService orderService) {
+                             PgVectorStore vectorStore,
+                             ChatHistoryServiceImpl chatHistoryService, OrderService orderService) {
         this.chatClient = builder.build();
         this.vectorStore = vectorStore;
         this.chatHistoryService = chatHistoryService;
@@ -45,21 +47,24 @@ public class AIChatServiceImpl implements AIChatService {
 
     @Override
     public Object chat(ChatRequest request) {
-        // 1. Tìm kiếm ngữ cảnh từ Vector Database
+        String sessionId = (request.sessionId() == null || request.sessionId().isBlank())
+                ? "default-session"
+                : request.sessionId();
+
+        String history = chatHistoryService.getChatHistoryContext(sessionId);
         List<Document> similarDocuments = vectorStore.similaritySearch(
                 SearchRequest.builder()
                         .query(request.message())
-                        .topK(3) // Giảm TopK để tối ưu tốc độ và chi phí
+                        .topK(3)
                         .build());
 
         String context = similarDocuments.stream()
                 .map(Document::getText)
                 .collect(Collectors.joining("\n"));
 
-        // 2. Cấu hình Converter và Prompt
         BeanOutputConverter<AIOrderResponse> converter = new BeanOutputConverter<>(AIOrderResponse.class);
 
-                String systemPrompt = """
+        String systemPrompt = """
                 Bạn là NV Future&Better. Trả lời ngắn gọn.
 
                 MENU:
@@ -67,18 +72,17 @@ public class AIChatServiceImpl implements AIChatService {
 
                 QUY TẮC PHẢN HỒI:
                 1. Mặc định action="INFO".
-                2. Khi khách hỏi menu:
-                   - CHỈ liệt kê 1-2 món đặc trưng nhất của mỗi loại (Category).
-                   - Sau đó hỏi khách thích loại nào để tư vấn thêm.
-                3. Từ chối trả lời nhg thông tin không liên quan đến cửa hàng.
-                3. KHÔNG trả về dữ liệu 'orderRequest' khi action="INFO".
-                4. Chỉ trả về action="ORDER" khi khách xác nhận "Chốt đơn" hoặc "Đặt món".
+                2. Khi khách hỏi menu thì liệt kê các món có trong menu kèm giá tiền.
+                3. Từ chối trả lời những thông tin không liên quan đến cửa hàng.
+                4. Khi action="INFO" tuyệt đối không trả dữ liệu 'OrderRequest'.
+                5. Chỉ trả về action="ORDER" khi khách xác nhận "Chốt đơn" hoặc "Đặt món".
 
             CHỈ TRẢ VỀ JSON THEO ĐỊNH DẠNG: {format}
             """;
 
         String rawResponse = chatClient.prompt()
                 .system(s -> s.text(systemPrompt)
+                        .param("history", history)
                         .param("context", context)
                         .param("format", converter.getFormat()))
                 .user(request.message())
@@ -104,7 +108,7 @@ public class AIChatServiceImpl implements AIChatService {
 
         if ("ORDER".equals(aiResult.action()) && aiResult.orderRequest() != null) {
             try {
-                chatHistoryService.saveHistory(request.message(), aiResult.message(), context);
+                chatHistoryService.savedHistory(request.sessionId(), request.message(), aiResult.message(), context);
                 return orderService.createOrder(aiResult.orderRequest());
             } catch (Exception e) {
                 log.error("Lỗi tạo đơn hàng: ", e);
@@ -112,9 +116,10 @@ public class AIChatServiceImpl implements AIChatService {
             }
         }
 
-        chatHistoryService.saveHistory(request.message(), aiResult.message(), context);
+        chatHistoryService.savedHistory(request.sessionId(), request.message(), aiResult.message(), context);
         return aiResult.message();
     }
+
 
     @Override
     @Transactional
@@ -168,19 +173,15 @@ public class AIChatServiceImpl implements AIChatService {
         if (content == null || content.isBlank())
             return;
         String sanitizedContent = content.replace("\u0000", "");
-
-        log.info("Starting summary generation...");
         String summaryInput = sanitizedContent.length() > 3000 ? sanitizedContent.substring(0, 3000) : sanitizedContent;
 
         String summaryPrompt = "Hãy tóm tắt nội dung sau thành một danh sách menu ngắn gọn (chỉ gồm tên món và loại): \n"
                 + summaryInput;
         String summary = chatClient.prompt().user(summaryPrompt).call().content();
-        log.info("Summary generation complete.");
 
         Document summaryDoc = new Document(summary, Map.of("type", "MENU_SUMMARY"));
         vectorStore.add(List.of(summaryDoc));
 
-        log.info("Starting content chunking and embedding...");
         Document fullDoc = new Document(sanitizedContent, Map.of("type", "MENU_DETAIL"));
         TokenTextSplitter splitter = new TokenTextSplitter();
         List<Document> chunks = splitter.split(List.of(fullDoc));
@@ -188,6 +189,5 @@ public class AIChatServiceImpl implements AIChatService {
         chunks.forEach(chunk -> chunk.getMetadata().put("type", "MENU_DETAIL"));
 
         vectorStore.add(chunks);
-        log.info("Ingestion complete. Added {} chunks.", chunks.size());
     }
 }
