@@ -24,6 +24,5 @@ public class SystemAdminRegistrationRequest {
     private String phone;
     private String address;
     private LocalDateTime dob;
-    private LocalDateTime createdAt;
 
 }

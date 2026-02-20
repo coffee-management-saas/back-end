@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @RequiredArgsConstructor
@@ -46,8 +47,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final EmployeeService employeeService;
 
     @Override
+    @Transactional
     public CustomerResponse register(CustomerRegistrationRequest request) {
-        Long currentShopId = SecurityUtils.getCurrentShopId();
+        Long currentShopId = request.getShopId();
 
         if (currentShopId == null) {
             throw new BusinessException("Cửa hàng không tồn tại");
@@ -87,39 +89,70 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        Long currentShopId = SecurityUtils.getCurrentShopId();
-
-        if (currentShopId == null) {
-            throw new BusinessException("Cửa hàng không tồn tại");
-        }
-
         if (request.getUsername() == null || request.getPassword() == null) {
             throw new BusinessException("Thiếu thông tin đăng nhập");
         }
 
         String username = request.getUsername();
         String password = request.getPassword();
+        Long shopId = request.getShopId(); // Giữ nguyên null nếu FE không truyền
 
+        // ==========================================
+        // 1. KIỂM TRA ĐĂNG NHẬP CHO CUSTOMER
+        // ==========================================
         var customerOpt = customerRepository.findByUsername(username);
         if (customerOpt.isPresent()) {
-            Customer customer = customerOpt.get();
-            validateLogin(password, customer.getPassword(), customer.getShop(), currentShopId);
-            return generateLoginResponse(customer.getUsername(), currentShopId, "CUSTOMER", customer);
-        }
-
-        var adminOpt = profileRepository.findByUsernameWithRoles(username);
-        if (adminOpt.isPresent()) {
-            UserProfile admin = adminOpt.get();
-            boolean isShopUser = admin.getRoles().stream()
-                    .anyMatch(role -> ApplyStatus.SHOP.equals(role.getRole()));
-
-            if (!isShopUser) {
-                throw new BusinessException("Tài khoản này không có quyền truy cập cửa hàng");
+            if (shopId == null || shopId == 0) {
+                throw new BusinessException("Vui lòng chọn cửa hàng để đăng nhập");
             }
 
-            validateLogin(password, admin.getPassword(), admin.getShop(), currentShopId);
-            return generateLoginResponse(admin.getUsername(), currentShopId, "SHOP", admin);
+            Customer customer = customerOpt.get();
+            // Giả định hàm validateLogin của bạn có check matching giữa customer.getShop() và shopId
+            validateLogin(password, customer.getPassword(), customer.getShop(), shopId);
+
+            return generateLoginResponse(customer.getUsername(), shopId, "CUSTOMER", customer);
         }
+
+        // ==========================================
+        // 2. KIỂM TRA ĐĂNG NHẬP CHO USER PROFILE (STAFF / MANAGER / SYSTEM ADMIN)
+        // ==========================================
+        var profileOpt = profileRepository.findByUsernameWithRoles(username);
+        if (profileOpt.isPresent()) {
+            UserProfile userProfile = profileOpt.get();
+
+            // Tách riêng việc kiểm tra loại Role
+            boolean isSystemAdmin = userProfile.getRoles().stream()
+                    .anyMatch(role -> ApplyStatus.SYSTEM.equals(role.getRole()));
+
+            boolean isShopUser = userProfile.getRoles().stream()
+                    .anyMatch(role -> ApplyStatus.SHOP.equals(role.getRole()));
+
+            // TH 2.1: LÀ SYSTEM ADMIN
+            if (isSystemAdmin) {
+                // Chỉ cần validate Password, KHÔNG validate Shop vì Admin quản lý toàn sàn
+                if (!passwordEncoder.matches(password, userProfile.getPassword())) {
+                    throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
+                }
+
+                // Truyền shopId = null cho System Admin
+                return generateLoginResponse(userProfile.getUsername(), null, "SYSTEM", userProfile);
+            }
+
+            // TH 2.2: LÀ SHOP USER (MANAGER / STAFF)
+            if (isShopUser) {
+                if (shopId == null || shopId == 0) {
+                    throw new BusinessException("Vui lòng chọn cửa hàng để đăng nhập");
+                }
+
+                validateLogin(password, userProfile.getPassword(), userProfile.getShop(), shopId);
+                return generateLoginResponse(userProfile.getUsername(), shopId, "SHOP", userProfile);
+            }
+
+            // Nếu UserProfile không có role hợp lệ
+            throw new BusinessException("Tài khoản này chưa được cấp quyền truy cập hợp lệ");
+        }
+
+        // Nếu không tìm thấy trong cả 2 bảng
         throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
     }
 
@@ -248,6 +281,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
+    @Transactional
     public SystemAdminRegistrationResponse registerSystemAdmin(SystemAdminRegistrationRequest request) {
         if (userProfileRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException("Tên đăng nhập đã tồn tại");
@@ -259,11 +293,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         admin.setAddress(request.getAddress());
         admin.setDob(request.getDob());
-        admin.setCreatedAt(request.getCreatedAt());
 
         Role adminRole = roleRepository.findByName("SYSTEM_ADMIN")
                 .orElseThrow(() -> new BusinessException("Admin chưa được cấu hình"));
-        admin.setRoles(Set.of(adminRole));
+
+        Set<Role> roles = new HashSet<>();
+        roles.add(adminRole);
+        admin.setRoles(roles);
 
         UserProfile savedAdmin = userProfileRepository.save(admin);
         return userProfileMapper.toAdminResponse(savedAdmin);
