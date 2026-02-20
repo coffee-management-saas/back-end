@@ -13,6 +13,9 @@ import com.futurenbetter.saas.modules.employee.enums.EmployeeStatus;
 import com.futurenbetter.saas.modules.employee.mapper.EmployeeMapper;
 import com.futurenbetter.saas.modules.employee.repository.EmployeeRepository;
 import com.futurenbetter.saas.modules.employee.service.inter.EmployeeService;
+//import com.futurenbetter.saas.modules.notification.entity.Notification;
+//import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+//import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -27,6 +30,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final ShopRepository shopRepository;
     private final UserProfileRepository userProfileRepository;
     private final EmployeeMapper employeeMapper;
+    // private final NotificationService notificationService;
 
 
     @Override
@@ -50,6 +54,16 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setUserProfile(userProfile);
 
         Employee savedEmployee = employeeRepository.save(employee);
+
+//        Notification noti = Notification.builder()
+//                .title("Tạo nhân viên mới")
+//                .message("Nhân viên đã dược tạo thành công: " + savedEmployee.getUserProfile().getFullname())
+//                .type(NotificationType.EMPLOYEE)
+//                .recipientType("SHOP_ADMIN")
+//                .recipientId(shop.getOwner().getUserProfileId())
+//                .referenceLink("/employee/employees/" + savedEmployee.getEmployeeId())
+//                .build();
+//        notificationService.sendToShopRole(noti, "SHOP_ADMIN");
 
         return employeeMapper.toResponse(savedEmployee);
     }
