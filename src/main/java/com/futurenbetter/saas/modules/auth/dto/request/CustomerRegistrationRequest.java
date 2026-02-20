@@ -27,5 +27,5 @@ public class CustomerRegistrationRequest {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dob;
-    private Long shopId;
+    //private Long shopId;
 }
