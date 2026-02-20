@@ -49,7 +49,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     @Transactional
     public CustomerResponse register(CustomerRegistrationRequest request) {
-        Long currentShopId = request.getShopId();
+        Long currentShopId = TenantContext.getCurrentShopId();
 
         if (currentShopId == null) {
             throw new BusinessException("Cửa hàng không tồn tại");
@@ -95,7 +95,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         String username = request.getUsername();
         String password = request.getPassword();
-        Long shopId = request.getShopId(); // Giữ nguyên null nếu FE không truyền
+        Long shopId = TenantContext.getCurrentShopId();// Giữ nguyên null nếu FE không truyền
+        System.out.println(shopId);
 
         // ==========================================
         // 1. KIỂM TRA ĐĂNG NHẬP CHO CUSTOMER
