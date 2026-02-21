@@ -1,12 +1,9 @@
 package com.futurenbetter.saas.modules.chatbot.service.impl;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.futurenbetter.saas.modules.chatbot.dto.request.ChatRequest;
 import com.futurenbetter.saas.modules.chatbot.dto.response.AIOrderResponse;
 import com.futurenbetter.saas.modules.chatbot.service.AIChatService;
-import com.futurenbetter.saas.modules.order.service.OrderService;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -24,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,92 +30,156 @@ public class AIChatServiceImpl implements AIChatService {
     private final ChatClient chatClient;
     private final PgVectorStore vectorStore;
     private final ChatHistoryServiceImpl chatHistoryService;
-    private final OrderService orderService;
 
     public AIChatServiceImpl(ChatClient.Builder builder,
-                             PgVectorStore vectorStore,
-                             ChatHistoryServiceImpl chatHistoryService, OrderService orderService) {
+            PgVectorStore vectorStore,
+            ChatHistoryServiceImpl chatHistoryService) {
         this.chatClient = builder.build();
         this.vectorStore = vectorStore;
         this.chatHistoryService = chatHistoryService;
-        this.orderService = orderService;
     }
 
     @Override
     public Object chat(ChatRequest request) {
-        String sessionId = (request.sessionId() == null || request.sessionId().isBlank())
+        String activeSessionId = (request.sessionId() == null || request.sessionId().isBlank())
                 ? "default-session"
                 : request.sessionId();
 
-        String history = chatHistoryService.getChatHistoryContext(sessionId);
+        String history = chatHistoryService.getChatHistoryContext(activeSessionId);
+
+        String queryLower = request.message().toLowerCase();
+        boolean isBroadMenuQuery = queryLower.contains("menu") || queryLower.contains("món gì")
+                || queryLower.contains("có gì") || queryLower.contains("bán gì")
+                || queryLower.contains("danh sách") || queryLower.contains("thực đơn");
+
         List<Document> similarDocuments = vectorStore.similaritySearch(
                 SearchRequest.builder()
-                        .query(request.message())
-                        .topK(3)
+                        .query(isBroadMenuQuery ? "danh sách món ăn thức uống menu" : request.message())
+                        .topK(isBroadMenuQuery ? 50 : 10) // Broad → lấy nhiều để đủ menu
+                        .similarityThreshold(isBroadMenuQuery ? 0.0 : 0.3) // Broad → không lọc
                         .build());
 
         String context = similarDocuments.stream()
                 .map(Document::getText)
-                .collect(Collectors.joining("\n"));
+                .collect(Collectors.joining("\n---\n"));
 
         BeanOutputConverter<AIOrderResponse> converter = new BeanOutputConverter<>(AIOrderResponse.class);
 
-        String systemPrompt = """
-                Bạn là NV Future&Better. Trả lời ngắn gọn.
+        String contextBlock = context.isBlank()
+                ? "[KHÔNG CÓ DỮ LIỆU MENU – hãy thông báo cho khách rằng bạn chưa có thông tin menu hiện tại]"
+                : context;
 
-                MENU:
+        String systemPrompt = """
+
+                Bạn là nhân viên tư vấn tại quán Future&Better. Giao tiếp lịch sự, thân thiện.
+
+                LỊCH SỬ TRÒ CHUYỆN:
+                {history}
+
+                DỮ LIỆU MENU TỪ HỆ THỐNG (chỉ dùng thông tin này, KHÔNG tự bịa thêm):
                 {context}
 
-                QUY TẮC PHẢN HỒI:
-                1. Mặc định action="INFO".
-                2. Khi khách hỏi menu thì liệt kê các món có trong menu kèm giá tiền.
-                3. Từ chối trả lời những thông tin không liên quan đến cửa hàng.
-                4. Khi action="INFO" tuyệt đối không trả dữ liệu 'OrderRequest'.
-                5. Chỉ trả về action="ORDER" khi khách xác nhận "Chốt đơn" hoặc "Đặt món".
+                QUY TẮC BẮT BUỘC:
+                1. LUÔN trả về JSON theo đúng định dạng. Tuyệt đối không kèm văn bản ngoài JSON.
+                2. CHỈ dùng thông tin có trong DỮ LIỆU MENU. KHÔNG được tự bịa tên món, giá, đặc tính.
+                3. Nếu DỮ LIỆU MENU bắt đầu bằng [KHÔNG CÓ DỮ LIỆU], báo khách và hướng dẫn liên hệ nhân viên.
+                4. Mặc định `action="INFO"`. `orderRequest` phải là `null` ở trạng thái này.
+                5. Khi khách hỏi menu / danh sách món, TRÌNH BÀY theo cấu trúc sau trong field `message`:
+                   - NHÓM các món theo DANH MỤC (ví dụ: ☕ Trà Sữa, 🥤 Combo, 🍹 Smoothy, 🥐 Bánh...).
+                   - Mỗi món liệt kê RÕ size và giá. Ví dụ:
+                     • Trà Oolong Trân Châu Tươi – M: 45.000đ | L: 55.000đ
+                   - Dùng ký tự xuống dòng (\\n) để phân cách, dễ đọc.
+                   - Kết thúc bằng câu mời đặt món.
+                6. Khi khách muốn đặt món:
+                   - Thu thập đủ: Tên món (đúng trong menu), Số lượng, Size (M/L), Topping.
+                   - Nếu thiếu: Giữ `action="INFO"`, hỏi cụ thể từng thứ còn thiếu.
+                7. Chỉ chuyển `action="ORDER"` khi ĐỦ thông tin VÀ khách xác nhận ("Đặt đi", "Chốt đơn", "Ok đặt", v.v.).
+                8. `toppingItems` PHẢI là mảng JSON. Không có topping: `[]`.
+                9. Trong `orderRequest`, luôn set `orderType = "ONLINE"`.
 
-            CHỈ TRẢ VỀ JSON THEO ĐỊNH DẠNG: {format}
-            """;
+                ĐỊNH DẠNG JSON BẮT BUỘC:
+                {format}
+                """;
 
-        String rawResponse = chatClient.prompt()
-                .system(s -> s.text(systemPrompt)
-                        .param("history", history)
-                        .param("context", context)
-                        .param("format", converter.getFormat()))
-                .user(request.message())
-                .call()
-                .content();
-
-        AIOrderResponse aiResult;
         try {
-            String jsonContent = rawResponse;
-            if (jsonContent != null) {
-                int start = jsonContent.indexOf("{");
-                int end = jsonContent.lastIndexOf("}");
-                if (start != -1 && end != -1) {
-                    jsonContent = jsonContent.substring(start, end + 1);
-                }
+            String rawResponse = chatClient.prompt()
+                    .system(s -> s.text(systemPrompt)
+                            .param("history", history)
+                            .param("context", contextBlock) // Dùng contextBlock (có fallback message nếu rỗng)
+                            .param("format", converter.getFormat()))
+                    .user(request.message())
+                    .call()
+                    .content();
+
+            AIOrderResponse aiResult = converter.convert(parseJson(rawResponse));
+
+            chatHistoryService.savedHistory(activeSessionId, request.message(), aiResult.message(), context);
+
+            if ("ORDER".equals(aiResult.action()) && aiResult.orderRequest() != null) {
+                return new AIOrderResponse(
+                        "ORDER",
+                        aiResult.message(),
+                        aiResult.orderRequest(),
+                        true);
             }
-
-            aiResult = converter.convert(jsonContent);
-
+            return aiResult.message();
         } catch (Exception e) {
-            aiResult = new AIOrderResponse("INFO", rawResponse, null);
+            return "Xin lỗi, tôi gặp chút trục trặc khi xử lý thông tin. Bạn có thể nhắc lại được không?";
         }
-
-        if ("ORDER".equals(aiResult.action()) && aiResult.orderRequest() != null) {
-            try {
-                chatHistoryService.savedHistory(request.sessionId(), request.message(), aiResult.message(), context);
-                return orderService.createOrder(aiResult.orderRequest());
-            } catch (Exception e) {
-                log.error("Lỗi tạo đơn hàng: ", e);
-                return "Xin lỗi, đã có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại sau.";
-            }
-        }
-
-        chatHistoryService.savedHistory(request.sessionId(), request.message(), aiResult.message(), context);
-        return aiResult.message();
     }
 
+    private String parseJson(String raw) {
+        if (raw == null)
+            return "{}";
+        int start = raw.indexOf("{");
+        int end = raw.lastIndexOf("}");
+        if (start == -1 || end == -1)
+            return raw;
+        String json = raw.substring(start, end + 1);
+        return escapeControlCharsInJsonStrings(json);
+    }
+
+    private String escapeControlCharsInJsonStrings(String json) {
+        StringBuilder sb = new StringBuilder(json.length() + 64);
+        boolean inString = false;
+        boolean escaped = false;
+
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+
+            if (escaped) {
+                sb.append(c);
+                escaped = false;
+                continue;
+            }
+
+            if (c == '\\') {
+                sb.append(c);
+                escaped = true;
+                continue;
+            }
+
+            if (c == '"') {
+                sb.append(c);
+                inString = !inString;
+                continue;
+            }
+
+            if (inString && c < 0x20) {
+                switch (c) {
+                    case '\n' -> sb.append("\\n");
+                    case '\r' -> sb.append("\\r");
+                    case '\t' -> sb.append("\\t");
+                    case '\b' -> sb.append("\\b");
+                    case '\f' -> sb.append("\\f");
+                    default -> sb.append(String.format("\\u%04x", (int) c));
+                }
+                continue;
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
 
     @Override
     @Transactional
@@ -159,9 +219,7 @@ public class AIChatServiceImpl implements AIChatService {
             }
         }
 
-        if (content.isBlank()) {
-            return "Tệp trống hoặc không thể đọc nội dung.";
-        }
+        if (content.isBlank()) return "Tệp trống hoặc không thể đọc nội dung.";
 
         ingestData(content);
         return "Đã nạp tài liệu từ file " + fileName + " thành công";
@@ -170,24 +228,12 @@ public class AIChatServiceImpl implements AIChatService {
     @Override
     @Transactional
     public void ingestData(String content) {
-        if (content == null || content.isBlank())
-            return;
+        if (content == null || content.isBlank()) return;
+
         String sanitizedContent = content.replace("\u0000", "");
-        String summaryInput = sanitizedContent.length() > 3000 ? sanitizedContent.substring(0, 3000) : sanitizedContent;
-
-        String summaryPrompt = "Hãy tóm tắt nội dung sau thành một danh sách menu ngắn gọn (chỉ gồm tên món và loại): \n"
-                + summaryInput;
-        String summary = chatClient.prompt().user(summaryPrompt).call().content();
-
-        Document summaryDoc = new Document(summary, Map.of("type", "MENU_SUMMARY"));
-        vectorStore.add(List.of(summaryDoc));
-
-        Document fullDoc = new Document(sanitizedContent, Map.of("type", "MENU_DETAIL"));
-        TokenTextSplitter splitter = new TokenTextSplitter();
-        List<Document> chunks = splitter.split(List.of(fullDoc));
-
-        chunks.forEach(chunk -> chunk.getMetadata().put("type", "MENU_DETAIL"));
-
-        vectorStore.add(chunks);
+        TokenTextSplitter splitter = new TokenTextSplitter(800, 100, 5, 10000, true);
+        List<Document> documents = splitter.split(new Document(sanitizedContent));
+        documents.forEach(doc -> doc.getMetadata().put("source", "menu_upload"));
+        vectorStore.add(documents);
     }
 }
