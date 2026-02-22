@@ -36,11 +36,11 @@ public class SizeController {
     @PutMapping("{id}")
     @Transactional
     @PreAuthorize("hasAuthority('product-size:update')")
-    public ApiResponse<Size> update(
+    public ApiResponse<SizeResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid SizeRequest request
     ) {
-        Size response = sizeService.update(id, request);
+        SizeResponse response = sizeService.update(id, request);
         return ApiResponse.success(
                 HttpStatus.OK,
                 "Update size successfully",
@@ -60,7 +60,7 @@ public class SizeController {
 
     @GetMapping("active")
     @PreAuthorize("hasAuthority('product-size:read-active')")
-    public ApiResponse<List<Size>> getActive() {
+    public ApiResponse<List<SizeResponse>> getActive() {
         return ApiResponse.success(
                 HttpStatus.OK,
                 "Get active sizes",

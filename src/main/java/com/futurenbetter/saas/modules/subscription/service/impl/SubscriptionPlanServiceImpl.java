@@ -1,9 +1,13 @@
 package com.futurenbetter.saas.modules.subscription.service.impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionPlanRequest;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.MomoPaymentResponse;
@@ -39,15 +43,31 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     private final SubscriptionPlanMapper subscriptionPlanMapper;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final NotificationService notificationService;
 
 
     @Override
     public SubscriptionPlanResponse createSubscriptionPlan(SubscriptionPlanRequest subscriptionPlanRequest) {
+
+        Long systemAdminId = SecurityUtils.getCurrentUserId();
+
         SubscriptionPlan plan = subscriptionPlanMapper.toEntity(subscriptionPlanRequest);
         plan.setCreatedAt(LocalDateTime.now());
         plan.setSubscriptionPlanStatus(SubscriptionPlanEnum.ACTIVE);
 
         SubscriptionPlan saved = subscriptionPlanRepository.save(plan);
+
+        Notification noti = Notification.builder()
+                .title("Tạo subscription plan thành công")
+                .message("Tạo subscription plan " + subscriptionPlanRequest.getSubscriptionPlanName() + " thành công")
+                .type(NotificationType.SUBSCRIPTION)
+                .recipientType("SYSTEM_ADMIN")
+                .recipientId(systemAdminId)
+                .referenceLink("api/system/subscription-plan/" + saved.getSubscriptionPlanId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
         return subscriptionPlanMapper.toResponse(saved);
     }
 
@@ -68,22 +88,50 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     @Override
     public SubscriptionPlanResponse updateSubscriptionPlan(SubscriptionPlanRequest subscriptionPlanRequest, Long id) {
+
+        Long systemAdminId = SecurityUtils.getCurrentUserId();
         SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
 
         subscriptionPlanMapper.updateEntityFromRequest(subscriptionPlanRequest, plan);
         plan.setUpdatedAt(LocalDateTime.now());
+
         SubscriptionPlan saved = subscriptionPlanRepository.save(plan);
+
+        Notification noti = Notification.builder()
+                .title("Cập nhật subscription plan thành công")
+                .message("Cập nhật subscription plan " + subscriptionPlanRequest.getSubscriptionPlanName() + " thành công")
+                .type(NotificationType.SUBSCRIPTION)
+                .recipientType("SYSTEM_ADMIN")
+                .recipientId(systemAdminId)
+                .referenceLink("api/system/subscription-plan/" + saved.getSubscriptionPlanId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
         return subscriptionPlanMapper.toResponse(saved);
     }
 
     @Override
     public void deleteSubscriptionPlan(Long id) {
+
+        Long systemAdminId = SecurityUtils.getCurrentUserId();
         SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
 
         plan.setSubscriptionPlanStatus(SubscriptionPlanEnum.INACTIVE);
         plan.setUpdatedAt(LocalDateTime.now());
         subscriptionPlanRepository.save(plan);
+
+        Notification noti = Notification.builder()
+                .title("Cập nhật subscription plan thành công")
+                .message("Cập nhật subscription plan " + plan.getSubscriptionPlanName() + " thành công")
+                .type(NotificationType.SUBSCRIPTION)
+                .recipientType("SYSTEM_ADMIN")
+                .recipientId(systemAdminId)
+                .referenceLink("api/system/subscription-plan/" + plan.getSubscriptionPlanId())
+                .build();
+
+        notificationService.sendToUser(noti);
     }
 }

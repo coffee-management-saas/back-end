@@ -8,5 +8,6 @@ public enum NotificationType {
     SYSTEM,
     EMPLOYEE,
     AUTHENTICATION,
-    SCHEDULE
+    SCHEDULE,
+    PRODUCT
 }
