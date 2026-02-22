@@ -3,6 +3,7 @@ package com.futurenbetter.saas.modules.employee.controller;
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.dto.response.ApiResponse;
 import com.futurenbetter.saas.common.dto.response.PageMeta;
+import com.futurenbetter.saas.modules.auth.dto.response.ShopEmployeeRegistrationResponse;
 import com.futurenbetter.saas.modules.employee.dto.request.EmployeeRequest;
 import com.futurenbetter.saas.modules.employee.dto.response.EmployeeResponse;
 import com.futurenbetter.saas.modules.employee.service.inter.EmployeeService;
@@ -55,10 +56,10 @@ public class EmployeeController {
 
     @GetMapping("{id}")
     @PreAuthorize("hasAuthority('employee:read-detail')")
-    public ApiResponse<EmployeeResponse> getDetail(
+    public ApiResponse<ShopEmployeeRegistrationResponse> getDetail(
             @PathVariable Long id
     ) {
-        EmployeeResponse response = employeeService.getById(id);
+        ShopEmployeeRegistrationResponse response = employeeService.getById(id);
         return ApiResponse.success(
                 HttpStatus.OK,
                 "Get employee detail successfully",
