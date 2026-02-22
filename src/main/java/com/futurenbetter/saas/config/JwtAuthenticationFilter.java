@@ -63,7 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 Object principal = null;
 
-                if ("CUSTOMER".equals(authenRole)) { // apply status là customer
+                if ("CUSTOMER".equals(authenRole)) {
                     Customer customer = customerRepository.findByUsernameWithRoleAndPermissions(username).orElse(null);
                     if (customer != null) {
                         principal = customer;
@@ -80,7 +80,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         }
                     }
                 }
-                else if ("SHOP".equals(authenRole) || "SYSTEM".equals(authenRole)) { // apply cho shop và system
+                else { // apply cho shop, employee, và system
                     UserProfile userProfile = userProfileRepository.findByUsernameWithRoles(username).orElse(null);
                     if (userProfile != null) {
                         principal = userProfile;

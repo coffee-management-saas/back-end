@@ -7,6 +7,7 @@ import com.futurenbetter.saas.modules.auth.dto.response.LoginResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.ShopEmployeeRegistrationResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminRegistrationResponse;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
+import com.futurenbetter.saas.modules.auth.entity.UserProfile;
 import com.futurenbetter.saas.modules.auth.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -71,5 +72,16 @@ public class AuthenticationController {
     public ResponseEntity<ShopEmployeeRegistrationResponse> createShopEmployee(@RequestBody ShopEmployeeRegistrationRequest request) {
         ShopEmployeeRegistrationResponse response = authenticationService.createShopEmployee(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/shop-employee/change-password")
+    public ResponseEntity<String> changePassword(@AuthenticationPrincipal UserProfile userProfile,
+                                                 @RequestBody ChangePasswordRequest request) {
+        if (userProfile == null) {
+            throw new BusinessException("Phiên đăng nhập hết hạn");
+        }
+
+        authenticationService.employeeChangePassword(userProfile.getUserProfileId(), request);
+        return ResponseEntity.ok("Thay đổi mật khẩu thành công");
     }
 }
