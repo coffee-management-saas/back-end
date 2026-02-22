@@ -50,6 +50,7 @@ FROM public.role r
          JOIN public.permission p ON p.permission_name IN (
                                                            'employee-unavailability:read', 'employee-unavailability:read-detail',
                                                            'employee-unavailability:create', 'employee-unavailability:update', 'employee-unavailability:delete',
+                                                           'employee:read-detail', 'employee:update'
                                                            'schedule:read', 'schedule:read-detail', 'schedule:read-by-employee',
                                                            'shift-template:read', 'shift-template:read-detail',
                                                            'inventory-invoice:import', 'inventory-invoice:read-by-filter', 'inventory-invoice:read-detail',
