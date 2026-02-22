@@ -19,6 +19,8 @@ import com.futurenbetter.saas.modules.employee.dto.request.EmployeeRequest;
 import com.futurenbetter.saas.modules.employee.dto.response.EmployeeResponse;
 import com.futurenbetter.saas.modules.employee.entity.Employee;
 import com.futurenbetter.saas.modules.employee.service.inter.EmployeeService;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
 import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -100,9 +102,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Long shopId = TenantContext.getCurrentShopId();// Giữ nguyên null nếu FE không truyền
         System.out.println(shopId);
 
-        // ==========================================
-        // 1. KIỂM TRA ĐĂNG NHẬP CHO CUSTOMER
-        // ==========================================
+        // customer
         var customerOpt = customerRepository.findByUsername(username);
         if (customerOpt.isPresent()) {
             if (shopId == null || shopId == 0) {
@@ -113,12 +113,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             // Giả định hàm validateLogin của bạn có check matching giữa customer.getShop() và shopId
             validateLogin(password, customer.getPassword(), customer.getShop(), shopId);
 
+            Notification noti = Notification.builder()
+                    .title("Chúc mừng customer login thành công")
+                    .message("abc")
+                    .type(NotificationType.AUTHENTICATION)
+                    .recipientType("CUSTOMER")
+                    .recipientId(customer.getId())
+                    .referenceLink("/customer/auth/" + customer.getId())
+                    .build();
+
+            notificationService.sendToUser(noti);
+
             return generateLoginResponse(customer.getUsername(), shopId, "CUSTOMER", customer);
         }
 
-        // ==========================================
-        // 2. KIỂM TRA ĐĂNG NHẬP CHO USER PROFILE (STAFF / MANAGER / SYSTEM ADMIN)
-        // ==========================================
+        // staff/shop-admin/system-admin
         var profileOpt = profileRepository.findByUsernameWithRoles(username);
         if (profileOpt.isPresent()) {
             UserProfile userProfile = profileOpt.get();
@@ -137,7 +146,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     throw new BusinessException("Tên đăng nhập hoặc mật khẩu không chính xác");
                 }
 
-                // Truyền shopId = null cho System Admin
+                Notification noti = Notification.builder()
+                        .title("Chúc mừng system_admin login thành công")
+                        .message("abc")
+                        .type(NotificationType.AUTHENTICATION)
+                        .recipientType("SYSTEM_ADMIN")
+                        .recipientId(userProfile.getUserProfileId())
+                        .referenceLink("/system/auth/" + userProfile.getUserProfileId())
+                        .build();
+
+                notificationService.sendToUser(noti);
+
                 return generateLoginResponse(userProfile.getUsername(), null, "SYSTEM", userProfile);
             }
 
@@ -148,6 +167,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 }
 
                 validateLogin(password, userProfile.getPassword(), userProfile.getShop(), shopId);
+
+                Notification noti = Notification.builder()
+                        .title("Chúc mừng shop_user login thành công")
+                        .message("abc")
+                        .type(NotificationType.AUTHENTICATION)
+                        .recipientType("SHOP")
+                        .recipientId(userProfile.getUserProfileId())
+                        .referenceLink("/shop/auth/" + userProfile.getUserProfileId())
+                        .build();
+
+                notificationService.sendToUser(noti);
                 return generateLoginResponse(userProfile.getUsername(), shopId, "SHOP", userProfile);
             }
 

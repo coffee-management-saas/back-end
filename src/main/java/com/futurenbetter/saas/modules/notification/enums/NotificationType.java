@@ -6,5 +6,6 @@ public enum NotificationType {
     SUBSCRIPTION,
     PROMOTION,
     SYSTEM,
-    EMPLOYEE
+    EMPLOYEE,
+    AUTHENTICATION
 }
