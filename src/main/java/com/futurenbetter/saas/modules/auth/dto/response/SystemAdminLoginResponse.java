@@ -8,4 +8,5 @@ import lombok.Data;
 public class SystemAdminLoginResponse {
     private String accessToken;
     private String refreshToken;
+    private String role;
 }

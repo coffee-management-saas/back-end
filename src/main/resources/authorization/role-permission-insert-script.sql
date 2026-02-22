@@ -5,7 +5,7 @@ INSERT INTO public.role_permission (role_id, permission_id)
 SELECT r.role_id, p.permission_id
 FROM public.role r
          CROSS JOIN public.permission p
-WHERE r.name = 'SYSTEM_ADMIN';
+WHERE r.name = 'SYSTEM';
 
 -- SHOP_MANAGER
 INSERT INTO public.role_permission (role_id, permission_id)
@@ -41,7 +41,7 @@ FROM public.role r
                                                            'product-variant:create', 'product-variant:read',
                                                            'product-variant:read-detail', 'product-variant:read-by-product'
     )
-WHERE r.name = 'SHOP_ADMIN';
+WHERE r.name = 'SHOP';
 
 -- SHOP_STAFF
 INSERT INTO public.role_permission (role_id, permission_id)
@@ -64,7 +64,7 @@ FROM public.role r
                                                            'promotion:read', 'promotion:read-detail',
                                                            'stock-check:update-count', 'stock-check:read-by-filter'
     )
-WHERE r.name = 'SHOP_STAFF';
+WHERE r.name = 'EMPLOYEE';
 
 -- CUSTOMER
 INSERT INTO public.role_permission (role_id, permission_id)

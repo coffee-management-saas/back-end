@@ -15,4 +15,5 @@ public interface AuthenticationService extends UserDetailsService {
     SystemAdminRegistrationResponse registerShopAdmin(ShopAdminRegistrationRequest request);
     ShopEmployeeRegistrationResponse createShopEmployee(ShopEmployeeRegistrationRequest request);
     LoginResponse loginShopAdmin(LoginRequest loginRequest);
+    void employeeChangePassword(Long userProfileId, ChangePasswordRequest request);
 }
