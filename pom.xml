@@ -118,6 +118,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- websocket for notification -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>

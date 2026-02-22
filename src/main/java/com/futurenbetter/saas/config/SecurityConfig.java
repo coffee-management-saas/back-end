@@ -18,7 +18,7 @@ import org.springframework.web.cors.CorsUtils;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-        private final AuthenticationService authenticationService;
+    private final AuthenticationService authenticationService;
         private static final String[] PUBLIC_ENDPOINTS = {
                         "/api/**",
                         "/v3/api-docs/**",
@@ -26,6 +26,7 @@ public class SecurityConfig {
                         "/api/swagger-ui.html",
                         "/api/docs/**",
                         "/swagger-ui/**",
+                "/ws/**",
         };
 
         @Bean

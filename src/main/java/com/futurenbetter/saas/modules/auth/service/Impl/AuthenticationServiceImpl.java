@@ -19,6 +19,7 @@ import com.futurenbetter.saas.modules.employee.dto.request.EmployeeRequest;
 import com.futurenbetter.saas.modules.employee.dto.response.EmployeeResponse;
 import com.futurenbetter.saas.modules.employee.entity.Employee;
 import com.futurenbetter.saas.modules.employee.service.inter.EmployeeService;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -45,6 +46,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final RoleRepository roleRepository;
     private final ShopRepository shopRepository;
     private final EmployeeService employeeService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
