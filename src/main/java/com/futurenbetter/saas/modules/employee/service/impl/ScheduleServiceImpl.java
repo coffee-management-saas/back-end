@@ -12,6 +12,9 @@ import com.futurenbetter.saas.modules.employee.mapper.ScheduleMapper;
 import com.futurenbetter.saas.modules.employee.repository.ScheduleRepository;
 import com.futurenbetter.saas.modules.employee.service.inter.EmployeeService;
 import com.futurenbetter.saas.modules.employee.service.inter.ScheduleService;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final ScheduleRepository scheduleRepository;
     private final EmployeeService employeeService;
     private final ScheduleMapper scheduleMapper;
+    private final NotificationService notificationService;
 
 
     @Override
@@ -35,19 +39,35 @@ public class ScheduleServiceImpl implements ScheduleService {
     public ScheduleResponse create(ScheduleRequest request) {
 
         Employee employee = employeeService.getEmployeeById(request.getEmployeeId());
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
 
         Schedule schedule = scheduleMapper.toEntity(request);
         schedule.setShop(employee.getShop());
         schedule.setEmployee(employee);
 
-        return scheduleMapper.toResponse(scheduleRepository.save(schedule));
+        Schedule result = scheduleRepository.save(schedule);
+
+        Notification noti = Notification.builder()
+                .title("Xếp lịch làm việc thành công")
+                .message("Bạn đã xếp lịch làm việc cho " + employee.getUserProfile().getFullname() +  " từ " + request.getStartTime() + " đến " + request.getEndTime())
+                .type(NotificationType.SCHEDULE)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/employee/schedules/" + result.getScheduleId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return scheduleMapper.toResponse(result);
     }
 
 
     @Override
     @Transactional
     public ScheduleResponse update(Long id, ScheduleRequest request) {
+
         Long shopId = SecurityUtils.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
 
         Schedule schedule = scheduleRepository.findByScheduleIdAndShopId(id, shopId)
                 .orElseThrow(() -> new BusinessException("Lịch làm việc không tồn tại"));
@@ -58,7 +78,20 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
 
         scheduleMapper.updateFromRequest(request, schedule);
-        return scheduleMapper.toResponse(scheduleRepository.save(schedule));
+        Schedule result = scheduleRepository.save(schedule);
+
+        Notification noti = Notification.builder()
+                .title("Cập nhật lịch làm việc thành công")
+                .message("Bạn đã cập nhật lịch làm việc cho " + result.getEmployee().getUserProfile().getFullname() +  " từ " + request.getStartTime() + " đến " + request.getEndTime())
+                .type(NotificationType.SCHEDULE)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/employee/schedules/" + result.getScheduleId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return scheduleMapper.toResponse(result);
     }
 
 
@@ -78,6 +111,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     public void delete(Long id) {
 
         Long shopId = SecurityUtils.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
 
         Schedule schedule = scheduleRepository.findByScheduleIdAndShopId(id, shopId)
                 .orElseThrow(() -> new BusinessException("Lịch làm việc không tồn tại"));
@@ -85,6 +119,17 @@ public class ScheduleServiceImpl implements ScheduleService {
         schedule.setStatus(ScheduleStatus.DELETED);
 
         scheduleRepository.save(schedule);
+
+        Notification noti = Notification.builder()
+                .title("Xóa lịch làm việc thành công")
+                .message("Bạn đã xóa lịch làm việc cho " + schedule.getEmployee().getUserProfile().getFullname() +  " từ " + schedule.getStartTime() + " đến " + schedule.getEndTime())
+                .type(NotificationType.SCHEDULE)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/employee/schedules/" + schedule.getScheduleId())
+                .build();
+
+        notificationService.sendToUser(noti);
     }
 
 

@@ -7,5 +7,6 @@ public enum NotificationType {
     PROMOTION,
     SYSTEM,
     EMPLOYEE,
-    AUTHENTICATION
+    AUTHENTICATION,
+    SCHEDULE
 }
