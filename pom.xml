@@ -124,6 +124,7 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
             <scope>compile</scope>
         </dependency>
+
     </dependencies>
 
     <dependencyManagement>

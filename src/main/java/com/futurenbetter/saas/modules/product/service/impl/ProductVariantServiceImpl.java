@@ -3,6 +3,9 @@ package com.futurenbetter.saas.modules.product.service.impl;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import com.futurenbetter.saas.modules.product.dto.filter.ProductVariantFilter;
 import com.futurenbetter.saas.modules.product.dto.request.ProductVariantRequest;
 import com.futurenbetter.saas.modules.product.dto.response.ProductVariantResponse;
@@ -32,11 +35,14 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     private final ProductRepository productRepository;
     private final SizeRepository sizeRepository;
     private final ProductVariantMapper variantMapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
     public ProductVariantResponse create(ProductVariantRequest request) {
+
         Long shopId = SecurityUtils.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
 
         if (variantRepository.existsBySkuCodeAndShopId(request.getSkuCode(), shopId)) {
             throw new BusinessException("Mã SKU đã tồn tại");
@@ -54,13 +60,28 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         variant.setSize(size);
         variant.setStatus(Status.ACTIVE);
 
-        return variantMapper.toResponse(variantRepository.save(variant));
+        ProductVariant result = variantRepository.save(variant);
+
+        Notification noti = Notification.builder()
+                .title("Tạo Product Variant thành công")
+                .message("Tạo variant cho sản phẩm " + product.getName() + " thành công")
+                .type(NotificationType.PRODUCT)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/product/variants/" + result.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return variantMapper.toResponse(result);
     }
 
     @Override
     @Transactional
     public ProductVariantResponse update(Long id, ProductVariantRequest request) {
+
         Long shopId = SecurityUtils.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
         ProductVariant variant = variantRepository.findByIdAndShopId(id, shopId)
                 .orElseThrow(() -> new BusinessException("Biến thể sản phẩm không tồn tại"));
 
@@ -72,7 +93,21 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         }
 
         variantMapper.updateFromRequest(variant, request);
-        return variantMapper.toResponse(variantRepository.save(variant));
+
+        ProductVariant result = variantRepository.save(variant);
+
+        Notification noti = Notification.builder()
+                .title("Cập nhật Product Variant thành công")
+                .message("Cập nhật variant cho sản phẩm " + variant.getProduct().getName() + " thành công")
+                .type(NotificationType.PRODUCT)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/product/variants/" + result.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return variantMapper.toResponse(result);
     }
 
     @Override

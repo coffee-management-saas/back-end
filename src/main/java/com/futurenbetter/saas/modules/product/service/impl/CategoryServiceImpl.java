@@ -3,8 +3,12 @@ package com.futurenbetter.saas.modules.product.service.impl;
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import com.futurenbetter.saas.modules.product.dto.request.CategoryRequest;
 import com.futurenbetter.saas.modules.product.dto.response.CategoryResponse;
 import com.futurenbetter.saas.modules.product.entity.Category;
@@ -25,11 +29,14 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
     private final ShopRepository shopRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
     public CategoryResponse create(CategoryRequest request) {
+
         Long shopId = TenantContext.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
 
         if (categoryRepository.existsByNameAndShopId(request.getName(), shopId)) {
             throw new BusinessException("Tên danh mục đã tồn tại");
@@ -41,13 +48,29 @@ public class CategoryServiceImpl implements CategoryService {
         category.setShop(shop);
         category.setStatus(Status.ACTIVE);
 
-        return categoryMapper.toResponse(categoryRepository.save(category));
+        Category result = categoryRepository.save(category);
+
+        Notification noti = Notification.builder()
+                .title("Tạo category thành công")
+                .message("Tạo category " + result.getName() + " thành công")
+                .type(NotificationType.PRODUCT)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/product/categories/" + result.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return categoryMapper.toResponse(result);
     }
 
     @Override
     @Transactional
     public CategoryResponse update(Long id, CategoryRequest request) {
+
         Long shopId = TenantContext.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
+
         Category category = categoryRepository.findByIdAndShopId(id, shopId)
                 .orElseThrow(() -> new BusinessException("Danh mục không tồn tại"));
 
@@ -58,7 +81,21 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         categoryMapper.updateFromRequest(category, request);
-        return categoryMapper.toResponse(categoryRepository.save(category));
+
+        Category result = categoryRepository.save(category);
+
+        Notification noti = Notification.builder()
+                .title("Cập nhật category thành công")
+                .message("Cập nhật category " + result.getName() + " thành công")
+                .type(NotificationType.PRODUCT)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/product/categories/" + result.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return categoryMapper.toResponse(result);
     }
 
     @Override
@@ -78,10 +115,24 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public void delete(Long id) {
+
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
+
         Category category = categoryRepository.findByIdAndShopId(id, TenantContext.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Danh mục không tồn tại"));
 
         category.setStatus(Status.DELETED);
         categoryRepository.save(category);
+
+        Notification noti = Notification.builder()
+                .title("Xóa category thành công")
+                .message("Xóa category " + category.getName() + " thành công")
+                .type(NotificationType.PRODUCT)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/product/categories/" + category.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
     }
 }

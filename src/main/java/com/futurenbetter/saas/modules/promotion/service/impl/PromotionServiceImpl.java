@@ -7,6 +7,9 @@ import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import com.futurenbetter.saas.modules.product.entity.Product;
 import com.futurenbetter.saas.modules.product.repository.ProductRepository;
 import com.futurenbetter.saas.modules.promotion.dto.request.PromotionRequest;
@@ -46,10 +49,13 @@ public class PromotionServiceImpl implements PromotionService {
     private final PromotionUsageRepository promotionUsageRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
+    private final NotificationService notificationService;
 
     @Override
     public PromotionResponse createPromotion(PromotionRequest promotionRequest) {
+
         Long currentShopId = SecurityUtils.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
         Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
@@ -81,6 +87,18 @@ public class PromotionServiceImpl implements PromotionService {
         }
 
         Promotion savedPromotion = promotionRepository.save(promotion);
+
+        Notification noti = Notification.builder()
+                .title("Tạo promotion thành công")
+                .message("Tạo promotion " + savedPromotion.getPromotionName() + " thành công")
+                .type(NotificationType.PROMOTION)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/promotion/" + savedPromotion.getPromotionId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
         return promotionMapper.toResponse(savedPromotion);
     }
 
@@ -138,21 +156,37 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public PromotionResponse updatePromotion(Long promotionId, PromotionRequest promotionRequest) {
-        Long currentShopId = TenantContext.getCurrentShopId();
 
+        Long currentShopId = TenantContext.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
         Promotion promotion = promotionRepository.findById(promotionId)
                 .filter(p -> p.getShop().getId().equals(currentShopId))
                 .orElseThrow(() -> new BusinessException("Mã khuyến mãi không tồn tại"));
 
         promotionMapper.updateEntity(promotionRequest, promotion);
         promotion.setUpdatedAt(LocalDateTime.now());
-        return promotionMapper.toResponse(promotionRepository.save(promotion));
+
+        Promotion savedPromotion = promotionRepository.save(promotion);
+
+        Notification noti = Notification.builder()
+                .title("Cập nhật promotion thành công")
+                .message("Cập nhật promotion " + savedPromotion.getPromotionName() + " thành công")
+                .type(NotificationType.PROMOTION)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/promotion/" + savedPromotion.getPromotionId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return promotionMapper.toResponse(savedPromotion);
     }
 
     @Override
     public void deletePromotion(Long promotionId) {
-        Long currentShopId = TenantContext.getCurrentShopId();
 
+        Long currentShopId = TenantContext.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
         Promotion promotion = promotionRepository.findById(promotionId)
                 .filter(p -> p.getShop().getId().equals(currentShopId))
                 .orElseThrow(() -> new BusinessException("Mã khuyến mãi không tồn tại"));
@@ -160,6 +194,17 @@ public class PromotionServiceImpl implements PromotionService {
         promotion.setPromotionStatus(PromotionEnum.INACTIVE);
         promotion.setUpdatedAt(LocalDateTime.now());
         promotionRepository.save(promotion);
+
+        Notification noti = Notification.builder()
+                .title("Xóa promotion thành công")
+                .message("Xóa promotion " + promotion.getPromotionName() + " thành công")
+                .type(NotificationType.PROMOTION)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/promotion/" + promotion.getPromotionId())
+                .build();
+
+        notificationService.sendToUser(noti);
     }
 
     @Override

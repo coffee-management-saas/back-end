@@ -19,6 +19,9 @@ import com.futurenbetter.saas.modules.inventory.repository.StockCheckDetailRepos
 import com.futurenbetter.saas.modules.inventory.repository.StockCheckSessionRepository;
 import com.futurenbetter.saas.modules.inventory.service.inter.StockCheckService;
 import com.futurenbetter.saas.modules.inventory.specification.StockCheckSessionSpec;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -35,16 +38,18 @@ public class StockCheckServiceImpl implements StockCheckService {
     private final StockCheckDetailRepository detailRepository;
     private final IngredientBatchRepository batchRepository;
     private final RawIngredientRepository ingredientRepository;
-    private final StockCheckMapper mapper;
+    private final StockCheckMapper stockCheckMapper;
+    private final NotificationService notificationService;
 
 
     @Override
     @Transactional
     public StockCheckSessionResponse startSession(StockCheckStartRequest request) {
         var shop = SecurityUtils.getCurrentShop();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
 
         // 1. Tạo Session dùng Mapper
-        StockCheckSession session = mapper.toSessionEntity(request);
+        StockCheckSession session = stockCheckMapper.toSessionEntity(request);
         session.setShop(shop);
         session.setCreatedBy(SecurityUtils.getCurrentUserId());
         session.setInventoryStatus(InventoryStatus.ACTIVE);
@@ -76,6 +81,17 @@ public class StockCheckServiceImpl implements StockCheckService {
             detailRepository.save(detail);
         }
 
+        Notification noti = Notification.builder()
+                .title("Bắt đầu phiên kiểm kê kho")
+                .message("Phiên kiểm kho " + session.getCode() + " bắt đầu lúc " + session.getCreatedAt() + ". Vui lòng cập nhật số lượng thực tế.")
+                .type(NotificationType.INVENTORY)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/inventory/stock-checks/" + session.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
         return getFullResponse(session);
     }
 
@@ -83,6 +99,9 @@ public class StockCheckServiceImpl implements StockCheckService {
     @Override
     @Transactional
     public StockCheckSessionResponse updateCount(StockCheckUpdateRequest request) {
+
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
+
         StockCheckSession session = sessionRepository.findByIdAndShopId(request.getSessionId(), SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Phiếu kiểm kê không tồn tại"));
 
@@ -95,7 +114,7 @@ public class StockCheckServiceImpl implements StockCheckService {
                     .orElseThrow(() -> new BusinessException("Nguyên liệu ID " + itemReq.getIngredientId() + " không có trong phiếu này"));
 
             // 1. Dùng Mapper để update (actualQuantity, reason)
-            mapper.updateDetailFromRequest(detail, itemReq);
+            stockCheckMapper.updateDetailFromRequest(detail, itemReq);
 
             // 2. Tính toán diff
             if (detail.getActualQuantity() != null) {
@@ -105,6 +124,17 @@ public class StockCheckServiceImpl implements StockCheckService {
             detailRepository.save(detail);
         }
 
+        Notification noti = Notification.builder()
+                .title("Kiểm kê nguyên liệu đã được cập nhật")
+                .message("Số lượng thực tế của các nguyên liệu đã được cập nhật cho phiên kiểm kho " + session.getCode() + ". Vui lòng duyệt phiếu khi đã hoàn tất.")
+                .type(NotificationType.INVENTORY)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/inventory/stock-checks/" + session.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
         return getFullResponse(session);
     }
 
@@ -112,6 +142,9 @@ public class StockCheckServiceImpl implements StockCheckService {
     @Override
     @Transactional
     public StockCheckSessionResponse approveSession(StockCheckApproveRequest request) {
+
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
+
         StockCheckSession session = sessionRepository.findByIdAndShopId(request.getSessionId(), SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Phiếu không tồn tại"));
 
@@ -128,7 +161,20 @@ public class StockCheckServiceImpl implements StockCheckService {
             session.setInventoryStatus(InventoryStatus.INACTIVE); // Cancel phiếu
         }
 
-        return getFullResponse(sessionRepository.save(session));
+        StockCheckSession result = sessionRepository.save(session);
+
+        Notification noti = Notification.builder()
+                .title("Kiểm kê nguyên liệu hoàn thành")
+                .message("Phiên kiểm kho " + session.getCode() + " đã được " + (Boolean.TRUE.equals(request.getIsApproved()) ? "duyệt" : "hủy") + ". Vui lòng kiểm tra lại số lượng tồn kho sau khi duyệt.")
+                .type(NotificationType.INVENTORY)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/inventory/stock-checks/" + session.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return getFullResponse(result);
     }
 
 
@@ -143,9 +189,9 @@ public class StockCheckServiceImpl implements StockCheckService {
 
 
     private StockCheckSessionResponse getFullResponse(StockCheckSession session) {
-        var response = mapper.toSessionResponse(session);
+        var response = stockCheckMapper.toSessionResponse(session);
         // Map list details
-        response.setDetails(mapper.toDetailResponseList(detailRepository.findAllBySessionId(session.getId())));
+        response.setDetails(stockCheckMapper.toDetailResponseList(detailRepository.findAllBySessionId(session.getId())));
         return response;
     }
 }
