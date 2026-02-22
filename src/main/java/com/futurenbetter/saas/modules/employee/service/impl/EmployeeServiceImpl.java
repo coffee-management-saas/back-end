@@ -2,8 +2,10 @@ package com.futurenbetter.saas.modules.employee.service.impl;
 
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.auth.dto.response.ShopEmployeeRegistrationResponse;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.entity.UserProfile;
+import com.futurenbetter.saas.modules.auth.mapper.UserProfileMapper;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.auth.repository.UserProfileRepository;
 import com.futurenbetter.saas.modules.employee.dto.request.EmployeeRequest;
@@ -30,15 +32,19 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final ShopRepository shopRepository;
     private final UserProfileRepository userProfileRepository;
     private final EmployeeMapper employeeMapper;
+    private final UserProfileMapper userProfileMapper;
     // private final NotificationService notificationService;
 
 
     @Override
-    public EmployeeResponse getById(Long employeeId) {
+    public ShopEmployeeRegistrationResponse getById(Long employeeId) {
 
         Employee employee = getEmployeeById(employeeId);
 
-        return employeeMapper.toResponse(employee);
+        UserProfile userProfile = employee.getUserProfile();
+
+        ShopEmployeeRegistrationResponse result = userProfileMapper.toEmployeeResponse(userProfile, employeeMapper.toResponse(employee), null);
+        return result;
     }
 
 

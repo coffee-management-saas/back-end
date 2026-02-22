@@ -1,13 +1,14 @@
 package com.futurenbetter.saas.modules.employee.service.inter;
 
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
+import com.futurenbetter.saas.modules.auth.dto.response.ShopEmployeeRegistrationResponse;
 import com.futurenbetter.saas.modules.employee.dto.request.EmployeeRequest;
 import com.futurenbetter.saas.modules.employee.dto.response.EmployeeResponse;
 import com.futurenbetter.saas.modules.employee.entity.Employee;
 import org.springframework.data.domain.Page;
 
 public interface EmployeeService {
-    EmployeeResponse getById(Long employeeId);
+    ShopEmployeeRegistrationResponse getById(Long employeeId);
     EmployeeResponse createEmployee(EmployeeRequest request);
     EmployeeResponse updateEmployee(Long employeeId, EmployeeRequest request);
     void deleteEmployee(Long employeeId);
