@@ -343,9 +343,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Tên đăng nhập đã tồn tại");
         }
 
-        Shop shop = shopRepository.findById(TenantContext.getCurrentShopId())
-                .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
+//        Shop shop = shopRepository.findById(TenantContext.getCurrentShopId())
+//                .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
+        Shop shop = shopRepository.findById(request.getShopId())
+                .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
         UserProfile admin = userProfileMapper.toEntity(request);
         admin.setPassword(passwordEncoder.encode(request.getPassword()));
         admin.setStatus(UserProfileEnum.ACTIVE);
@@ -412,7 +414,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         boolean isShopAdmin = admin.getRoles().stream()
-                .anyMatch(role -> "SHOP_ADMIN".equals(role.getName()));
+                .anyMatch(role -> "SHOP".equals(role.getName()));
 
         if (!isShopAdmin) {
             throw new BusinessException("Tài khoản không có quyền truy cập quản trị quán");
@@ -439,6 +441,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .shopId(shopId)
+                .role("SHOP")
                 .build();
     }
 

@@ -14,7 +14,6 @@ public class ProductVariantRequest {
     @NotNull(message = "Sản phẩm là bắt buộc")
     Long productId;
 
-    @NotNull(message = "Kích thước là bắt buộc")
     Long sizeId;
 
     @NotNull(message = "Giá bán là bắt buộc")

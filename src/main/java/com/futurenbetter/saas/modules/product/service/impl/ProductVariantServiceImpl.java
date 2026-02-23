@@ -44,10 +44,6 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         Long shopId = SecurityUtils.getCurrentShopId();
         Long shopAdminId = SecurityUtils.getCurrentUserId();
 
-        if (variantRepository.existsBySkuCodeAndShopId(request.getSkuCode(), shopId)) {
-            throw new BusinessException("Mã SKU đã tồn tại");
-        }
-
         Product product = productRepository.findByIdAndShopId(request.getProductId(), shopId)
                 .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
 
