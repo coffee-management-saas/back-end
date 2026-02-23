@@ -2,21 +2,18 @@ package com.futurenbetter.saas.modules.inventory.service.impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.inventory.dto.filter.StockCheckSessionFilter;
 import com.futurenbetter.saas.modules.inventory.dto.request.StockCheckApproveRequest;
 import com.futurenbetter.saas.modules.inventory.dto.request.StockCheckItemRequest;
 import com.futurenbetter.saas.modules.inventory.dto.request.StockCheckStartRequest;
 import com.futurenbetter.saas.modules.inventory.dto.request.StockCheckUpdateRequest;
 import com.futurenbetter.saas.modules.inventory.dto.response.StockCheckSessionResponse;
-import com.futurenbetter.saas.modules.inventory.entity.RawIngredient;
-import com.futurenbetter.saas.modules.inventory.entity.StockCheckDetail;
-import com.futurenbetter.saas.modules.inventory.entity.StockCheckSession;
+import com.futurenbetter.saas.modules.inventory.entity.*;
 import com.futurenbetter.saas.modules.inventory.enums.InventoryStatus;
+import com.futurenbetter.saas.modules.inventory.enums.TransactionType;
 import com.futurenbetter.saas.modules.inventory.mapper.StockCheckMapper;
-import com.futurenbetter.saas.modules.inventory.repository.IngredientBatchRepository;
-import com.futurenbetter.saas.modules.inventory.repository.RawIngredientRepository;
-import com.futurenbetter.saas.modules.inventory.repository.StockCheckDetailRepository;
-import com.futurenbetter.saas.modules.inventory.repository.StockCheckSessionRepository;
+import com.futurenbetter.saas.modules.inventory.repository.*;
 import com.futurenbetter.saas.modules.inventory.service.inter.StockCheckService;
 import com.futurenbetter.saas.modules.inventory.specification.StockCheckSessionSpec;
 import com.futurenbetter.saas.modules.notification.entity.Notification;
@@ -40,6 +37,7 @@ public class StockCheckServiceImpl implements StockCheckService {
     private final RawIngredientRepository ingredientRepository;
     private final StockCheckMapper stockCheckMapper;
     private final NotificationService notificationService;
+    private final InventoryTransactionRepository inventoryTransactionRepository;
 
 
     @Override
@@ -155,17 +153,78 @@ public class StockCheckServiceImpl implements StockCheckService {
             session.setNote(request.getNote());
             session.setInventoryStatus(InventoryStatus.ACTIVE);
 
-            // Logic Cân bằng kho (Adjustment) sẽ thực hiện ở đây...
-            // (Như đã thảo luận, ta sẽ ghi nhận transaction log hoặc gọi service xử lý batch)
+            List<StockCheckDetail> details = detailRepository.findAllBySessionId(session.getId());
+
+            for (StockCheckDetail detail : details) {
+                Double diff = detail.getDiffQuantity();
+
+                // Bỏ qua nếu không có sự chênh lệch (Thực tế == Hệ thống)
+                if (diff == null || diff == 0.0) {
+                    continue;
+                }
+
+                RawIngredient ingredient = detail.getIngredient();
+
+                if (diff < 0) {
+                    // 1. HAO HỤT (THIẾU HÀNG): Trừ kho theo phương pháp FIFO
+                    double amountToDeduct = Math.abs(diff);
+                    List<IngredientBatch> activeBatches = batchRepository
+                            .findByRawIngredientIdAndInventoryStatusOrderByExpiredAtAsc(ingredient.getId(), InventoryStatus.ACTIVE);
+
+                    for (IngredientBatch batch : activeBatches) {
+                        if (amountToDeduct <= 0) break; // Đã trừ đủ số lượng hụt
+
+                        double deductAmount = Math.min(batch.getCurrentQuantity(), amountToDeduct);
+                        if (deductAmount > 0) {
+                            batch.setCurrentQuantity(batch.getCurrentQuantity() - deductAmount);
+                            amountToDeduct -= deductAmount;
+                            batchRepository.save(batch);
+
+                            // Ghi lại lịch sử trừ kho
+                            createAdjustmentTransaction(session.getShop(), ingredient, batch, detail,
+                                    -deductAmount, batch.getCurrentQuantity());
+                        }
+                    }
+
+                    if (amountToDeduct > 0) {
+                        // Cảnh báo: Số lượng hụt lớn hơn cả tổng tồn kho hiện tại (Có thể do sai sót hệ thống nghiêm trọng)
+                        // Trong thực tế có thể throw exception hoặc cho phép kho âm. Ở đây ta tạm thời ném lỗi để kiểm soát.
+                        throw new BusinessException("Lỗi: Số lượng hụt của " + ingredient.getName() + " lớn hơn tổng tồn các lô!");
+                    }
+
+                } else {
+                    // 2. DƯ THỪA (THỪA HÀNG): Cộng dồn vào lô có hạn sử dụng dài nhất
+                    List<IngredientBatch> activeBatches = batchRepository
+                            .findByRawIngredientIdAndInventoryStatusOrderByExpiredAtDesc(ingredient.getId(), InventoryStatus.ACTIVE);
+
+                    if (!activeBatches.isEmpty()) {
+                        IngredientBatch latestBatch = activeBatches.get(0);
+                        latestBatch.setCurrentQuantity(latestBatch.getCurrentQuantity() + diff);
+                        batchRepository.save(latestBatch);
+
+                        // Ghi lại lịch sử cộng kho
+                        createAdjustmentTransaction(session.getShop(), ingredient, latestBatch, detail,
+                                diff, latestBatch.getCurrentQuantity());
+                    } else {
+                        // Nếu quán hoàn toàn chưa nhập hàng (không có lô) mà lại kiểm ra thừa hàng
+                        throw new BusinessException("Lỗi: Phát hiện dư thừa " + ingredient.getName() + " nhưng nguyên liệu này chưa từng được nhập lô nào. Vui lòng tạo phiếu Nhập Kho trước!");
+                    }
+                }
+            }
+            // ==============================================================
+            // KẾT THÚC LOGIC CÂN BẰNG KHO
+            // ==============================================================
+
         } else {
-            session.setInventoryStatus(InventoryStatus.INACTIVE); // Cancel phiếu
+            session.setInventoryStatus(InventoryStatus.INACTIVE); // Hủy phiếu
         }
 
         StockCheckSession result = sessionRepository.save(session);
 
+        // Bắn Notification
         Notification noti = Notification.builder()
                 .title("Kiểm kê nguyên liệu hoàn thành")
-                .message("Phiên kiểm kho " + session.getCode() + " đã được " + (Boolean.TRUE.equals(request.getIsApproved()) ? "duyệt" : "hủy") + ". Vui lòng kiểm tra lại số lượng tồn kho sau khi duyệt.")
+                .message("Phiên kiểm kho " + session.getCode() + " đã được " + (Boolean.TRUE.equals(request.getIsApproved()) ? "duyệt" : "hủy") + ". Vui lòng kiểm tra lại thẻ kho.")
                 .type(NotificationType.INVENTORY)
                 .recipientType("SHOP_ADMIN")
                 .recipientId(shopAdminId)
@@ -193,5 +252,21 @@ public class StockCheckServiceImpl implements StockCheckService {
         // Map list details
         response.setDetails(stockCheckMapper.toDetailResponseList(detailRepository.findAllBySessionId(session.getId())));
         return response;
+    }
+
+
+    private void createAdjustmentTransaction(Shop shop, RawIngredient ingredient, IngredientBatch batch,
+                                             StockCheckDetail detail, Double quantityChange, Double quantityAfter) {
+        InventoryTransaction transaction = new InventoryTransaction();
+        transaction.setShop(shop);
+        transaction.setIngredient(ingredient);
+        transaction.setBatch(batch);
+        transaction.setStockCheckDetail(detail);
+        transaction.setQuantityChange(quantityChange);
+        transaction.setQuantityAfter(quantityAfter);
+        transaction.setTransactionType(TransactionType.STOCK_CHECK_ADJUST);
+        transaction.setInventoryStatus(InventoryStatus.ACTIVE);
+
+        inventoryTransactionRepository.save(transaction);
     }
 }

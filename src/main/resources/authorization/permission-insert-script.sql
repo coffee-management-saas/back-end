@@ -47,6 +47,7 @@ VALUES
     (NOW(), NOW(), 'unit-conversion:update', 'Cập nhật quy đổi đơn vị', 'ACTIVE'),
 
     (NOW(), NOW(), 'order:create', 'Tạo đơn hàng mới', 'ACTIVE'),
+    (NOW(), NOW(), 'order:read-history', 'Xem lịch sử đơn hàng', 'ACTIVE'),
 
     (NOW(), NOW(), 'category:create', 'Tạo danh mục sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'category:read', 'Xem danh sách danh mục', 'ACTIVE'),
@@ -83,4 +84,19 @@ VALUES
     (NOW(), NOW(), 'promotion:read-detail', 'Xem chi tiết khuyến mãi', 'ACTIVE'),
     (NOW(), NOW(), 'promotion:update', 'Cập nhật khuyến mãi', 'ACTIVE'),
     (NOW(), NOW(), 'promotion:delete', 'Xóa khuyến mãi', 'ACTIVE'),
-    (NOW(), NOW(), 'promotion:upload-image', 'Tải lên ảnh khuyến mãi', 'ACTIVE');
+    (NOW(), NOW(), 'promotion:upload-image', 'Tải lên ảnh khuyến mãi', 'ACTIVE'),
+
+    (NOW(), NOW(), 'membership-rank:read', 'Xem hạng thành viên', 'ACTIVE'),
+    (NOW(), NOW(), 'membership-rank:read-detail', 'Xem chi tiết hạng thành viên', 'ACTIVE'),
+    (NOW(), NOW(), 'membership-rank:create', 'Tạo hạng thành viên', 'ACTIVE'),
+    (NOW(), NOW(), 'membership-rank:update', 'Cập nhật hạng thành viên', 'ACTIVE'),
+    (NOW(), NOW(), 'membership-rank:delete', 'Xóa hạng thành viên', 'ACTIVE'),
+
+    (NOW(), NOW(), 'shop:read', 'Xem cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'shop:read-detail', 'Xem chi tiết cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'shop:create', 'Tạo cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'shop:update', 'Cập nhật cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'shop:delete', 'Xóa cửa hàng', 'ACTIVE'),
+
+    (NOW(), NOW(), 'dashboard:shop', 'Dashboard hằng ngày của cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'dashboard:system', 'Dashboard hằng tháng của system', 'ACTIVE');

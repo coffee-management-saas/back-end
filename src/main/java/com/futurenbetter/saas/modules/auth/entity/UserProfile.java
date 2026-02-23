@@ -13,7 +13,15 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "user_profile")
+@Table(
+        name = "user_profile",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_shop_email",
+                        columnNames = {"shop_id", "email"}
+                )
+        }
+)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -37,7 +45,7 @@ public class UserProfile {
     @Column(name = "phone")
     private String phone;
 
-    @Column(name = "email", unique = true)
+    @Column(name = "email")
     private String email;
 
     @Column(name = "address")

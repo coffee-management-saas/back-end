@@ -33,4 +33,8 @@ public interface IngredientBatchRepository
                         @Param("shopId") Long shopId,
                         @Param("ingredientId") Long ingredientId,
                         @Param("status") InventoryStatus status);
+
+    List<IngredientBatch> findByRawIngredientIdAndInventoryStatusOrderByExpiredAtAsc(Long ingredientId, InventoryStatus status);
+
+    List<IngredientBatch> findByRawIngredientIdAndInventoryStatusOrderByExpiredAtDesc(Long ingredientId, InventoryStatus status);
 }

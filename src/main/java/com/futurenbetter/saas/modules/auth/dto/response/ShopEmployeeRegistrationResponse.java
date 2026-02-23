@@ -19,5 +19,4 @@ public class ShopEmployeeRegistrationResponse {
     private LocalDate dob;
     private LocalDateTime createdAt;
     private EmployeeResponse employee;
-    private String password;
 }
