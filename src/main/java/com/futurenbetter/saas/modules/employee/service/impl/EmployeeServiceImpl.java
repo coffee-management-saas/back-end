@@ -43,7 +43,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         UserProfile userProfile = employee.getUserProfile();
 
-        ShopEmployeeRegistrationResponse result = userProfileMapper.toEmployeeResponse(userProfile, employeeMapper.toResponse(employee), null);
+        ShopEmployeeRegistrationResponse result = userProfileMapper.toEmployeeResponse(userProfile, employeeMapper.toResponse(employee));
         return result;
     }
 
