@@ -12,6 +12,9 @@ import com.futurenbetter.saas.modules.employee.mapper.EmployeeUnavailabilityMapp
 import com.futurenbetter.saas.modules.employee.repository.EmployeeUnavailabilityRepository;
 import com.futurenbetter.saas.modules.employee.service.inter.EmployeeService;
 import com.futurenbetter.saas.modules.employee.service.inter.EmployeeUnavailabilityService;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ public class EmployeeUnavailabilityServiceImpl implements EmployeeUnavailability
     private final EmployeeUnavailabilityRepository unavailabilityRepository;
     private final EmployeeService employeeService;
     private final EmployeeUnavailabilityMapper mapper;
+    private final NotificationService notificationService;
 
 
     @Override
@@ -38,6 +42,17 @@ public class EmployeeUnavailabilityServiceImpl implements EmployeeUnavailability
         entity.setEmployee(employee);
 
         EmployeeUnavailability result = unavailabilityRepository.save(entity);
+
+        Notification noti = Notification.builder()
+                .title("Tạo lịch nghỉ thành công")
+                .message(employee.getUserProfile().getFullname() + " đã tạo lịch nghỉ từ " + request.getStartTime() + " đến " + request.getEndTime())
+                .type(NotificationType.EMPLOYEE)
+                .recipientType("EMPLOYEE")
+                .recipientId(employee.getEmployeeId())
+                .referenceLink("api/employee/unavailability/" + result.getEmployeeUnavailabilityId())
+                .build();
+
+        notificationService.sendToUser(noti);
 
         return mapper.toResponse(result);
     }
@@ -54,6 +69,17 @@ public class EmployeeUnavailabilityServiceImpl implements EmployeeUnavailability
         mapper.updateFromRequest(request, entity);
 
         EmployeeUnavailability result = unavailabilityRepository.save(entity);
+
+        Notification noti = Notification.builder()
+                .title("Cập nhật lịch nghỉ thành công")
+                .message(entity.getEmployee().getUserProfile().getFullname() + " đã cập nhật lịch nghỉ từ " + request.getStartTime() + " đến " + request.getEndTime())
+                .type(NotificationType.EMPLOYEE)
+                .recipientType("EMPLOYEE")
+                .recipientId(entity.getEmployee().getEmployeeId())
+                .referenceLink("api/employee/unavailability/" + result.getEmployeeUnavailabilityId())
+                .build();
+
+        notificationService.sendToUser(noti);
 
         return mapper.toResponse(result);
     }
@@ -80,6 +106,17 @@ public class EmployeeUnavailabilityServiceImpl implements EmployeeUnavailability
 
         entity.setStatus(UnavailabilityStatus.INACTIVE);
         unavailabilityRepository.save(entity);
+
+        Notification noti = Notification.builder()
+                .title("Xóa lịch nghỉ thành công")
+                .message(entity.getEmployee().getUserProfile().getFullname() + " đã xóa lịch nghỉ từ " + entity.getStartTime() + " đến " + entity.getEndTime())
+                .type(NotificationType.EMPLOYEE)
+                .recipientType("EMPLOYEE")
+                .recipientId(entity.getEmployee().getEmployeeId())
+                .referenceLink("api/employee/unavailability/" + entity.getEmployeeUnavailabilityId())
+                .build();
+
+        notificationService.sendToUser(noti);
     }
 
 

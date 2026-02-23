@@ -18,15 +18,17 @@ import org.springframework.web.cors.CorsUtils;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-        private final AuthenticationService authenticationService;
-        private static final String[] PUBLIC_ENDPOINTS = {
-                        "/api/**",
-                        "/v3/api-docs/**",
-                        "/api/swagger-ui/**",
-                        "/api/swagger-ui.html",
-                        "/api/docs/**",
-                        "/swagger-ui/**",
-        };
+    private static final String[] strings = {
+            "/api/**",
+            "/v3/api-docs/**",
+            "/api/swagger-ui/**",
+            "/api/swagger-ui.html",
+            "/api/docs/**",
+            "/swagger-ui/**",
+            "/ws/**",
+    };
+    private final AuthenticationService authenticationService;
+        private static final String[] PUBLIC_ENDPOINTS = strings;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -39,6 +41,7 @@ public class SecurityConfig {
                                 // .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                                 // .anyRequest().authenticated()
                                 // )
+                                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/auth/**", "/api/system/auth/**").permitAll()
                                                 .requestMatchers("/api/customers/me").permitAll()

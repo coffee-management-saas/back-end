@@ -10,6 +10,9 @@ import com.futurenbetter.saas.modules.inventory.mapper.RecipeMapper;
 import com.futurenbetter.saas.modules.inventory.repository.RawIngredientRepository;
 import com.futurenbetter.saas.modules.inventory.repository.RecipeRepository;
 import com.futurenbetter.saas.modules.inventory.service.inter.RecipeService;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,12 +28,14 @@ public class RecipeServiceImpl implements RecipeService {
     private final RecipeRepository recipeRepository;
     private final RawIngredientRepository ingredientRepository;
     private final RecipeMapper recipeMapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
     public List<RecipeResponse> create(RecipeRequest request) {
         Long shopId = SecurityUtils.getCurrentShopId();
         var shop = SecurityUtils.getCurrentShop();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
 
         if (request.getVariantId() != null) {
             recipeRepository.deleteByVariantIdAndShopId(request.getVariantId(), shopId);
@@ -55,7 +60,20 @@ public class RecipeServiceImpl implements RecipeService {
             return recipe;
         }).collect(Collectors.toList());
 
-        return recipeRepository.saveAll(entities).stream()
+        List<Recipe> results = recipeRepository.saveAll(entities);
+
+        Notification noti = Notification.builder()
+                .title("Tạo công thức thành công")
+                .message("Tạo " + results.stream().count() + " công thức thành công")
+                .type(NotificationType.INVENTORY)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink(null)
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return results.stream()
                 .map(recipeMapper::toResponse)
                 .collect(Collectors.toList());
     }

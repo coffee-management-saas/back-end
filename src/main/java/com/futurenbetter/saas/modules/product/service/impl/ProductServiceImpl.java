@@ -5,6 +5,9 @@ import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import com.futurenbetter.saas.modules.product.dto.filter.ProductFilter;
 import com.futurenbetter.saas.modules.product.dto.request.ProductRequest;
 import com.futurenbetter.saas.modules.product.dto.response.ProductResponse;
@@ -39,11 +42,14 @@ public class ProductServiceImpl implements ProductService {
     private final ShopRepository shopRepository;
     private final ToppingRepository toppingRepository;
     private final ProductMapper productMapper;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
     public ProductResponse create(ProductRequest request) {
+
         Long currentShopId = TenantContext.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
 
         if (productRepository.existsByNameAndShopId(request.getName(), currentShopId)) {
             throw new BusinessException("Tên sản phẩm đã tồn tại");
@@ -60,13 +66,28 @@ public class ProductServiceImpl implements ProductService {
         product.setCategory(category);
         product.setStatus(Status.ACTIVE);
 
-        return productMapper.toResponse(productRepository.save(product));
+        Product result = productRepository.save(product);
+
+        Notification noti = Notification.builder()
+                .title("Tạo sản phẩm thành công")
+                .message("Tạo sản phẩm " + result.getName() + " thành công")
+                .type(NotificationType.PRODUCT)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/product/products/" + result.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return productMapper.toResponse(result);
     }
 
     @Override
     @Transactional
     public ProductResponse update(Long id, ProductRequest request) {
+
         Long currentShopId = TenantContext.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
         Product product = productRepository.findByIdAndShopId(id, currentShopId)
                 .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
 
@@ -78,7 +99,20 @@ public class ProductServiceImpl implements ProductService {
 
         productMapper.updateFromRequest(product, request);
 
-        return productMapper.toResponse(productRepository.save(product));
+        Product result = productRepository.save(product);
+
+        Notification noti = Notification.builder()
+                .title("Cập nhật sản phẩm thành công")
+                .message("Cập nhật sản phẩm " + result.getName() + " thành công")
+                .type(NotificationType.PRODUCT)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/product/products/" + result.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
+
+        return productMapper.toResponse(result);
     }
 
     @Override
@@ -101,7 +135,9 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void updateAllowToppings(Long productId, List<Long> toppingIds) {
+
         Long currentShopId = TenantContext.getCurrentShopId();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
         Product product = productRepository.findByIdAndShopId(productId, currentShopId)
                 .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
 
@@ -120,6 +156,17 @@ public class ProductServiceImpl implements ProductService {
 
             allowToppingRepository.saveAll(newMappings);
         }
+
+        Notification noti = Notification.builder()
+                .title("Cập nhật danh sách topping thành công")
+                .message("Cập nhật danh sách topping cho sản phẩm " + product.getName() + " thành công")
+                .type(NotificationType.PRODUCT)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/product/products/" + product)
+                .build();
+
+        notificationService.sendToUser(noti);
     }
 
     @Override

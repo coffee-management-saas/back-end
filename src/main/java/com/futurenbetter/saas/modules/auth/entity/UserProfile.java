@@ -76,5 +76,11 @@ public class UserProfile {
     @ToString.Exclude
     @OneToMany(mappedBy = "owner")
     private List<Shop> ownedShops;
+
+    @PrePersist
+    public void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = createdAt;
+    }
 }
 

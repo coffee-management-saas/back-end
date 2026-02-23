@@ -14,6 +14,9 @@ import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
 import com.futurenbetter.saas.modules.auth.repository.MembershipRankRepository;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceService;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import com.futurenbetter.saas.modules.order.dto.request.OrderItemRequest;
 import com.futurenbetter.saas.modules.order.dto.request.OrderRequest;
 import com.futurenbetter.saas.modules.order.dto.request.ToppingItemRequest;
@@ -70,6 +73,7 @@ public class OrderServiceImpl implements OrderService {
     private final MembershipRankRepository membershipRankRepository;
     private final PointHistoryMapper pointHistoryMapper;
     private final PointHistoryRepository pointHistoryRepository;
+    private final NotificationService notificationService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -275,11 +279,29 @@ public class OrderServiceImpl implements OrderService {
                 String payUrl = (String) response.getBody().get("payUrl");
                 OrderResponse orderResponse = orderMapper.toOrderResponse(savedOrder);
                 orderResponse.setPayUrl(payUrl);
+
+                generateNotification("Tạo đơn hàng thành công",
+                        "Bạn đã tạo đơn hàng #"
+                                + savedOrder.getOrderId()
+                                + " thành công với tổng giá trị "
+                                + savedOrder.getPaidPrice(),
+                        currentUserId,
+                        savedOrder.getOrderId());
+
                 return orderResponse;
             } else {
                 throw new BusinessException("Lỗi kết nối cổng thanh toán MOMO");
             }
         }
+
+        generateNotification("Tạo đơn hàng thành công",
+                "Bạn đã tạo đơn hàng #"
+                        + savedOrder.getOrderId()
+                        + " thành công với tổng giá trị "
+                        + savedOrder.getPaidPrice(),
+                currentUserId,
+                savedOrder.getOrderId());
+
         return orderMapper.toOrderResponse(savedOrder);
     }
 
@@ -435,5 +457,19 @@ public class OrderServiceImpl implements OrderService {
                 break;
             }
         }
+    }
+
+    void generateNotification(String title, String message, Long recipientId, Long orderId) {
+
+        Notification noti = Notification.builder()
+                .title(title)
+                .message(message)
+                .type(NotificationType.ORDER)
+                .recipientType("CUSTOMER")
+                .recipientId(recipientId)
+                .referenceLink("api/orders/" + orderId)
+                .build();
+
+        notificationService.sendToUser(noti);
     }
 }

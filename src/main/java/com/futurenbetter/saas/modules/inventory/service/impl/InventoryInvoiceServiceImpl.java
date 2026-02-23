@@ -15,6 +15,9 @@ import com.futurenbetter.saas.modules.inventory.repository.*;
 import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceService;
 import com.futurenbetter.saas.modules.inventory.service.inter.UnitConversionService;
 import com.futurenbetter.saas.modules.inventory.specification.InventoryInvoiceSpec;
+import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.enums.NotificationType;
+import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -38,6 +41,8 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
     private final RecipeRepository recipeRepository;
 
     private final UnitConversionService conversionService;
+    private final NotificationService notificationService;
+
     private final InventoryInvoiceMapper invoiceMapper;
     private final InvoiceItemMapper itemMapper;
 
@@ -45,6 +50,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
     @Transactional
     public InventoryInvoiceResponse importStock(InventoryInvoiceRequest request) {
         var shop = SecurityUtils.getCurrentShop();
+        Long shopAdminId = SecurityUtils.getCurrentUserId();
 
         // 1. Tạo Header Invoice dùng Mapper
         InventoryInvoice invoice = invoiceMapper.toEntity(request);
@@ -119,6 +125,17 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
         invoice = invoiceRepository.save(invoice);
 
         var response = invoiceMapper.toResponse(invoice);
+
+        Notification noti = Notification.builder()
+                .title("Nhập kho thành công")
+                .message("Nhập kho các sản phẩm " + details.stream().map(d -> d.getRawIngredient().getName()).reduce((a, b) -> a + ", " + b).orElse("") + " thành công với tổng giá trị " + totalAmount)
+                .type(NotificationType.INVENTORY)
+                .recipientType("SHOP_ADMIN")
+                .recipientId(shopAdminId)
+                .referenceLink("api/inventory/invoices/" + invoice.getId())
+                .build();
+
+        notificationService.sendToUser(noti);
 
         return response;
     }

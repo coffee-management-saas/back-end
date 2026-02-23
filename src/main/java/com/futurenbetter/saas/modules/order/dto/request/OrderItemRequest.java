@@ -16,5 +16,5 @@ public class OrderItemRequest {
 
     Long productVariantId;
     Integer quantity;
-    List<ToppingItemRequest> toppingItems;
+    List<ToppingItemRequest> toppingItems = new java.util.ArrayList<>();
 }

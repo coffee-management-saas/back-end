@@ -10,8 +10,8 @@ import java.util.List;
 
 public interface SizeService {
     SizeResponse create(SizeRequest request);
-    Size update(Long id, SizeRequest request);
+    SizeResponse update(Long id, SizeRequest request);
     List<SizeResponse> getAll(SizeStatus status);
-    List<Size> getActiveSizes();
+    List<SizeResponse> getActiveSizes();
     void delete(Long id);
 }
