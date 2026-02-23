@@ -377,11 +377,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Shop shop = shopRepository.findById(SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
-        // tạo pass ngẫu nhiên và trả ve để employee tự đổi pass lần sau
-        String password = PasswordUtils.generateRandomPassword();
+
 
         UserProfile employeeProfile = userProfileMapper.toEntity(request);
-        employeeProfile.setPassword(passwordEncoder.encode(password));
+        employeeProfile.setPassword(passwordEncoder.encode(request.getPassword()));
         employeeProfile.setStatus(UserProfileEnum.ACTIVE);
         employeeProfile.setShop(shop);
 
@@ -400,7 +399,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .build()
         );
         // trả về password cho shop-admin lưu lại gửi cho nhân viên
-        return userProfileMapper.toEmployeeResponse(savedEmployee, employee, password);
+        return userProfileMapper.toEmployeeResponse(savedEmployee, employee);
     }
 
     @Override

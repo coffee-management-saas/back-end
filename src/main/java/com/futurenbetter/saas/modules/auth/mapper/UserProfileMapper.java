@@ -28,6 +28,5 @@ public interface UserProfileMapper {
     @Mapping(target = "address", source = "userProfile.address")
     @Mapping(target = "dob", source = "userProfile.dob")
     @Mapping(target = "createdAt", source = "userProfile.createdAt")
-    @Mapping(target = "password", source = "password")
-    ShopEmployeeRegistrationResponse toEmployeeResponse(UserProfile userProfile, EmployeeResponse employeeResponse, String password);
+    ShopEmployeeRegistrationResponse toEmployeeResponse(UserProfile userProfile, EmployeeResponse employeeResponse);
 }
