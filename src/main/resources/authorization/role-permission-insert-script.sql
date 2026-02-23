@@ -33,7 +33,7 @@ FROM public.role r
                                                            'stock-check:start-session', 'stock-check:read-by-filter',
                                                            'stock-check:update-count', 'stock-check:approve-session',
                                                            'unit-conversion:create', 'unit-conversion:update',
-                                                           'order:create',
+                                                           'order:create', 'order:read-history',
                                                            'category:create', 'category:read', 'category:read-detail',
                                                            'category:update', 'category:delete',
                                                            'product:create', 'product:read', 'product:read-detail', 'product:update',
@@ -58,7 +58,7 @@ FROM public.role r
                                                            'inventory-invoice:import', 'inventory-invoice:read-by-filter', 'inventory-invoice:read-detail',
                                                            'raw-ingredient:read-by-filter', 'raw-ingredient:read-detail',
                                                            'recipe:read-by-variant', 'recipe:read-by-topping',
-                                                           'order:create',
+                                                           'order:create', 'order:read-history',
                                                            'category:read', 'category:read-detail',
                                                            'product:read', 'product:read-detail', 'product:read-allow-topping',
                                                            'product-variant:read', 'product-variant:read-detail', 'product-variant:read-by-product',
@@ -76,7 +76,7 @@ INSERT INTO public.role_permission (role_id, permission_id)
 SELECT r.role_id, p.permission_id
 FROM public.role r
          JOIN public.permission p ON p.permission_name IN (
-                                                           'order:create',
+                                                           'order:create', 'order:read-history',
                                                            'product:read', 'product:read-detail', 'product:read-allow-topping',
                                                            'product-variant:read', 'product-variant:read-detail', 'product-variant:read-by-product',
                                                            'product-size:read', 'product-size:read-active',
