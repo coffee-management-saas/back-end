@@ -21,6 +21,7 @@ import com.futurenbetter.saas.modules.subscription.repository.SubscriptionTransa
 import com.futurenbetter.saas.modules.subscription.service.CloudinaryStorageService;
 import com.futurenbetter.saas.modules.subscription.service.PdfExportService;
 import com.futurenbetter.saas.modules.subscription.service.SubscriptionService;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -95,7 +96,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         //3. Đóng gói thông tin shop vào extra data (Base64 JSON)
         String extraData = "";
         try {
-            byte[] jsonBytes = objectMapper.writeValueAsBytes(request);
+            byte[] jsonBytes = objectMapper.writeValueAsBytes(extraDataMap);
             extraData = Base64.getUrlEncoder().withoutPadding().encodeToString(jsonBytes);
 
         } catch (Exception e) {
@@ -188,9 +189,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         SubscriptionRequest shopData;
         try {
             byte[] decodedBytes = Base64.getUrlDecoder().decode(extraData);
-            shopData = objectMapper.readValue(decodedBytes, SubscriptionRequest.class);
+            JsonNode rootNode = objectMapper.readTree(decodedBytes);
+            shopData = objectMapper.treeToValue(rootNode.get("shopData"), SubscriptionRequest.class);
         } catch (Exception e) {
-            throw new BusinessException("Không thể giải mã dữ liệu shop");
+            throw new BusinessException("Không thể giải mã dữ liệu shop: " + e.getMessage());
         }
 
         if (shopRepository.existsByEmail(shopData.getEmail()) ||

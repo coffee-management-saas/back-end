@@ -99,10 +99,10 @@
 - promotion:delete
 - promotion: upload-image
 
-SYSTEM_ADMIN
+SYSTEM
 - all permissions
 
-SHOP_ADMIN
+SHOP
 - promotion:create
 - promotion:read
 - promotion:read-detail
@@ -173,7 +173,7 @@ SHOP_ADMIN
 - product-variant:read-detail
 - product-variant:read-by-product
 
-SHOP_STAFF
+EMPLOYEE
 - employee-unavailability:read
 - employee-unavailability:read-detail
 - schedule:read
