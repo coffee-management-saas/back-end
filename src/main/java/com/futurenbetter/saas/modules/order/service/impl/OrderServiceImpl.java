@@ -17,6 +17,7 @@ import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceSe
 import com.futurenbetter.saas.modules.notification.entity.Notification;
 import com.futurenbetter.saas.modules.notification.enums.NotificationType;
 import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
+import com.futurenbetter.saas.modules.order.dto.filter.OrderFilter;
 import com.futurenbetter.saas.modules.order.dto.request.OrderItemRequest;
 import com.futurenbetter.saas.modules.order.dto.request.OrderRequest;
 import com.futurenbetter.saas.modules.order.dto.request.ToppingItemRequest;
@@ -31,6 +32,7 @@ import com.futurenbetter.saas.modules.order.mapper.OrderMapper;
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
 import com.futurenbetter.saas.modules.order.repository.PointHistoryRepository;
 import com.futurenbetter.saas.modules.order.service.OrderService;
+import com.futurenbetter.saas.modules.order.specification.OrderSpecification;
 import com.futurenbetter.saas.modules.product.entity.ProductVariant;
 import com.futurenbetter.saas.modules.product.entity.Topping;
 import com.futurenbetter.saas.modules.product.repository.ProductVariantRepository;
@@ -44,6 +46,7 @@ import com.futurenbetter.saas.modules.subscription.service.PdfExportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -471,5 +474,25 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         notificationService.sendToUser(noti);
+    }
+
+
+    @Override
+    public Page<OrderResponse> getOrderHistory(OrderFilter filter) {
+        Long currentShopId = SecurityUtils.getCurrentShopId();
+
+        if (SecurityUtils.isCustomer()) {
+            Long currentCustomerId = SecurityUtils.getCurrentUserId();
+            filter.setCustomerId(currentCustomerId);
+        } else if (SecurityUtils.isUserProfile()) {
+            // có thể thêm logic để nhân vie ktra dơn trong ca của họ
+        }
+
+        Page<Order> orderPage = orderRepository.findAll(
+                OrderSpecification.filter(currentShopId, filter),
+                filter.getPageable()
+        );
+
+        return orderPage.map(orderMapper::toOrderResponse);
     }
 }

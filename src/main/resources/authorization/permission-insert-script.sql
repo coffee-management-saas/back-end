@@ -47,6 +47,7 @@ VALUES
     (NOW(), NOW(), 'unit-conversion:update', 'Cập nhật quy đổi đơn vị', 'ACTIVE'),
 
     (NOW(), NOW(), 'order:create', 'Tạo đơn hàng mới', 'ACTIVE'),
+    (NOW(), NOW(), 'order:read-history', 'Xem lịch sử đơn hàng', 'ACTIVE'),
 
     (NOW(), NOW(), 'category:create', 'Tạo danh mục sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'category:read', 'Xem danh sách danh mục', 'ACTIVE'),
