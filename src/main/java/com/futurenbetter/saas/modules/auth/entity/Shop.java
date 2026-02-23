@@ -78,4 +78,13 @@ public class Shop {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user_id")
     private UserProfile owner;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if(shopStatus == null) {
+            shopStatus = ShopStatus.ACTIVE;
+        }
+    }
 }

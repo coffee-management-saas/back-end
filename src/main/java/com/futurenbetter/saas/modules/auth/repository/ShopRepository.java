@@ -2,10 +2,11 @@ package com.futurenbetter.saas.modules.auth.repository;
 
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.Optional;
 
-public interface ShopRepository extends JpaRepository<Shop, Long> {
+public interface ShopRepository extends JpaRepository<Shop, Long>, JpaSpecificationExecutor<Shop> {
     Optional<Shop> findByDomain(String domain);
     boolean existsByDomain(String domain);
     boolean existsByEmail(String email);
