@@ -112,3 +112,7 @@
 - shop:read-detail
 - shop:update
 - shop:delete
+
+19. Dashboard
+- dashboard:shop
+- dashboard:system
