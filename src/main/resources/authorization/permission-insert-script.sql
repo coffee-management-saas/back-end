@@ -96,4 +96,7 @@ VALUES
     (NOW(), NOW(), 'shop:read-detail', 'Xem chi tiết cửa hàng', 'ACTIVE'),
     (NOW(), NOW(), 'shop:create', 'Tạo cửa hàng', 'ACTIVE'),
     (NOW(), NOW(), 'shop:update', 'Cập nhật cửa hàng', 'ACTIVE'),
-    (NOW(), NOW(), 'shop:delete', 'Xóa cửa hàng', 'ACTIVE');
+    (NOW(), NOW(), 'shop:delete', 'Xóa cửa hàng', 'ACTIVE'),
+
+    (NOW(), NOW(), 'dashboard:shop', 'Dashboard hằng ngày của cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'dashboard:system', 'Dashboard hằng tháng của system', 'ACTIVE');

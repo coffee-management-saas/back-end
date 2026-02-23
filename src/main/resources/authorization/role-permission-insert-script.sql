@@ -41,7 +41,8 @@ FROM public.role r
                                                            'product-variant:create', 'product-variant:read',
                                                            'product-variant:read-detail', 'product-variant:read-by-product',
                                                            'membership-rank:read', 'membership-rank:create', 'membership-rank:update', 'membership-rank:delete', 'membership-rank:read-detail',
-                                                           'shop:update', 'shop:read-detail'
+                                                           'shop:update', 'shop:read-detail',
+                                                           'dashboard:shop'
     )
 WHERE r.name = 'SHOP';
 
