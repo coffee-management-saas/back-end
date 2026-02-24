@@ -38,7 +38,7 @@ FROM public.role r
                                                            'category:update', 'category:delete',
                                                            'product:create', 'product:read', 'product:read-detail', 'product:update',
                                                            'product:update-allow-topping', 'product:read-allow-topping',
-                                                           'product-variant:create', 'product-variant:read',
+                                                           'product-variant:create', 'product-variant:read', 'product-variant:update',
                                                            'product-variant:read-detail', 'product-variant:read-by-product',
                                                            'membership-rank:read', 'membership-rank:create', 'membership-rank:update', 'membership-rank:delete', 'membership-rank:read-detail',
                                                            'shop:update', 'shop:read-detail',

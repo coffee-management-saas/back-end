@@ -66,6 +66,7 @@ VALUES
     (NOW(), NOW(), 'product-variant:read', 'Xem danh sách biến thể', 'ACTIVE'),
     (NOW(), NOW(), 'product-variant:read-detail', 'Xem chi tiết biến thể', 'ACTIVE'),
     (NOW(), NOW(), 'product-variant:read-by-product', 'Xem biến thể theo sản phẩm', 'ACTIVE'),
+    (NOW(), NOW(), 'product-variant:update', 'Cập nhật biến thể sản phẩm', 'ACTIVE'),
 
     (NOW(), NOW(), 'product-size:create', 'Tạo kích thước (Size) mới', 'ACTIVE'),
     (NOW(), NOW(), 'product-size:read', 'Xem danh sách kích thước', 'ACTIVE'),
