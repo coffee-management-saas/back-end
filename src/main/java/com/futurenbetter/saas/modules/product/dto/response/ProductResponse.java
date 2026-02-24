@@ -12,6 +12,7 @@ public class ProductResponse {
     String name;
     String description;
     String image;
+    Long price;
     String categoryName;
     Long categoryId;
     Status status;
