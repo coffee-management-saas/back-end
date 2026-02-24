@@ -37,7 +37,7 @@ public class ProductVariant {
     Product product;
 
     @Column(name = "price")
-    Double price;
+    Long price;
 
     @Column(name = "cost_price")
     Double costPrice;

@@ -72,8 +72,7 @@ public class MomoCallbackController {
 
         if ("SUBSCRIPTION".equals(type)) {
             log.info("Routing to SUBSCRIPTION - redirecting to frontend");
-            String orderId = params.get("orderId");
-            String targetUrl = redirectUrl + "/subscription/momo-callback?resultCode=" + resultCode + "&orderId=" + orderId;
+            String targetUrl = redirectUrl + "/subscription/momo-callback";
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(targetUrl))
                     .build();

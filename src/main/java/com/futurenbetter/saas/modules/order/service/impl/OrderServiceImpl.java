@@ -102,22 +102,20 @@ public class OrderServiceImpl implements OrderService {
         // 1. Lấy ShopId và Customer từ SecurityUtils
         Long currentShopId = SecurityUtils.getCurrentShopId();
         Long currentUserId = SecurityUtils.getCurrentUserId();
+        Customer currentCustomer = SecurityUtils.getCurrentCustomer();
         Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
-
-        Customer currentCustomer = customerRepository.findById(currentUserId)
-                .orElseThrow(() -> new BusinessException("Không tìm thấy thông tin khách hàng"));
 
         // 2. Khởi tạo Entity Order từ Request
         Order order = orderMapper.toOrder(request);
         order.setShop(shop);
-        order.setCustomer(currentCustomer);
+        order.setCustomer(currentCustomer); // Set customer cho order
 
         OrderItemStatus initialItemStatus = (request.getPaymentGateway() == PaymentGateway.CASH)
                 ? OrderItemStatus.PAID
                 : OrderItemStatus.PENDING;
 
-        Double totalBasePrice = 0.0;
+        long totalBasePrice = 0;
         List<OrderItem> items = new ArrayList<>();
 
         // 3. Xử lý từng Item trong đơn hàng
@@ -131,9 +129,9 @@ public class OrderServiceImpl implements OrderService {
             ProductVariant variant = productVariantRepository.findById(itemReq.getProductVariantId())
                     .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
             item.setProductVariant(variant);
-            item.setUnitPrice(variant.getPrice().longValue());
+            item.setUnitPrice(variant.getPrice());
 
-            long itemTotal = variant.getPrice().longValue() * itemReq.getQuantity();
+            long itemTotal = (variant.getPrice() * itemReq.getQuantity());
 
             // 4. Xử lý Toppings đi kèm
             if (itemReq.getToppingItems() != null && !itemReq.getToppingItems().isEmpty()) {
@@ -166,10 +164,10 @@ public class OrderServiceImpl implements OrderService {
                     request.getPromotionCode(),
                     currentShopId,
                     currentUserId,
-                    totalBasePrice.longValue());
+                    totalBasePrice);
 
             if (promotion.getPromotionType() == PromotionTypeEnum.ORDER) {
-                discountAmount = calculateDiscount(promotion, totalBasePrice.longValue());
+                discountAmount = calculateDiscount(promotion, totalBasePrice);
             } else if (promotion.getPromotionType() == PromotionTypeEnum.PRODUCT) {
                 if (promotion.getPromotionTargets() == null || promotion.getPromotionTargets().isEmpty()) {
                     throw new BusinessException("Mã khuyến mãi không có sản phẩm áp dụng");
@@ -204,9 +202,9 @@ public class OrderServiceImpl implements OrderService {
 
         // 6. Cập nhật thông tin tổng quát và lưu trữ
         order.setOrderItems(items);
-        order.setBasePrice(totalBasePrice.longValue());
+        order.setBasePrice(totalBasePrice);
         order.setDiscountAmount(discountAmount);
-        order.setPaidPrice(totalBasePrice.longValue() - discountAmount.longValue());
+        order.setPaidPrice(totalBasePrice - discountAmount);
         order.setProductQuantity(items.size());
         order.setPromotion(promotion);
 
@@ -219,7 +217,6 @@ public class OrderServiceImpl implements OrderService {
         // 7. Ghi nhận promotion usage nếu thanh toán bằng CASH
         if (request.getPaymentGateway() == PaymentGateway.CASH) {
             triggerStockDeduction(savedOrder);
-            processCustomerPoints(savedOrder);
 
             if (promotion != null) {
                 promotionService.recordPromotionUsage(
@@ -234,7 +231,7 @@ public class OrderServiceImpl implements OrderService {
         if (request.getPaymentGateway() == PaymentGateway.MOMO) {
             String orderIdMomo = "ORD_" + savedOrder.getOrderId() + "_" + System.currentTimeMillis();
             String requestId = String.valueOf(System.currentTimeMillis());
-            String orderInfo = "Thanh toan don hang #" + savedOrder.getOrderId();
+            String orderInfo = "Thanh toan don hang " + savedOrder.getOrderId();
             String requestType = "captureWallet";
 
             String extraData = "";
@@ -244,8 +241,9 @@ public class OrderServiceImpl implements OrderService {
                 extraDatamap.put("orderId", savedOrder.getOrderId());
 
                 byte[] jsonBytes = objectMapper.writeValueAsBytes(extraDatamap);
-                extraData = Base64.getUrlEncoder().withoutPadding().encodeToString(jsonBytes);
+                extraData = Base64.getEncoder().encodeToString(jsonBytes);
             } catch (Exception e) {
+                log.error("Lỗi chuẩn bị dữ liệu extraData: {}", e.getMessage());
                 throw new BusinessException("Lỗi chuẩn bị dữ liệu thanh toán");
             }
 
@@ -276,35 +274,25 @@ public class OrderServiceImpl implements OrderService {
             body.put("lang", "vi");
 
             RestTemplate restTemplate = new RestTemplate();
+            log.info("Sending MoMo Request (Order): Body={}", body);
             ResponseEntity<Map> response = restTemplate.postForEntity(momoApiUrl, body, Map.class);
+            log.info("MoMo Response (Order): {}", response.getBody());
 
             if (response.getBody() != null && response.getBody().get("payUrl") != null) {
                 String payUrl = (String) response.getBody().get("payUrl");
                 OrderResponse orderResponse = orderMapper.toOrderResponse(savedOrder);
                 orderResponse.setPayUrl(payUrl);
-
-                generateNotification("Tạo đơn hàng thành công",
-                        "Bạn đã tạo đơn hàng #"
-                                + savedOrder.getOrderId()
-                                + " thành công với tổng giá trị "
-                                + savedOrder.getPaidPrice(),
-                        currentUserId,
-                        savedOrder.getOrderId());
-
                 return orderResponse;
             } else {
-                throw new BusinessException("Lỗi kết nối cổng thanh toán MOMO");
+                String resultCode = response.getBody() != null ? String.valueOf(response.getBody().get("resultCode"))
+                        : "unknown";
+                String message = response.getBody() != null ? String.valueOf(response.getBody().get("message"))
+                        : "No message";
+                log.error("MoMo Order Error: resultCode={}, message={}", resultCode, message);
+                throw new BusinessException(
+                        "Lỗi kết nối cổng thanh toán MOMO: " + message + " (code: " + resultCode + ")");
             }
         }
-
-        generateNotification("Tạo đơn hàng thành công",
-                "Bạn đã tạo đơn hàng #"
-                        + savedOrder.getOrderId()
-                        + " thành công với tổng giá trị "
-                        + savedOrder.getPaidPrice(),
-                currentUserId,
-                savedOrder.getOrderId());
-
         return orderMapper.toOrderResponse(savedOrder);
     }
 
@@ -347,7 +335,6 @@ public class OrderServiceImpl implements OrderService {
         }
         orderRepository.save(order);
         triggerStockDeduction(order);
-        processCustomerPoints(order);
 
         if (order.getPromotion() != null) {
             Long customerId = (order.getCustomer() != null) ? order.getCustomer().getId() : null;
@@ -421,13 +408,16 @@ public class OrderServiceImpl implements OrderService {
 
     private void processCustomerPoints(Order order) {
         Customer customer = order.getCustomer();
-        if (customer == null) return;
+        if (customer == null)
+            return;
 
         MembershipRank currentRank = customer.getMembershipRank();
-        if (currentRank == null || currentRank.getPointRate() == null) return;
+        if (currentRank == null || currentRank.getPointRate() == null)
+            return;
 
         int earnedPoints = (int) Math.floor(order.getPaidPrice() * currentRank.getPointRate());
-        if (earnedPoints <= 0) return;
+        if (earnedPoints <= 0)
+            return;
 
         int beforePoints = (customer.getTotalPoint() != null) ? customer.getTotalPoint().intValue() : 0;
         int afterPoints = beforePoints + earnedPoints;
@@ -476,7 +466,6 @@ public class OrderServiceImpl implements OrderService {
         notificationService.sendToUser(noti);
     }
 
-
     @Override
     public Page<OrderResponse> getOrderHistory(OrderFilter filter) {
         Long currentShopId = SecurityUtils.getCurrentShopId();
@@ -490,8 +479,7 @@ public class OrderServiceImpl implements OrderService {
 
         Page<Order> orderPage = orderRepository.findAll(
                 OrderSpecification.filter(currentShopId, filter),
-                filter.getPageable()
-        );
+                filter.getPageable());
 
         return orderPage.map(orderMapper::toOrderResponse);
     }
