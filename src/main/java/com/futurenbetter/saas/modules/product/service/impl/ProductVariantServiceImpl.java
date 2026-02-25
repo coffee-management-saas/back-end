@@ -62,7 +62,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
                 .title("Tạo Product Variant thành công")
                 .message("Tạo variant cho sản phẩm " + product.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/variants/" + result.getId())
                 .build();
@@ -96,7 +96,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
                 .title("Cập nhật Product Variant thành công")
                 .message("Cập nhật variant cho sản phẩm " + variant.getProduct().getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/variants/" + result.getId())
                 .build();

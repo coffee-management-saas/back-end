@@ -8,4 +8,5 @@ import java.time.LocalDate;
 public class DashboardFilter {
     private LocalDate fromDate;
     private LocalDate toDate;
+    private Integer topProductsLimit;
 }

@@ -51,7 +51,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .title("Xếp lịch làm việc thành công")
                 .message("Bạn đã xếp lịch làm việc cho " + employee.getUserProfile().getFullname() +  " từ " + request.getStartTime() + " đến " + request.getEndTime())
                 .type(NotificationType.SCHEDULE)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/employee/schedules/" + result.getScheduleId())
                 .build();
@@ -84,7 +84,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .title("Cập nhật lịch làm việc thành công")
                 .message("Bạn đã cập nhật lịch làm việc cho " + result.getEmployee().getUserProfile().getFullname() +  " từ " + request.getStartTime() + " đến " + request.getEndTime())
                 .type(NotificationType.SCHEDULE)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/employee/schedules/" + result.getScheduleId())
                 .build();
@@ -124,7 +124,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .title("Xóa lịch làm việc thành công")
                 .message("Bạn đã xóa lịch làm việc cho " + schedule.getEmployee().getUserProfile().getFullname() +  " từ " + schedule.getStartTime() + " đến " + schedule.getEndTime())
                 .type(NotificationType.SCHEDULE)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/employee/schedules/" + schedule.getScheduleId())
                 .build();

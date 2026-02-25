@@ -46,7 +46,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
                 .title("Tạo nguyên liệu thành công")
                 .message("Tạo nguyên liệu " + request.getName() + " thành công")
                 .type(NotificationType.INVENTORY)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/ingredients/" + result.getId())
                 .build();
@@ -74,7 +74,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
                 .title("Cập nhật nguyên liệu thành công")
                 .message("Cập nhật nguyên liệu " + request.getName() + " thành công")
                 .type(NotificationType.INVENTORY)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/ingredients/" + result.getId())
                 .build();

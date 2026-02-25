@@ -41,6 +41,7 @@ public class DashboardAggregationTask {
         shopRepository.findAll().forEach(shop -> {
             Long totalRev = orderRepository.calculateTotalRevenueByShop(shop.getId(), start, end);
             Integer totalOrd = orderRepository.countOrdersByShop(shop.getId(), start, end);
+            Integer totalOrdWithPromotion = orderRepository.countOdersByShopIdAndHasPromotionIsTrue(shop.getId(), start, end);
 
             // Bỏ qua nếu ngày hôm đó quán không có doanh thu để tránh rác DB
             if ((totalRev != null && totalRev > 0) || (totalOrd != null && totalOrd > 0)) {
@@ -49,6 +50,7 @@ public class DashboardAggregationTask {
                         .reportDate(yesterday)
                         .totalRevenue(totalRev != null ? totalRev : 0L)
                         .totalOrders(totalOrd != null ? totalOrd : 0)
+                        .usingVouchersPercentage(totalOrd != null && totalOrd > 0 ? (totalOrdWithPromotion != null ? totalOrdWithPromotion : 0) * 100.0 / totalOrd : 0.0)
                         .build();
                 shopDailyReportRepository.save(report);
             }
