@@ -62,7 +62,7 @@ public class UnitConversion {
         }
         createdAt = LocalDateTime.now();
         updatedAt = createdAt;
-        isStandard = false;
+        isStandard = true;
     }
 
     @PreUpdate
