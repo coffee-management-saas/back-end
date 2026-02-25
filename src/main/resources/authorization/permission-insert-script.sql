@@ -61,6 +61,7 @@ VALUES
     (NOW(), NOW(), 'product:update', 'Cập nhật sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'product:update-allow-topping', 'Cập nhật topping cho phép', 'ACTIVE'),
     (NOW(), NOW(), 'product:read-allow-topping', 'Xem topping được phép của sản phẩm', 'ACTIVE'),
+    (NOW(), NOW(), 'product:upload-image', 'Upload hình ảnh của sản phẩm', 'ACTIVE'),
 
     (NOW(), NOW(), 'product-variant:create', 'Tạo biến thể sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'product-variant:read', 'Xem danh sách biến thể', 'ACTIVE'),

@@ -23,11 +23,15 @@ import com.futurenbetter.saas.modules.product.repository.ProductRepository;
 import com.futurenbetter.saas.modules.product.repository.ToppingRepository;
 import com.futurenbetter.saas.modules.product.service.inter.ProductService;
 import com.futurenbetter.saas.modules.product.specification.ProductSpec;
+import com.futurenbetter.saas.modules.subscription.service.CloudinaryStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,6 +47,7 @@ public class ProductServiceImpl implements ProductService {
     private final ToppingRepository toppingRepository;
     private final ProductMapper productMapper;
     private final NotificationService notificationService;
+    private final CloudinaryStorageService cloudinaryStorageService;
 
     @Override
     @Transactional
@@ -175,5 +180,27 @@ public class ProductServiceImpl implements ProductService {
         return allowToppingRepository.findByProductId(productId).stream()
                 .map(mapping -> mapping.getTopping().getId())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public ProductResponse uploadImage(Long productId, MultipartFile image) throws IOException {
+        Long shopId = TenantContext.getCurrentShopId();
+
+        Product product =  productRepository.findById(shopId)
+                .filter(p -> p.getShop().getId().equals(shopId))
+                .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
+
+        if (image != null && !image.isEmpty()) {
+            String fileName = "product_" + productId + "-"  + System.currentTimeMillis() + "." + image.getOriginalFilename();
+            String imageUrl = cloudinaryStorageService.uploadFile(image.getBytes(), fileName, "products");
+            product.setImage(imageUrl);
+            product.setUpdatedAt(LocalDateTime.now());
+
+            Product savedProduct = productRepository.save(product);
+            return productMapper.toResponse(savedProduct);
+        } else {
+                throw new BusinessException("Vui lòng chọn file ảnh để upload");
+        }
     }
 }

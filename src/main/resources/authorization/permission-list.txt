@@ -166,6 +166,7 @@ SHOP
 - product:read
 - product:read-detail
 - product:update
+- product:upload-image
 - product:update-allow-topping
 - product:read-allow-topping
 - product-variant:create
@@ -213,6 +214,7 @@ EMPLOYEE
 
 CUSTOMER
 - order:create
+- order:read-history
 - product:read
 - product:read-detail
 - product:read-allow-topping

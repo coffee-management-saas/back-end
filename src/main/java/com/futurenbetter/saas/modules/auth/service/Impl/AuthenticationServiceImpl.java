@@ -70,8 +70,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không hợp lệ"));
 
-
-
         Customer customer = customerMapper.toEntity(request);
         customer.setShop(shop);
         String encodedPassword = passwordEncoder.encode(request.getPassword());
@@ -109,7 +107,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
 
             Customer customer = customerOpt.get();
-            // Giả định hàm validateLogin của bạn có check matching giữa customer.getShop() và shopId
+            // Giả định hàm validateLogin của bạn có check matching giữa customer.getShop()
+            // và shopId
             validateLogin(password, customer.getPassword(), customer.getShop(), shopId);
 
             Notification noti = Notification.builder()
@@ -217,48 +216,82 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    // update lại lấy role từ claims
     public LoginResponse refreshToken(String refreshToken) {
         if (jwtService.isTokenExpired(refreshToken)) {
             throw new BusinessException("Refresh token expired");
         }
 
         String username = jwtService.extractUsername(refreshToken);
-
-        Customer customer = customerRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException("Người dùng không tồn tại"));
-
         Claims claims = jwtService.extractAllClaims(refreshToken);
         String role = claims.get("role", String.class);
 
-        String newAccessToken = jwtService.generateAccessToken(
-                customer.getUsername(),
-                customer.getMembershipRank().getShop().getId(),
-                role);
-        String newRefreshToken = jwtService.generateRefreshToken(customer.getUsername());
+        var customerOpt = customerRepository.findByUsername(username);
+        if (customerOpt.isPresent()) {
+            Customer customer = customerOpt.get();
+            String newAccessToken = jwtService.generateAccessToken(
+                    customer.getUsername(),
+                    customer.getMembershipRank().getShop().getId(),
+                    role);
+            String newRefreshToken = jwtService.generateRefreshToken(customer.getUsername());
 
-        customer.setRefreshToken(newRefreshToken);
-        customer.setUpdatedAt(LocalDateTime.now());
-        customerRepository.save(customer);
+            customer.setRefreshToken(newRefreshToken);
+            customer.setUpdatedAt(LocalDateTime.now());
+            customerRepository.save(customer);
 
-        return LoginResponse.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .build();
+            return LoginResponse.builder()
+                    .accessToken(newAccessToken)
+                    .refreshToken(newRefreshToken)
+                    .build();
+        }
+
+        var profileOpt = userProfileRepository.findByUsername(username);
+        if (profileOpt.isPresent()) {
+            UserProfile userProfile = profileOpt.get();
+            Long shopId = userProfile.getShop() != null ? userProfile.getShop().getId() : null;
+            String newAccessToken = jwtService.generateAccessToken(
+                    userProfile.getUsername(),
+                    shopId,
+                    role);
+            String newRefreshToken = jwtService.generateRefreshToken(userProfile.getUsername());
+
+            userProfile.setRefreshToken(newRefreshToken);
+            userProfile.setUpdatedAt(LocalDateTime.now());
+            userProfileRepository.save(userProfile);
+
+            return LoginResponse.builder()
+                    .accessToken(newAccessToken)
+                    .refreshToken(newRefreshToken)
+                    .build();
+        }
+
+        throw new BusinessException("Người dùng không tồn tại");
     }
 
     @Override
     public void logout(String refreshToken) {
-        Customer customer = customerRepository.findByRefreshToken(refreshToken)
-                .orElseThrow(() -> new BusinessException("Token không hợp lệ hoặc đã hết hạn"));
-
         if (jwtService.isTokenExpired(refreshToken)) {
             throw new BusinessException("Refresh token expired");
         }
 
-        customer.setRefreshToken(null);
-        customer.setUpdatedAt(LocalDateTime.now());
-        customerRepository.save(customer);
+        var customerOpt = customerRepository.findByRefreshToken(refreshToken);
+        if (customerOpt.isPresent()) {
+            Customer customer = customerOpt.get();
+            customer.setRefreshToken(null);
+            customer.setUpdatedAt(LocalDateTime.now());
+            customerRepository.save(customer);
+            return;
+        }
+
+        var profileOpt = userProfileRepository.findByRefreshToken(refreshToken);
+        if (profileOpt.isPresent()) {
+            UserProfile userProfile = profileOpt.get();
+            userProfile.setRefreshToken(null);
+            userProfile.setUpdatedAt(LocalDateTime.now());
+            userProfileRepository.save(userProfile);
+            return;
+        }
+
+        throw new BusinessException("Token không hợp lệ hoặc đã hết hạn");
     }
 
     @Override
@@ -343,8 +376,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Tên đăng nhập đã tồn tại");
         }
 
-//        Shop shop = shopRepository.findById(TenantContext.getCurrentShopId())
-//                .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
+        // Shop shop = shopRepository.findById(TenantContext.getCurrentShopId())
+        // .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
         Shop shop = shopRepository.findById(request.getShopId())
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
@@ -353,7 +386,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         admin.setStatus(UserProfileEnum.ACTIVE);
         admin.setShop(shop);
 
-        Role shopRole = roleRepository.findByRole(ApplyStatus.SHOP) // set tạm là manager, có thể tạo thêm shop-admin sau
+        Role shopRole = roleRepository.findByRole(ApplyStatus.SHOP) // set tạm là manager, có thể tạo thêm shop-admin
+                                                                    // sau
                 .orElseThrow(() -> new BusinessException("Role quản trị quán chưa được cấu hình"));
         admin.setRoles(Set.of(shopRole));
 
@@ -367,7 +401,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 
-
     @Override
     @Transactional
     public ShopEmployeeRegistrationResponse createShopEmployee(ShopEmployeeRegistrationRequest request) {
@@ -378,8 +411,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         Shop shop = shopRepository.findById(SecurityUtils.getCurrentShopId())
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
-
-
 
         UserProfile employeeProfile = userProfileMapper.toEntity(request);
         employeeProfile.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -398,8 +429,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .hourlyWage(request.getHourlyWage())
                 .userProfileId(savedEmployee.getUserProfileId())
                 .weeklyHourLimit(request.getWeeklyHourLimit())
-                .build()
-        );
+                .build());
         // trả về password cho shop-admin lưu lại gửi cho nhân viên
         return userProfileMapper.toEmployeeResponse(savedEmployee, employee);
     }

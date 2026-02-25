@@ -6,13 +6,18 @@ import com.futurenbetter.saas.modules.product.dto.filter.ProductFilter;
 import com.futurenbetter.saas.modules.product.dto.request.ProductRequest;
 import com.futurenbetter.saas.modules.product.dto.response.ProductResponse;
 import com.futurenbetter.saas.modules.product.service.inter.ProductService;
+import com.futurenbetter.saas.modules.promotion.dto.response.PromotionResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -49,6 +54,15 @@ public class ProductController {
                 response,
                 null
         );
+    }
+
+    @PatchMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('product:upload-image')")
+    public ResponseEntity<ProductResponse> uploadPromotionImage(
+            @PathVariable("id") Long id,
+            @RequestParam("image") MultipartFile image) throws IOException {
+        ProductResponse response = productService.uploadImage(id, image);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("{id}")
