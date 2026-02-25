@@ -50,7 +50,7 @@ public class SizeServiceImpl implements SizeService {
                 .title("Tạo Size thành công")
                 .message("Tạo Size " + result.getCode() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/sizes/" + result.getId())
                 .build();
@@ -82,7 +82,7 @@ public class SizeServiceImpl implements SizeService {
                 .title("Tạo Size thành công")
                 .message("Tạo Size " + result.getCode() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/sizes/" + result.getId())
                 .build();
@@ -133,7 +133,7 @@ public class SizeServiceImpl implements SizeService {
                 .title("Xóa Size thành công")
                 .message("Xóa Size " + size.getCode() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/sizes/" + size.getId())
                 .build();

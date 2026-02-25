@@ -46,7 +46,7 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
                 .title("Tạo ca làm thành công")
                 .message("Bạn đã tạo ca làm " + request.getName() + " thành công . Thời gian từ " + request.getStartTime() + " đến " + request.getEndTime())
                 .type(NotificationType.SCHEDULE)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/employee/shift-templates/" + result.getShiftTemplateId())
                 .build();
@@ -75,7 +75,7 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
                 .title("Cập nhật ca làm thành công")
                 .message("Bạn đã cập nhật ca làm " + request.getName() + " thành công . Thời gian từ " + request.getStartTime() + " đến " + request.getEndTime())
                 .type(NotificationType.SCHEDULE)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/employee/shift-templates/" + result.getShiftTemplateId())
                 .build();
@@ -114,7 +114,7 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
                 .title("Cập nhật ca làm thành công")
                 .message("Bạn đã cập nhật ca làm " + template.getName() + " thành công . Thời gian từ " + template.getStartTime() + " đến " + template.getEndTime())
                 .type(NotificationType.SCHEDULE)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/employee/shift-templates/" + template.getShiftTemplateId())
                 .build();

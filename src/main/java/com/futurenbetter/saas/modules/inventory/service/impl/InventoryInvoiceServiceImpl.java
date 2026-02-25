@@ -130,7 +130,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
                 .title("Nhập kho thành công")
                 .message("Nhập kho các sản phẩm " + details.stream().map(d -> d.getRawIngredient().getName()).reduce((a, b) -> a + ", " + b).orElse("") + " thành công với tổng giá trị " + totalAmount)
                 .type(NotificationType.INVENTORY)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/invoices/" + invoice.getId())
                 .build();

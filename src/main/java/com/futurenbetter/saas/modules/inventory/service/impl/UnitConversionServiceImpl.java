@@ -52,7 +52,7 @@ public class UnitConversionServiceImpl implements UnitConversionService {
                 .title("Tạo bảng quy đổi thành công")
                 .message("Tạo bảng quy đổi từ " + request.getFromUnit() + " sang " + request.getToUnit() + " với hệ số " + request.getConversionFactor() + " cho nguyên liệu " + ingredient.getName() + " thành công")
                 .type(NotificationType.INVENTORY)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/unit-conversions/" + entity.getId())
                 .build();
@@ -79,7 +79,7 @@ public class UnitConversionServiceImpl implements UnitConversionService {
                 .title("Cập nhật bảng quy đổi thành công")
                 .message("Cập nhật bảng quy đổi từ " + request.getFromUnit() + " sang " + request.getToUnit() + " với hệ số " + request.getConversionFactor() + " cho nguyên liệu " + entity.getIngredient().getName() + " thành công")
                 .type(NotificationType.INVENTORY)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/unit-conversions/" + result.getId())
                 .build();

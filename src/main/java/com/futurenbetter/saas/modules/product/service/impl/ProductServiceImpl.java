@@ -72,7 +72,7 @@ public class ProductServiceImpl implements ProductService {
                 .title("Tạo sản phẩm thành công")
                 .message("Tạo sản phẩm " + result.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/products/" + result.getId())
                 .build();
@@ -105,7 +105,7 @@ public class ProductServiceImpl implements ProductService {
                 .title("Cập nhật sản phẩm thành công")
                 .message("Cập nhật sản phẩm " + result.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/products/" + result.getId())
                 .build();
@@ -161,7 +161,7 @@ public class ProductServiceImpl implements ProductService {
                 .title("Cập nhật danh sách topping thành công")
                 .message("Cập nhật danh sách topping cho sản phẩm " + product.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/products/" + product)
                 .build();

@@ -49,7 +49,7 @@ public class ToppingServiceImpl implements ToppingService {
                 .title("Tạo topping thành công")
                 .message("Tạo topping " + result.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/toppings/" + result.getId())
                 .build();
@@ -75,7 +75,7 @@ public class ToppingServiceImpl implements ToppingService {
                 .title("Cập nhật topping thành công")
                 .message("Cập nhật topping " + result.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/toppings/" + result.getId())
                 .build();
@@ -113,7 +113,7 @@ public class ToppingServiceImpl implements ToppingService {
                 .title("Xóa topping thành công")
                 .message("Xóa topping " + topping.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/toppings/" + topping.getId())
                 .build();
