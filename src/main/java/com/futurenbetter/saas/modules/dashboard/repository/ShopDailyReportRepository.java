@@ -14,4 +14,9 @@ public interface ShopDailyReportRepository extends JpaRepository<ShopDailyReport
 
     @Query("SELECT SUM(r.totalOrders) FROM ShopDailyReport r WHERE r.shop.id = :shopId AND r.reportDate >= :startDate AND r.reportDate <= :endDate")
     Integer sumOrders(@Param("shopId") Long shopId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT AVG(r.usingVouchersPercentage) FROM ShopDailyReport r WHERE r.shop.id = :shopId AND r.reportDate >= :startDate AND r.reportDate <= :endDate")
+    Double averageOrdersHasPromotion(@Param("shopId") Long shopId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+
 }

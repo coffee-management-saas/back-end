@@ -8,9 +8,8 @@ import java.util.List;
 
 @Data
 @Builder
-public class ShopDashboardResponse {
-    private Long totalRevenue;
-    private Integer totalOrders;
-    private Double usingPromotionRate;
+public class TopSellingProductResponse {
+    private String productName;
+    private Integer totalUnitsSold;
     private List<TopProductProjection> topProducts;
 }
