@@ -1,19 +1,27 @@
 package com.futurenbetter.saas.modules.notification.service.impl;
 
+import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.notification.dto.filter.NotificationFilter;
+import com.futurenbetter.saas.modules.notification.dto.response.NotificationResponse;
 import com.futurenbetter.saas.modules.notification.entity.Notification;
+import com.futurenbetter.saas.modules.notification.mapper.NotificationMapper;
 import com.futurenbetter.saas.modules.notification.repository.NotificationRepository;
 import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
+import com.futurenbetter.saas.modules.notification.specification.NotificationSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationMapper notificationMapper;
 
     @Transactional
     public void sendToUser(Notification notification) {
@@ -36,5 +44,29 @@ public class NotificationServiceImpl implements NotificationService {
                 savedNotification.getShop().getId(), roleName);
 
         messagingTemplate.convertAndSend(destination, savedNotification);
+    }
+
+    @Override
+    public Page<NotificationResponse> getAll(NotificationFilter filter) {
+
+        Long shopId = SecurityUtils.getCurrentShopId();
+
+        return notificationRepository.findAll(
+                NotificationSpecification.filter(filter, shopId),
+                        filter.getPageable()
+                ).map(notificationMapper::toResponse);
+    }
+
+    @Override
+    public NotificationResponse markAsRead(Long notificationId) {
+
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+
+        notification.setRead(true);
+
+        Notification result = notificationRepository.save(notification);
+
+        return notificationMapper.toResponse(result);
     }
 }

@@ -31,11 +31,9 @@ public class Notification {
     @Column(nullable = false)
     NotificationType type;
 
-    // Phân loại người nhận để map đúng bảng Customer hoặc UserProfile
     @Column(name = "recipient_type", nullable = false)
-    String recipientType; // "CUSTOMER", "USER_PROFILE", hoặc "SYSTEM_ADMIN"
+    String recipientType; // "CUSTOMER", "SHOP", "EMPLOYEE", "SYSTEM"
 
-    // ID của người nhận cụ thể. Nếu null có nghĩa là gửi cho toàn bộ Shop hoặc toàn Hệ thống
     @Column(name = "recipient_id")
     Long recipientId;
 

@@ -42,7 +42,8 @@ FROM public.role r
                                                            'product-variant:read-detail', 'product-variant:read-by-product',
                                                            'membership-rank:read', 'membership-rank:create', 'membership-rank:update', 'membership-rank:delete', 'membership-rank:read-detail',
                                                            'shop:update', 'shop:read-detail',
-                                                           'dashboard:shop'
+                                                           'dashboard:shop',
+                                                           'notification:read', 'notification:update'
     )
 WHERE r.name = 'SHOP';
 
@@ -68,7 +69,8 @@ FROM public.role r
                                                            'promotion:read', 'promotion:read-detail',
                                                            'stock-check:update-count', 'stock-check:read-by-filter',
                                                            'membership-rank:read', 'membership-rank:read-detail',
-                                                           'shop:read-detail'
+                                                           'shop:read-detail',
+                                                           'notification:read', 'notification:update'
     )
 WHERE r.name = 'EMPLOYEE';
 
@@ -85,6 +87,7 @@ FROM public.role r
                                                            'promotion:read', 'promotion:read-detail',
                                                            'category:read',
                                                            'membership-rank:read', 'membership-rank:read-detail',
-                                                           'shop:read-detail'
+                                                           'shop:read-detail',
+                                                           'notification:read', 'notification:update'
     )
 WHERE r.name = 'CUSTOMER';
