@@ -1,6 +1,5 @@
 package com.futurenbetter.saas.modules.dashboard.dto.response;
 
-import com.futurenbetter.saas.modules.dashboard.dto.projection.TopProductProjection;
 import lombok.Builder;
 import lombok.Data;
 
@@ -9,8 +8,6 @@ import java.util.List;
 @Data
 @Builder
 public class ShopDashboardResponse {
-    private Long totalRevenue;
-    private Integer totalOrders;
-    private Double usingPromotionRate;
-    private List<TopProductProjection> topProducts;
+    private List<ShopDashboardWeeklyResponse> weeklyReports;
+    private List<ShopDashboardMonthlyResponse> monthlyReports;
 }

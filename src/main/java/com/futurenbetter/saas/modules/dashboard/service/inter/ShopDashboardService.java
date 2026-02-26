@@ -1,8 +1,12 @@
 package com.futurenbetter.saas.modules.dashboard.service.inter;
 
 import com.futurenbetter.saas.modules.dashboard.dto.filter.DashboardFilter;
+import com.futurenbetter.saas.modules.dashboard.dto.response.ShopDashboardDailyResponse;
 import com.futurenbetter.saas.modules.dashboard.dto.response.ShopDashboardResponse;
 
+import java.util.List;
+
 public interface ShopDashboardService {
-    ShopDashboardResponse getOverview(DashboardFilter filter);
+    List<ShopDashboardDailyResponse> getDaily(DashboardFilter filter);
+    ShopDashboardResponse getShopDashboard(DashboardFilter filter);
 }

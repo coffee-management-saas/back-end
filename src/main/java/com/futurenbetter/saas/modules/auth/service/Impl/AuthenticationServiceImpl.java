@@ -2,7 +2,6 @@ package com.futurenbetter.saas.modules.auth.service.Impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
-import com.futurenbetter.saas.common.utils.PasswordUtils;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.dto.request.*;
 import com.futurenbetter.saas.modules.auth.dto.response.*;
@@ -17,7 +16,6 @@ import com.futurenbetter.saas.modules.auth.service.AuthenticationService;
 import com.futurenbetter.saas.modules.auth.service.JwtService;
 import com.futurenbetter.saas.modules.employee.dto.request.EmployeeRequest;
 import com.futurenbetter.saas.modules.employee.dto.response.EmployeeResponse;
-import com.futurenbetter.saas.modules.employee.entity.Employee;
 import com.futurenbetter.saas.modules.employee.service.inter.EmployeeService;
 import com.futurenbetter.saas.modules.notification.entity.Notification;
 import com.futurenbetter.saas.modules.notification.enums.NotificationType;
@@ -126,7 +124,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         // check SHOP or EMPLOYEE
-        var profileOpt = profileRepository.findByUsernameWithRoles(username);
+        var profileOpt = profileRepository.findByUsername(username);
         if (profileOpt.isPresent()) {
             UserProfile userProfile = profileOpt.get();
 
@@ -315,7 +313,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public SystemAdminLoginResponse loginSystemAdmin(SystemAdminLoginRequest request) {
-        UserProfile admin = profileRepository.findByUsernameWithRoles(request.getUsername())
+        UserProfile admin = profileRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BusinessException("Tài khoản admin không tồn tại"));
 
         if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
@@ -436,7 +434,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public LoginResponse loginShopAdmin(LoginRequest loginRequest) {
-        UserProfile admin = profileRepository.findByUsernameWithRoles(loginRequest.getUsername())
+        UserProfile admin = profileRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new BusinessException("Tài khoản không tồn tại"));
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), admin.getPassword())) {
