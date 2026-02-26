@@ -48,6 +48,7 @@ VALUES
 
     (NOW(), NOW(), 'order:create', 'Tạo đơn hàng mới', 'ACTIVE'),
     (NOW(), NOW(), 'order:read-history', 'Xem lịch sử đơn hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'order:read', 'Xem chi tiết đơn hàng', 'ACTIVE'),
 
     (NOW(), NOW(), 'category:create', 'Tạo danh mục sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'category:read', 'Xem danh sách danh mục', 'ACTIVE'),

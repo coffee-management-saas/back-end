@@ -45,7 +45,13 @@ public class OrderController {
                 HttpStatus.OK,
                 "Lấy lịch sử đơn hàng thành công",
                 page.getContent(),
-                meta
-        );
+                meta);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id) {
+        OrderResponse response = orderService.getOrderById(id);
+        return ResponseEntity.ok(response);
     }
 }

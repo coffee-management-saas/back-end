@@ -13,7 +13,9 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     // Optional<UserProfile> findByUsername(@Param("username") String username);
     Optional<UserProfile> findByUsername(String username);
 
-    Optional<UserProfile> findByUsernameWithRoles(@Param("username") String username);
+    @Query("SELECT u FROM UserProfile u LEFT JOIN FETCH u.roles WHERE u.username = :username")
+    Optional<UserProfile> findByUsernameWithRoles(
+            @Param("username") String username);
 
     Optional<UserProfile> findByRefreshToken(String refreshToken);
 
