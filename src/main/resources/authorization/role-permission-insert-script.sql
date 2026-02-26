@@ -79,7 +79,7 @@ INSERT INTO public.role_permission (role_id, permission_id)
 SELECT r.role_id, p.permission_id
 FROM public.role r
          JOIN public.permission p ON p.permission_name IN (
-                                                           'order:create', 'order:read-history', 'order:read'
+                                                           'order:create', 'order:read-history', 'order:read',
                                                            'product:read', 'product:read-detail', 'product:read-allow-topping',
                                                            'product-variant:read', 'product-variant:read-detail', 'product-variant:read-by-product',
                                                            'product-size:read', 'product-size:read-active',
