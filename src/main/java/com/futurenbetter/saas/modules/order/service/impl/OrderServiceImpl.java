@@ -243,7 +243,6 @@ public class OrderServiceImpl implements OrderService {
                 byte[] jsonBytes = objectMapper.writeValueAsBytes(extraDatamap);
                 extraData = Base64.getEncoder().encodeToString(jsonBytes);
             } catch (Exception e) {
-                log.error("Lỗi chuẩn bị dữ liệu extraData: {}", e.getMessage());
                 throw new BusinessException("Lỗi chuẩn bị dữ liệu thanh toán");
             }
 
@@ -274,9 +273,7 @@ public class OrderServiceImpl implements OrderService {
             body.put("lang", "vi");
 
             RestTemplate restTemplate = new RestTemplate();
-            log.info("Sending MoMo Request (Order): Body={}", body);
             ResponseEntity<Map> response = restTemplate.postForEntity(momoApiUrl, body, Map.class);
-            log.info("MoMo Response (Order): {}", response.getBody());
 
             if (response.getBody() != null && response.getBody().get("payUrl") != null) {
                 String payUrl = (String) response.getBody().get("payUrl");
@@ -288,7 +285,6 @@ public class OrderServiceImpl implements OrderService {
                         : "unknown";
                 String message = response.getBody() != null ? String.valueOf(response.getBody().get("message"))
                         : "No message";
-                log.error("MoMo Order Error: resultCode={}, message={}", resultCode, message);
                 throw new BusinessException(
                         "Lỗi kết nối cổng thanh toán MOMO: " + message + " (code: " + resultCode + ")");
             }
@@ -482,5 +478,28 @@ public class OrderServiceImpl implements OrderService {
                 filter.getPageable());
 
         return orderPage.map(orderMapper::toOrderResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(Long orderId) {
+        Long currentShopId = SecurityUtils.getCurrentShopId();
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + orderId));
+
+        // Security check: must belong to current shop
+        if (!order.getShop().getId().equals(currentShopId)) {
+            throw new BusinessException("Đơn hàng không thuộc cửa hàng này");
+        }
+
+        // Optional: If customer, must belong to them
+        if (SecurityUtils.isCustomer()) {
+            Long currentCustomerId = SecurityUtils.getCurrentUserId();
+            if (order.getCustomer() == null || !order.getCustomer().getId().equals(currentCustomerId)) {
+                throw new BusinessException("Bạn không có quyền xem đơn hàng này");
+            }
+        }
+
+        return orderMapper.toOrderResponse(order);
     }
 }
