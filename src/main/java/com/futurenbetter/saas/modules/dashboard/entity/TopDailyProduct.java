@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.dashboard.entity;
 
 import com.futurenbetter.saas.modules.auth.entity.Shop;
+import com.futurenbetter.saas.modules.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,11 +9,12 @@ import java.time.LocalDate;
 
 @Entity
 @Table(
-        name = "shop_daily_reports",
+        name = "top_daily_products",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {
                         "shop_id",
-                        "report_date"
+                        "report_date",
+                        "product_id"
                 })
         }
 )
@@ -21,7 +23,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShopDailyReport {
+public class TopDailyProduct {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,13 +36,10 @@ public class ShopDailyReport {
     @Column(name = "report_date", nullable = false)
     private LocalDate reportDate;
 
-    @Column(name = "total_revenue")
-    private Long totalRevenue;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
-    @Column(name = "total_orders")
-    private Integer totalOrders;
-
-    @Column(name = "using_vouchers_percentage")
-    private Double usingVouchersPercentage;
-
+    @Column(name = "quantity_sold")
+    private Integer quantitySold;
 }

@@ -8,8 +8,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class TopSellingProductResponse {
+public class TopDailyProductResponse {
     private String productName;
-    private Integer totalUnitsSold;
-    private List<TopProductProjection> topProducts;
+    private Integer quantitySold;
 }

@@ -69,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Object principal = null;
 
                 if ("CUSTOMER".equals(authenRole)) {
-                    Customer customer = customerRepository.findByUsernameWithRoleAndPermissions(username).orElse(null);
+                    Customer customer = customerRepository.findByUsername(username).orElse(null);
                     if (customer != null) {
                         principal = customer;
 
@@ -86,7 +86,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
                 }
                 else { // apply cho shop, employee, và system
-                    UserProfile userProfile = userProfileRepository.findByUsernameWithRoles(username).orElse(null);
+                    UserProfile userProfile = userProfileRepository.findByUsername(username).orElse(null);
                     if (userProfile != null) {
                         principal = userProfile;
 
