@@ -11,6 +11,10 @@ import java.util.Map;
 public interface OrderService {
 
     OrderResponse createOrder(OrderRequest orderRequest);
+
     void handleMomoOrderIpn(Map<String, String> payload);
+
     Page<OrderResponse> getOrderHistory(OrderFilter filter);
+
+    OrderResponse getOrderById(Long orderId);
 }
