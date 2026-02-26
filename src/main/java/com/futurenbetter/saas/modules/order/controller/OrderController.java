@@ -54,4 +54,13 @@ public class OrderController {
         OrderResponse response = orderService.getOrderById(id);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{id}/initiate-payment")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> initiatePayment(
+            @PathVariable Long id,
+            @RequestParam String returnUrl) {
+        OrderResponse response = orderService.initiatePayment(id, returnUrl);
+        return ResponseEntity.ok(response);
+    }
 }

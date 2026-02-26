@@ -5,8 +5,9 @@ import com.futurenbetter.saas.modules.order.dto.request.OrderRequest;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AIOrderResponse(
-                String action,
-                String message,
-                OrderRequest orderRequest,
-                Boolean redirectToPayment) {
+        String action,
+        String message,
+        OrderRequest orderRequest,
+        Boolean redirectToPayment,
+        Long orderId) {
 }

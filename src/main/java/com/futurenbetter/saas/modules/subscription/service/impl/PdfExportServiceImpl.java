@@ -183,7 +183,7 @@ public class PdfExportServiceImpl implements PdfExportService {
             // 4. Products Table
             PdfPTable table = new PdfPTable(6);
             table.setWidthPercentage(100);
-            table.setWidths(new float[] { 0.35f, 2.5f, 0.35f, 1.0f, 0.4f, 1.2f });
+            table.setWidths(new float[] { 0.4f, 2.0f, 0.4f, 1.1f, 0.5f, 1.4f });
             table.setSpacingBefore(5);
 
             addReceiptHeaderCell(table, "STT", fontBold);
@@ -338,7 +338,7 @@ public class PdfExportServiceImpl implements PdfExportService {
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setPaddingBottom(5);
         cell.setPaddingTop(5);
-        cell.setNoWrap(false);
+        cell.setNoWrap(true);
         table.addCell(cell);
     }
 
@@ -348,7 +348,7 @@ public class PdfExportServiceImpl implements PdfExportService {
         cell.setHorizontalAlignment(alignment);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setPadding(3);
-        cell.setNoWrap(false);
+        cell.setNoWrap(true);
         table.addCell(cell);
     }
 

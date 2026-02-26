@@ -17,4 +17,6 @@ public interface OrderService {
     Page<OrderResponse> getOrderHistory(OrderFilter filter);
 
     OrderResponse getOrderById(Long orderId);
+
+    OrderResponse initiatePayment(Long orderId, String returnUrl);
 }
