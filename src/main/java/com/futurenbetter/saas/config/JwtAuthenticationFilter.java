@@ -121,16 +121,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if (shopId != null) {
                         TenantContext.setCurrentShopId(shopId);
                     }
-
-                    // Cập nhật lại log để in ra shopId giúp dễ debug
-                    log.info("User authenticated: {}, Type: {}, Authorities: {}, ShopId: {}", username, userType, uniqueAuthorities, shopId);
                 } else {
                     log.warn("User not found: {}", username);
                 }
             }
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
-            log.error("Authentication failed for token: {}", token, e);
         }
         filterChain.doFilter(request, response);
     }
