@@ -5,12 +5,9 @@ spring:
   application:
     name: ${APPLICATION_NAME}
 
-  autoconfigure:
-    exclude:
-      - org.springframework.ai.autoconfigure.vectorstore.pgvector.PgVectorStoreAutoConfiguration
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:future_saas}?options=-c%20TimeZone=Asia/Ho_Chi_Minh
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5434}/${DB_NAME:future_saas}?options=-c%20TimeZone=Asia/Ho_Chi_Minh
     username: postgres
     password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
@@ -44,10 +41,9 @@ spring:
     ollama:
       base-url: http://localhost:11434
       embedding:
+        enabled: true
         options:
           model: nomic-embed-text
-        embedding:
-          enabled: false
 
 
     vectorstore:
