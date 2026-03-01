@@ -36,7 +36,7 @@ FROM public.role r
                                                            'order:create', 'order:read-history',
                                                            'category:create', 'category:read', 'category:read-detail',
                                                            'category:update', 'category:delete',
-                                                           'product:create', 'product:read', 'product:read-detail', 'product:update', 'product:upload-image',
+                                                           'product:create', 'product:read', 'product:best-seller', 'product:read-detail', 'product:update', 'product:upload-image',
                                                            'product:update-allow-topping', 'product:read-allow-topping',
                                                            'product-variant:create', 'product-variant:read', 'product-variant:update',
                                                            'product-variant:read-detail', 'product-variant:read-by-product',
@@ -62,7 +62,7 @@ FROM public.role r
                                                            'recipe:read-by-variant', 'recipe:read-by-topping',
                                                            'order:create', 'order:read-history',
                                                            'category:read', 'category:read-detail',
-                                                           'product:read', 'product:read-detail', 'product:read-allow-topping',
+                                                           'product:read', 'product:read-detail', 'product:best-seller', 'product:read-allow-topping',
                                                            'product-variant:read', 'product-variant:read-detail', 'product-variant:read-by-product', 'product:upload-image',
                                                            'product-size:read', 'product-size:read-active',
                                                            'topping:read', 'topping:read-detail',
@@ -80,7 +80,7 @@ SELECT r.role_id, p.permission_id
 FROM public.role r
          JOIN public.permission p ON p.permission_name IN (
                                                            'order:create', 'order:read-history', 'order:read',
-                                                           'product:read', 'product:read-detail', 'product:read-allow-topping',
+                                                           'product:read', 'product:read-detail', 'product:best-seller', 'product:read-allow-topping',
                                                            'product-variant:read', 'product-variant:read-detail', 'product-variant:read-by-product',
                                                            'product-size:read', 'product-size:read-active',
                                                            'topping:read', 'topping:read-detail',

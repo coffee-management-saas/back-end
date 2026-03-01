@@ -5,6 +5,7 @@ import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.dashboard.dto.filter.DashboardFilter;
+import com.futurenbetter.saas.modules.dashboard.dto.projection.BestSellerProjection;
 import com.futurenbetter.saas.modules.dashboard.dto.projection.TopProductProjection;
 import com.futurenbetter.saas.modules.dashboard.dto.response.*;
 import com.futurenbetter.saas.modules.dashboard.entity.ShopDailyReport;
@@ -16,6 +17,7 @@ import com.futurenbetter.saas.modules.dashboard.service.inter.ShopDashboardServi
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
 import com.futurenbetter.saas.modules.product.entity.Product;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -243,6 +245,15 @@ public class ShopDashboardServiceImpl implements ShopDashboardService {
                 .weeklyReports(weeklyReports)
                 .monthlyReports(monthlyReports)
                 .build();
+    }
+
+    @Cacheable(value = "bestSellerProducts", key = "#shopId", unless = "#result == null or #result.isEmpty()")
+    @Override
+    public List<BestSellerProjection> getBestSeller(Long shopId, int limit) {
+        LocalDateTime tenDaysAgo = LocalDateTime.now().minusDays(10);
+        Pageable pageable = PageRequest.of(0, limit);
+
+        return orderRepository.getBestSellerProducts(shopId, tenDaysAgo, pageable);
     }
 
     private ShopDashboardWeeklyResponse aggregateWeekly(LocalDate startOfWeek, LocalDate endOfWeek,

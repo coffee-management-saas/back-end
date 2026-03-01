@@ -2,6 +2,9 @@ package com.futurenbetter.saas.modules.product.controller;
 
 import com.futurenbetter.saas.common.dto.response.ApiResponse;
 import com.futurenbetter.saas.common.dto.response.PageMeta;
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
+import com.futurenbetter.saas.modules.dashboard.dto.projection.BestSellerProjection;
+import com.futurenbetter.saas.modules.dashboard.service.inter.ShopDashboardService;
 import com.futurenbetter.saas.modules.product.dto.filter.ProductFilter;
 import com.futurenbetter.saas.modules.product.dto.request.ProductRequest;
 import com.futurenbetter.saas.modules.product.dto.response.ProductResponse;
@@ -21,11 +24,12 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/product/products")
+@RequestMapping("api/products")
 @RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
+    private final ShopDashboardService shopDashboardService;
 
     @PostMapping
     @PreAuthorize("hasAuthority('product:create')")
@@ -130,5 +134,14 @@ public class ProductController {
                 toppingIds,
                 null
         );
+    }
+
+    @GetMapping("/best-seller")
+//    @PreAuthorize("hasAuthority('product:best-seller')")
+    public ResponseEntity<List<BestSellerProjection>> getBestSellers(
+            @RequestParam(defaultValue = "10") int limit) {
+        Long shopId = TenantContext.getCurrentShopId();
+        List<BestSellerProjection> data = shopDashboardService.getBestSeller(shopId, limit);
+        return ResponseEntity.ok(data);
     }
 }
