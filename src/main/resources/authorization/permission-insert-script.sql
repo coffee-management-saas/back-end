@@ -58,6 +58,7 @@ VALUES
 
     (NOW(), NOW(), 'product:create', 'Tạo sản phẩm mới', 'ACTIVE'),
     (NOW(), NOW(), 'product:read', 'Xem danh sách sản phẩm', 'ACTIVE'),
+    (NOW(), NOW(), 'product:best-seller', 'Xem danh sách sản phẩm bán chạy', 'ACTIVE'),
     (NOW(), NOW(), 'product:read-detail', 'Xem chi tiết sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'product:update', 'Cập nhật sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'product:update-allow-topping', 'Cập nhật topping cho phép', 'ACTIVE'),
