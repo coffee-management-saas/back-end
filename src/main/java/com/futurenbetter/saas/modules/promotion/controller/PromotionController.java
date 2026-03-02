@@ -39,7 +39,7 @@ public class PromotionController {
     }
 
     @GetMapping("")
-    @PreAuthorize("hasAuthority('promotion:read')")
+//    @PreAuthorize("hasAuthority('promotion:read')")
     public ResponseEntity<List<PromotionResponse>> getAllPromotions() {
         List<PromotionResponse> response = promotionService.getAllPromotions();
         return ResponseEntity.ok(response);
