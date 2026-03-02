@@ -187,7 +187,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse uploadImage(Long productId, MultipartFile image) throws IOException {
         Long shopId = TenantContext.getCurrentShopId();
 
-        Product product =  productRepository.findById(shopId)
+        Product product =  productRepository.findById(productId)
                 .filter(p -> p.getShop().getId().equals(shopId))
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
