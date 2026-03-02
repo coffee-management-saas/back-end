@@ -54,7 +54,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .title("Tạo category thành công")
                 .message("Tạo category " + result.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/categories/" + result.getId())
                 .build();
@@ -88,7 +88,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .title("Cập nhật category thành công")
                 .message("Cập nhật category " + result.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/categories/" + result.getId())
                 .build();
@@ -128,7 +128,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .title("Xóa category thành công")
                 .message("Xóa category " + category.getName() + " thành công")
                 .type(NotificationType.PRODUCT)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/categories/" + category.getId())
                 .build();

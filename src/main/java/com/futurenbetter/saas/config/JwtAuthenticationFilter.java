@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.config;
 
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.entity.UserProfile;
 import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
@@ -55,16 +56,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // Lấy toàn bộ claims để đọc user_type
+                // Lấy toàn bộ claims để đọc dữ liệu
                 Claims claims = jwtService.extractAllClaims(token);
                 String userType = claims.get("user_type", String.class);
                 String authenRole = claims.get("role", String.class);
+
+                // 1. LẤY SHOP_ID TỪ CLAIMS (Dùng Number để an toàn tránh lỗi ClassCastException giữa Integer và Long)
+                Number shopIdNum = claims.get("shopId", Number.class);
+                Long shopId = (shopIdNum != null) ? shopIdNum.longValue() : null;
 
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 Object principal = null;
 
                 if ("CUSTOMER".equals(authenRole)) {
-                    Customer customer = customerRepository.findByUsernameWithRoleAndPermissions(username).orElse(null);
+                    Customer customer = customerRepository.findByUsername(username).orElse(null);
                     if (customer != null) {
                         principal = customer;
 
@@ -81,7 +86,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
                 }
                 else { // apply cho shop, employee, và system
-                    UserProfile userProfile = userProfileRepository.findByUsernameWithRoles(username).orElse(null);
+                    UserProfile userProfile = userProfileRepository.findByUsername(username).orElse(null);
                     if (userProfile != null) {
                         principal = userProfile;
 
@@ -112,17 +117,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                    log.info("User authenticated: {}, Type: {}, Authorities: {}", username, userType, uniqueAuthorities);
+                    // 2. LƯU SHOP_ID VÀO TENANT_CONTEXT
+                    if (shopId != null) {
+                        TenantContext.setCurrentShopId(shopId);
+                    }
                 } else {
-                    log.warn("User user not found: {}", username);
+                    log.warn("User not found: {}", username);
                 }
             }
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
-            log.error("Authentication failed for token: {}", token, e);
         }
-
-
         filterChain.doFilter(request, response);
     }
 }

@@ -18,7 +18,7 @@ public class MomoUtils {
 
     public String decodeType(String extraData) {
         try {
-            byte[] decodeBytes = Base64.getUrlDecoder().decode(extraData);
+            byte[] decodeBytes = Base64.getDecoder().decode(extraData);
             Map<String, Object> data = objectMapper.readValue(decodeBytes, Map.class);
             return (String) data.get("type");
         } catch (Exception e) {

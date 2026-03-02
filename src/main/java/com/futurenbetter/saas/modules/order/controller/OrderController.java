@@ -29,24 +29,6 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
-    //        String systemPrompt = """
-//                Bạn là NV Future&Better. Trả lời ngắn gọn.
-//
-//                MENU:
-//                {context}
-//
-//                QUY TẮC PHẢN HỒI:
-//                1. Mặc định action="INFO".
-//                2. Khi khách hỏi menu:
-//                   - CHỈ liệt kê 1-2 món đặc trưng nhất của mỗi loại (Category).
-//                   - Sau đó hỏi khách thích loại nào để tư vấn thêm.
-//                3. Từ chối trả lời nhg thông tin không liên quan đến cửa hàng.
-//                3. KHÔNG trả về dữ liệu 'orderRequest' khi action="INFO".
-//                4. Chỉ trả về action="ORDER" khi khách xác nhận "Chốt đơn" hoặc "Đặt món".
-//
-//            CHỈ TRẢ VỀ JSON THEO ĐỊNH DẠNG: {format}
-//            """;
-
     @GetMapping("/history")
     @PreAuthorize("hasAuthority('order:read-history')")
     public ApiResponse<List<OrderResponse>> getOrderHistory(OrderFilter filter) {
@@ -63,7 +45,22 @@ public class OrderController {
                 HttpStatus.OK,
                 "Lấy lịch sử đơn hàng thành công",
                 page.getContent(),
-                meta
-        );
+                meta);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id) {
+        OrderResponse response = orderService.getOrderById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/initiate-payment")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> initiatePayment(
+            @PathVariable Long id,
+            @RequestParam String returnUrl) {
+        OrderResponse response = orderService.initiatePayment(id, returnUrl);
+        return ResponseEntity.ok(response);
     }
 }

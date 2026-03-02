@@ -9,12 +9,15 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ProductVariantRepository extends JpaRepository<ProductVariant, Long>, JpaSpecificationExecutor<ProductVariant> {
+public interface ProductVariantRepository
+        extends JpaRepository<ProductVariant, Long>, JpaSpecificationExecutor<ProductVariant> {
     Optional<ProductVariant> findByIdAndShopId(Long id, Long shopId);
 
     Optional<ProductVariant> findBySkuCodeAndShopId(String skuCode, Long shopId);
 
     List<ProductVariant> findAllByProductIdAndShopId(Long productId, Long shopId);
+
+    List<ProductVariant> findAllByShopId(Long shopId);
 
     boolean existsBySkuCodeAndShopId(String skuCode, Long shopId);
 }

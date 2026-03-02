@@ -48,6 +48,7 @@ VALUES
 
     (NOW(), NOW(), 'order:create', 'Tạo đơn hàng mới', 'ACTIVE'),
     (NOW(), NOW(), 'order:read-history', 'Xem lịch sử đơn hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'order:read', 'Xem chi tiết đơn hàng', 'ACTIVE'),
 
     (NOW(), NOW(), 'category:create', 'Tạo danh mục sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'category:read', 'Xem danh sách danh mục', 'ACTIVE'),
@@ -57,15 +58,18 @@ VALUES
 
     (NOW(), NOW(), 'product:create', 'Tạo sản phẩm mới', 'ACTIVE'),
     (NOW(), NOW(), 'product:read', 'Xem danh sách sản phẩm', 'ACTIVE'),
+    (NOW(), NOW(), 'product:best-seller', 'Xem danh sách sản phẩm bán chạy', 'ACTIVE'),
     (NOW(), NOW(), 'product:read-detail', 'Xem chi tiết sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'product:update', 'Cập nhật sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'product:update-allow-topping', 'Cập nhật topping cho phép', 'ACTIVE'),
     (NOW(), NOW(), 'product:read-allow-topping', 'Xem topping được phép của sản phẩm', 'ACTIVE'),
+    (NOW(), NOW(), 'product:upload-image', 'Upload hình ảnh của sản phẩm', 'ACTIVE'),
 
     (NOW(), NOW(), 'product-variant:create', 'Tạo biến thể sản phẩm', 'ACTIVE'),
     (NOW(), NOW(), 'product-variant:read', 'Xem danh sách biến thể', 'ACTIVE'),
     (NOW(), NOW(), 'product-variant:read-detail', 'Xem chi tiết biến thể', 'ACTIVE'),
     (NOW(), NOW(), 'product-variant:read-by-product', 'Xem biến thể theo sản phẩm', 'ACTIVE'),
+    (NOW(), NOW(), 'product-variant:update', 'Cập nhật biến thể sản phẩm', 'ACTIVE'),
 
     (NOW(), NOW(), 'product-size:create', 'Tạo kích thước (Size) mới', 'ACTIVE'),
     (NOW(), NOW(), 'product-size:read', 'Xem danh sách kích thước', 'ACTIVE'),
@@ -98,5 +102,9 @@ VALUES
     (NOW(), NOW(), 'shop:update', 'Cập nhật cửa hàng', 'ACTIVE'),
     (NOW(), NOW(), 'shop:delete', 'Xóa cửa hàng', 'ACTIVE'),
 
-    (NOW(), NOW(), 'dashboard:shop', 'Dashboard hằng ngày của cửa hàng', 'ACTIVE'),
-    (NOW(), NOW(), 'dashboard:system', 'Dashboard hằng tháng của system', 'ACTIVE');
+    (NOW(), NOW(), 'dashboard:shop', 'Dashboard của cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'dashboard:shop-daily', 'Dashboard hằng ngày của cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'dashboard:system', 'Dashboard hằng tháng của system', 'ACTIVE'),
+
+    (NOW(), NOW(), 'notification:read', 'Xem thông báo', 'ACTIVE'),
+    (NOW(), NOW(), 'notification:update', 'cập nhật thông báo', 'ACTIVE');

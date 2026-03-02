@@ -4,6 +4,8 @@ import com.futurenbetter.saas.modules.chatbot.dto.request.ChatRequest;
 import com.futurenbetter.saas.modules.chatbot.dto.response.AIOrderResponse;
 import com.futurenbetter.saas.modules.chatbot.service.AIChatService;
 
+import com.futurenbetter.saas.modules.order.enums.PaymentGateway;
+import java.text.Normalizer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -17,7 +19,15 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.futurenbetter.saas.modules.product.entity.ProductVariant;
+import com.futurenbetter.saas.modules.product.repository.ProductVariantRepository;
+import com.futurenbetter.saas.modules.product.repository.ToppingRepository;
+import com.futurenbetter.saas.modules.product.entity.Topping;
+import com.futurenbetter.saas.modules.order.service.OrderService;
+import com.futurenbetter.saas.modules.order.dto.response.OrderResponse;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
 import org.apache.poi.ss.usermodel.Cell;
+import org.springframework.data.domain.Pageable;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,13 +43,22 @@ public class AIChatServiceImpl implements AIChatService {
     private final ChatClient chatClient;
     private final PgVectorStore vectorStore;
     private final ChatHistoryServiceImpl chatHistoryService;
+    private final ProductVariantRepository productVariantRepository;
+    private final ToppingRepository toppingRepository;
+    private final OrderService orderService;
 
     public AIChatServiceImpl(ChatClient.Builder builder,
-                             PgVectorStore vectorStore,
-                             ChatHistoryServiceImpl chatHistoryService) {
+            PgVectorStore vectorStore,
+            ChatHistoryServiceImpl chatHistoryService,
+            ProductVariantRepository productVariantRepository,
+            ToppingRepository toppingRepository,
+            OrderService orderService) {
         this.chatClient = builder.build();
         this.vectorStore = vectorStore;
         this.chatHistoryService = chatHistoryService;
+        this.productVariantRepository = productVariantRepository;
+        this.toppingRepository = toppingRepository;
+        this.orderService = orderService;
     }
 
     @Override
@@ -49,13 +68,36 @@ public class AIChatServiceImpl implements AIChatService {
                 : request.sessionId();
 
         String history = chatHistoryService.getChatHistoryContext(activeSessionId);
-        String queryLower = request.message().toLowerCase();
+        String currentMessage = request.message();
+        String queryLower = currentMessage.toLowerCase();
+        String refinedQuery = currentMessage;
+
+        // Nếu tin nhắn quá ngắn (ví dụ: "ok", "đúng rồi", "xác nhận"),
+        // bổ sung thêm nội dung tin nhắn trước đó của khách để search menu chính xác
+        // hơn.
+        if (currentMessage.length() < 15 && history != null && !history.isBlank()) {
+            String lastUserMsg = "";
+            String[] segments = history.split("Khách: ");
+            if (segments.length > 1) {
+                String lastSegment = segments[segments.length - 1];
+                int aiIdx = lastSegment.indexOf("\nAI: ");
+                if (aiIdx != -1) {
+                    lastUserMsg = lastSegment.substring(0, aiIdx).trim();
+                } else {
+                    lastUserMsg = lastSegment.trim();
+                }
+            }
+            if (!lastUserMsg.isEmpty() && !currentMessage.equalsIgnoreCase(lastUserMsg)) {
+                refinedQuery = lastUserMsg + " " + currentMessage;
+                log.info("Refined search query for short message: '{}' -> '{}'", currentMessage, refinedQuery);
+            }
+        }
 
         boolean isCalorieQuery = queryLower.contains("calo") || queryLower.contains("calorie")
                 || queryLower.contains("năng lượng") || queryLower.contains("kcal");
 
-        boolean isCalorieRankQuery = isCalorieQuery && (
-                queryLower.contains("cao nhất") || queryLower.contains("thấp nhất")
+        boolean isCalorieRankQuery = isCalorieQuery
+                && (queryLower.contains("cao nhất") || queryLower.contains("thấp nhất")
                         || queryLower.contains("nhiều nhất") || queryLower.contains("ít nhất")
                         || queryLower.contains("cao hơn") || queryLower.contains("thấp hơn")
                         || queryLower.contains("trên") || queryLower.contains("dưới")
@@ -80,38 +122,45 @@ public class AIChatServiceImpl implements AIChatService {
 
         if (isCalorieRankQuery || isCalorieQuery || isTagQuery || isBroadMenuQuery) {
             List<Document> allDocs = getAllDocuments();
+            // Chỉ lấy các variants liên quan đến các docs này để tối ưu performance
+            List<ProductVariant> shopVariants = getVariantsForDocs(allDocs);
 
             if (isCalorieRankQuery) {
-                context = buildCalorieContext(allDocs, queryLower);
+                context = buildCalorieContext(allDocs, queryLower, shopVariants);
             } else if (isCalorieQuery) {
                 List<Document> byName = vectorStore.similaritySearch(
                         SearchRequest.builder()
-                                .query(request.message())
-                                .topK(5)
+                                .query(refinedQuery)
+                                .topK(10)
                                 .similarityThreshold(0.1)
                                 .build());
-                context = buildDefaultContext(byName) + "\n\n=== TOÀN BỘ MENU (để tham khảo calo) ===\n"
-                        + buildFullMenuContext(allDocs);
+                context = buildDefaultContext(byName, shopVariants) + "\n\n=== TOÀN BỘ MENU (để tham khảo calo) ===\n"
+                        + buildFullMenuContext(allDocs, shopVariants);
             } else if (isTagQuery) {
-                context = buildTagContext(allDocs, queryLower);
+                context = buildTagContext(allDocs, queryLower, shopVariants);
             } else {
-                context = buildFullMenuContext(allDocs);
+                context = buildFullMenuContext(allDocs, shopVariants);
             }
         } else {
             List<Document> similarDocuments = vectorStore.similaritySearch(
                     SearchRequest.builder()
-                            .query(request.message())
-                            .topK(5)
-                            .similarityThreshold(0.15)
+                            .query(refinedQuery)
+                            .topK(10)
+                            .similarityThreshold(0.1)
                             .build());
-            context = buildDefaultContext(similarDocuments);
+            List<ProductVariant> shopVariants = getVariantsForDocs(similarDocuments);
+            context = buildDefaultContext(similarDocuments, shopVariants);
         }
+
+        // Bổ sung thông tin Topping khả dụng
+        String toppingContext = buildToppingContext();
+        String finalContext = context + "\n\n" + toppingContext;
 
         BeanOutputConverter<AIOrderResponse> converter = new BeanOutputConverter<>(AIOrderResponse.class);
 
-        String contextBlock = (context == null || context.isBlank())
+        String contextBlock = (finalContext == null || finalContext.isBlank())
                 ? "[KHÔNG CÓ DỮ LIỆU MENU – hãy thông báo cho khách rằng bạn chưa có thông tin menu hiện tại]"
-                : context;
+                : finalContext;
 
         String systemPrompt = """
 
@@ -132,34 +181,20 @@ public class AIChatServiceImpl implements AIChatService {
                 3. KHỚP TÊN CHÍNH XÁC: Không nhầm tên món dù có Tags giống nhau.
                 4. LIỆT KÊ ĐẦY ĐỦ: Khi khách hỏi "món nào ít ngọt?" → liệt kê TẤT CẢ món có tag đó, không chỉ một vài món.
 
+                QUY TRÌNH ĐẶT MÓN (Bắt buộc theo thứ tự):
+                Bước 1: Khách hỏi/muốn đặt món -> AI tìm món trong DỮ LIỆU MENU.
+                Bước 2: AI hỏi Size (M/L) và Topping (nếu chưa có).
+                Bước 3: AI tổng hợp đơn hàng gồm: Tên món, Số lượng, Size, Topping và Tổng giá dự kiến.
+                Bước 4: AI hỏi khách: "Bạn xác nhận chốt đơn này chứ?".
+                Bước 5: Khách nói "Đồng ý", "Chốt luôn", "Ok",... -> AI mới được chuyển `action="ORDER"` và điền thong tin vào `orderRequest`.
+
                 QUY TẮC BẮT BUỘC:
                 1. LUÔN trả về JSON theo đúng định dạng. Tuyệt đối không kèm văn bản ngoài JSON.
-                2. CHỈ dùng thông tin có trong DỮ LIỆU MENU. KHÔNG được tự bịa tên món, giá, đặc tính.
-                3. Nếu DỮ LIỆU MENU bắt đầu bằng [KHÔNG CÓ DỮ LIỆU], báo khách và hướng dẫn liên hệ nhân viên.
-                4. Mặc định `action="INFO"`. `orderRequest` phải là `null` ở trạng thái này.
-                5. Khi khách hỏi menu / danh sách món, TRÌNH BÀY theo cấu trúc sau trong field `message`:
-                   - NHÓM các món theo DANH MỤC (ví dụ: ☕ Trà Sữa, 🥤 Combo, 🍹 Smoothy, 🥐 Bánh...).
-                   - Mỗi món liệt kê RÕ size và giá. Ví dụ:
-                     • Trà Oolong Trân Châu Tươi – M: 45.000đ | L: 55.000đ
-                   - Dùng ký tự xuống dòng (\\n) để phân cách, dễ đọc.
-                   - Kết thúc bằng câu mời đặt món.
-                6. Khi khách hỏi về TAGS / ĐẶC TÍNH (ít ngọt, giải nhiệt, ...):
-                   - Liệt kê TẤT CẢ món phù hợp với tag đó.
-                   - Kèm giá và một câu mô tả ngắn từ [Gợi ý].
-                7. Khi khách hỏi về CALO:
-                   - Trả lời chính xác theo số liệu trong [Calo].
-                   - Sắp xếp từ thấp đến cao (hoặc theo yêu cầu).
-                   - TRÌNH BÀY MỖI MÓN TRÊN MỘT DÒNG RIÊNG, theo mẫu sau (dùng \\n để xuống dòng):
-                     🔸 Tên Món – M: Xk | L: Xk – Calo: X kcal
-                   - Ví dụ đúng:
-                     🔸 Mousse Đào sà – M: 42k – Calo: 250 kcal\\n🔸 Trà Oolong Cam sả tươi – M: 35k | L: 43k – Calo: 150 kcal
-                   - TUYỆT ĐỐI không gộp nhiều món trên cùng một dòng hay dùng dấu •.
-                8. Khi khách muốn đặt món:
-                   - Thu thập đủ: Tên món (đúng trong menu), Số lượng, Size (M/L), Topping.
-                   - Nếu thiếu: Giữ `action="INFO"`, hỏi cụ thể từng thứ còn thiếu.
-                9. Chỉ chuyển `action="ORDER"` khi ĐỦ thông tin VÀ khách xác nhận ("Đặt đi", "Chốt đơn", "Ok đặt", v.v.).
-                10. `toppingItems` PHẢI là mảng JSON. Không có topping: `[]`.
-                11. Trong `orderRequest`, luôn set `orderType = "ONLINE"`.
+                2. CHỈ dùng thông tin có trong DỮ LIỆU MENU. KHÔNG được tự bịa.
+                3. AI PHẢI lấy đúng ID (ví dụ: 123) từ mục `[ID_SIZE_...]` để điền vào `productVariantId`. KHÔNG ĐƯỢC để null khi đặt món.
+                4. Nếu khách chưa xác nhận chốt đơn cuối cùng, LUÔN để `action="INFO"` và `orderRequest=null`.
+                5. Trong `orderRequest`, LUÔN set `orderType="ONLINE"` và `paymentGateway="CASH"` làm mặc định (Khách sẽ chọn lại phương thức thanh toán sau tại trang checkout).
+                6. Trình bày Menu/Tin nhắn đẹp mắt, mỗi món một dòng, dùng dấu xuống dòng (\\n).
 
                 ĐỊNH DẠNG JSON BẮT BUỘC:
                 {format}
@@ -176,22 +211,58 @@ public class AIChatServiceImpl implements AIChatService {
                     .content();
 
             AIOrderResponse aiResult = converter.convert(parseJson(rawResponse));
-
-            chatHistoryService.savedHistory(activeSessionId, request.message(), aiResult.message(), context);
+            chatHistoryService.savedHistory(activeSessionId, request.message(), aiResult.message(), contextBlock);
 
             if ("ORDER".equals(aiResult.action()) && aiResult.orderRequest() != null) {
-                return new AIOrderResponse(
-                        "ORDER",
-                        aiResult.message(),
-                        aiResult.orderRequest(),
-                        true);
+                try {
+                    // Validation: Kiểm tra xem tất cả items đã có ProductVariantId chưa
+                    boolean hasInvalidItem = aiResult.orderRequest().getOrderItems().stream()
+                            .anyMatch(item -> item.getProductVariantId() == null || item.getProductVariantId() <= 0);
+
+                    if (hasInvalidItem) {
+                        return new AIOrderResponse("INFO",
+                                "Tôi xin lỗi, có chút vấn đề về mã sản phẩm. Bạn vui lòng nói lại món và size muốn đặt để tôi xác nhận lại chính xác nhé!",
+                                null, false, null);
+                    }
+
+                    // Đảm bảo không bị lỗi Null Gateway
+                    if (aiResult.orderRequest().getPaymentGateway() == null) {
+                        aiResult.orderRequest().setPaymentGateway(PaymentGateway.CASH);
+                    }
+
+                    OrderResponse createdOrder = orderService.createOrder(aiResult.orderRequest());
+                    String successMsg = aiResult.message() + "\n\n✅ **Đơn hàng #" + createdOrder.getOrderId()
+                            + " đã được khởi tạo!**\n*Mời bạn nhấn vào nút thanh toán bên dưới để chọn phương thức thanh toán phù hợp.*";
+
+                    return new AIOrderResponse("ORDER", successMsg, aiResult.orderRequest(), true,
+                            createdOrder.getOrderId());
+                } catch (Exception orderEx) {
+                    log.error("Order Creation Failed", orderEx);
+                    return "Rất tiếc, hệ thống gặp lỗi khi tạo đơn: " + orderEx.getMessage();
+                }
             }
-            return aiResult.message();
+            return aiResult;
 
         } catch (Exception e) {
-            log.error("Error in chat processing", e);
-            return "Xin lỗi, tôi gặp chút trục trặc khi xử lý thông tin. Bạn có thể nhắc lại được không?";
+            log.error("Chat processing error", e);
+            return "Tôi gặp khó khăn khi kết nối dữ liệu, bạn vui lòng thử lại nhé!";
         }
+    }
+
+    private List<ProductVariant> getVariantsForDocs(List<Document> docs) {
+        Long shopId = SecurityUtils.getCurrentShopId();
+        if (shopId == null || docs.isEmpty())
+            return Collections.emptyList();
+
+        Set<String> productNames = docs.stream()
+                .map(d -> (String) d.getMetadata().get("ten_mon"))
+                .filter(Objects::nonNull)
+                .map(this::normalizeName)
+                .collect(Collectors.toSet());
+
+        return productVariantRepository.findAllByShopId(shopId).stream()
+                .filter(v -> productNames.contains(normalizeName(v.getProduct().getName())))
+                .collect(Collectors.toList());
     }
 
     private List<Document> getAllDocuments() {
@@ -203,7 +274,7 @@ public class AIChatServiceImpl implements AIChatService {
                         .build());
     }
 
-    private String buildCalorieContext(List<Document> docs, String queryLower) {
+    private String buildCalorieContext(List<Document> docs, String queryLower, List<ProductVariant> shopVariants) {
         List<Document> docsWithCalo = docs.stream()
                 .filter(d -> parseCalo(d) > 0)
                 .collect(Collectors.toList());
@@ -231,9 +302,12 @@ public class AIChatServiceImpl implements AIChatService {
 
             docsWithCalo = docsWithCalo.stream().filter(d -> {
                 int c = parseCalo(d);
-                if (below)  return c < val;
-                if (above)  return c > val;
-                if (around) return Math.abs(c - val) <= 50;
+                if (below)
+                    return c < val;
+                if (above)
+                    return c > val;
+                if (around)
+                    return Math.abs(c - val) <= 50;
                 return true;
             }).collect(Collectors.toList());
         }
@@ -246,36 +320,36 @@ public class AIChatServiceImpl implements AIChatService {
         sb.append("=== DANH SÁCH MÓN THEO CALO (")
                 .append(ascending ? "thấp → cao" : "cao → thấp")
                 .append(") ===\n");
-        docsWithCalo.forEach(doc -> sb.append(formatDocContext(doc)).append("\n"));
+        docsWithCalo.forEach(doc -> sb.append(formatDocContext(doc, shopVariants)).append("\n"));
         return sb.toString();
     }
 
-    private String buildTagContext(List<Document> docs, String queryLower) {
+    private String buildTagContext(List<Document> docs, String queryLower, List<ProductVariant> shopVariants) {
         Map<String, List<String>> tagMapping = new LinkedHashMap<>();
-        tagMapping.put("ít ngọt",       List.of("ít_ngọt", "it_ngot"));
-        tagMapping.put("không ngọt",    List.of("ít_ngọt", "it_ngot"));
-        tagMapping.put("thanh mát",     List.of("thanh_mát", "thanh_mat"));
-        tagMapping.put("thanh khiết",   List.of("thanh_khiết", "thanh_khiet"));
-        tagMapping.put("giải nhiệt",    List.of("giải_nhiệt", "giai_nhiet"));
-        tagMapping.put("mát lạnh",      List.of("mát_lạnh", "mat_lanh"));
-        tagMapping.put("không caffeine",List.of("caffeine_free"));
+        tagMapping.put("ít ngọt", List.of("ít_ngọt", "it_ngot"));
+        tagMapping.put("không ngọt", List.of("ít_ngọt", "it_ngot"));
+        tagMapping.put("thanh mát", List.of("thanh_mát", "thanh_mat"));
+        tagMapping.put("thanh khiết", List.of("thanh_khiết", "thanh_khiet"));
+        tagMapping.put("giải nhiệt", List.of("giải_nhiệt", "giai_nhiet"));
+        tagMapping.put("mát lạnh", List.of("mát_lạnh", "mat_lanh"));
+        tagMapping.put("không caffeine", List.of("caffeine_free"));
         tagMapping.put("caffeine free", List.of("caffeine_free"));
-        tagMapping.put("no caffeine",   List.of("caffeine_free"));
-        tagMapping.put("béo ngậy",      List.of("béo_ngậy", "beo_ngay"));
-        tagMapping.put("giảm cân",      List.of("ít_béo", "it_beo"));
-        tagMapping.put("healthy",       List.of("thanh_mát", "ít_béo", "it_beo"));
-        tagMapping.put("chua ngọt",     List.of("chua_ngọt", "chua_ngot"));
-        tagMapping.put("signature",     List.of("signature"));
-        tagMapping.put("no lâu",        List.of("no_lâu", "no_lau"));
-        tagMapping.put("tráng miệng",   List.of("tráng_miệng", "trang_mieng"));
-        tagMapping.put("tỉnh táo",      List.of("sáng_trưa", "sang_trua", "caffeine"));
-        tagMapping.put("sáng trưa",     List.of("sáng_trưa", "sang_trua"));
-        tagMapping.put("thư giãn",      List.of("thư_giãn", "thu_gian"));
-        tagMapping.put("ít béo",        List.of("ít_béo", "it_beo"));
-        tagMapping.put("đậm đà",        List.of("đậm_đà", "dam_da"));
-        tagMapping.put("mềm mịn",       List.of("mềm_mịn", "mem_min"));
-        tagMapping.put("nhẹ",           List.of("thanh_nhẹ", "thanh_nhe"));
-        tagMapping.put("tiêu hóa",      List.of("tiêu_hóa", "tieu_hoa"));
+        tagMapping.put("no caffeine", List.of("caffeine_free"));
+        tagMapping.put("béo ngậy", List.of("béo_ngậy", "beo_ngay"));
+        tagMapping.put("giảm cân", List.of("ít_béo", "it_beo"));
+        tagMapping.put("healthy", List.of("thanh_mát", "ít_béo", "it_beo"));
+        tagMapping.put("chua ngọt", List.of("chua_ngọt", "chua_ngot"));
+        tagMapping.put("signature", List.of("signature"));
+        tagMapping.put("no lâu", List.of("no_lâu", "no_lau"));
+        tagMapping.put("tráng miệng", List.of("tráng_miệng", "trang_mieng"));
+        tagMapping.put("tỉnh táo", List.of("sáng_trưa", "sang_trua", "caffeine"));
+        tagMapping.put("sáng trưa", List.of("sáng_trưa", "sang_trua"));
+        tagMapping.put("thư giãn", List.of("thư_giãn", "thu_gian"));
+        tagMapping.put("ít béo", List.of("ít_béo", "it_beo"));
+        tagMapping.put("đậm đà", List.of("đậm_đà", "dam_da"));
+        tagMapping.put("mềm mịn", List.of("mềm_mịn", "mem_min"));
+        tagMapping.put("nhẹ", List.of("thanh_nhẹ", "thanh_nhe"));
+        tagMapping.put("tiêu hóa", List.of("tiêu_hóa", "tieu_hoa"));
 
         Set<String> searchTags = new HashSet<>();
         tagMapping.forEach((keyword, tags) -> {
@@ -305,11 +379,11 @@ public class AIChatServiceImpl implements AIChatService {
 
         StringBuilder sb = new StringBuilder();
         sb.append("=== MÓN PHÙ HỢP VỚI ĐẶC TÍNH YÊU CẦU ===\n");
-        filtered.forEach(doc -> sb.append(formatDocContext(doc)).append("\n"));
+        filtered.forEach(doc -> sb.append(formatDocContext(doc, shopVariants)).append("\n"));
         return sb.toString();
     }
 
-    private String buildFullMenuContext(List<Document> docs) {
+    private String buildFullMenuContext(List<Document> docs, List<ProductVariant> shopVariants) {
         Map<String, List<Document>> grouped = new LinkedHashMap<>();
         docs.forEach(doc -> {
             String nhom = (String) doc.getMetadata().getOrDefault("nhom", "KHÁC");
@@ -320,39 +394,90 @@ public class AIChatServiceImpl implements AIChatService {
         sb.append("=== TOÀN BỘ MENU ===\n");
         grouped.forEach((nhom, items) -> {
             sb.append("\n[NHÓM: ").append(nhom).append("]\n");
-            items.forEach(doc -> sb.append(formatDocContext(doc)).append("\n"));
+            items.forEach(doc -> sb.append(formatDocContext(doc, shopVariants)).append("\n"));
         });
         return sb.toString();
     }
 
-    private String buildDefaultContext(List<Document> docs) {
+    private String buildDefaultContext(List<Document> docs, List<ProductVariant> shopVariants) {
         return docs.stream()
-                .map(this::formatDocContext)
+                .map(doc -> this.formatDocContext(doc, shopVariants))
                 .collect(Collectors.joining("\n"));
     }
 
-    private String formatDocContext(Document doc) {
-        String ten   = (String) doc.getMetadata().getOrDefault("ten_mon", "?");
-        String nhom  = (String) doc.getMetadata().getOrDefault("nhom", "");
-        String tags  = (String) doc.getMetadata().getOrDefault("tags", "");
-        String calo  = (String) doc.getMetadata().getOrDefault("calories", "");
+    private String formatDocContext(Document doc, List<ProductVariant> shopVariants) {
+        String ten = (String) doc.getMetadata().getOrDefault("ten_mon", "?");
+        String nhom = (String) doc.getMetadata().getOrDefault("nhom", "");
+        String tags = (String) doc.getMetadata().getOrDefault("tags", "");
+        String calo = (String) doc.getMetadata().getOrDefault("calories", "");
         String logic = (String) doc.getMetadata().getOrDefault("logic_goi_y", "");
-        String giaM  = (String) doc.getMetadata().getOrDefault("gia_m", "-");
-        String giaL  = (String) doc.getMetadata().getOrDefault("gia_l", "-");
+        String giaM = (String) doc.getMetadata().getOrDefault("gia_m", "-");
+        String giaL = (String) doc.getMetadata().getOrDefault("gia_l", "-");
+
+        StringBuilder idInfo = new StringBuilder();
+        if (shopVariants != null && !shopVariants.isEmpty()) {
+            String targetTenNorm = normalizeName(ten);
+            List<ProductVariant> variants = shopVariants.stream()
+                    .filter(v -> normalizeName(v.getProduct().getName()).equals(targetTenNorm))
+                    .toList();
+
+            for (ProductVariant v : variants) {
+                String sizeCode = v.getSize().getCode().toUpperCase();
+                idInfo.append(String.format("\n[ID_SIZE_%s]: %d", sizeCode, v.getId()));
+            }
+        }
 
         return String.format(
                 "--- MÓN: %s [%s] ---\n" +
                         "[Giá]: M: %s | L: %s\n" +
                         "[Calo]: %s kcal\n" +
-                        "[Tags]: %s\n" +
-                        "[Gợi ý tư vấn]: %s",
-                ten, nhom, giaM, giaL, calo, tags, logic
-        );
+                        "[Gợi ý]: %s%s",
+                ten, nhom, giaM, giaL, calo, logic, idInfo.toString());
+    }
+
+    private String normalizeName(String name) {
+        if (name == null)
+            return "";
+
+        // Chuyển về chữ thường và thay thế các từ đặc biệt
+        String normalized = name.toLowerCase()
+                .replace("oolong", "ô long")
+                .replace("(signature)", "")
+                .replace("signature", "")
+                .replace("-", "")
+                .replace(".", "")
+                .trim();
+
+        // Loại bỏ dấu tiếng Việt (Normalizer NFD + Regex)
+        normalized = Normalizer.normalize(normalized, Normalizer.Form.NFD);
+        normalized = normalized.replaceAll("\\p{M}", "");
+        normalized = normalized.replace("đ", "d");
+
+        // Loại bỏ toàn bộ khoảng trắng và các ký tự không phải chữ/số để so sánh tuyệt
+        // đối
+        return normalized.replaceAll("[^a-z0-9]", "").trim();
+    }
+
+    private String buildToppingContext() {
+        Long shopId = SecurityUtils.getCurrentShopId();
+        if (shopId == null)
+            return "";
+
+        List<Topping> toppings = toppingRepository.findAllByShopId(shopId, Pageable.unpaged()).getContent();
+        if (toppings.isEmpty())
+            return "";
+
+        StringBuilder sb = new StringBuilder("\n=== DANH SÁCH TOPPING KHẢ DỤNG ===\n");
+        for (Topping t : toppings) {
+            sb.append(String.format("• %s - Giá: %,dđ | [ID]: %d\n", t.getName(), t.getPrice(), t.getId()));
+        }
+        return sb.toString();
     }
 
     private int parseCalo(Document doc) {
         String raw = (String) doc.getMetadata().getOrDefault("calories", "0");
-        if (raw == null || raw.isBlank()) return 0;
+        if (raw == null || raw.isBlank())
+            return 0;
         try {
             String digits = raw.replaceAll("[^0-9]", "").trim();
             return digits.isEmpty() ? 0 : Integer.parseInt(digits);
@@ -360,7 +485,6 @@ public class AIChatServiceImpl implements AIChatService {
             return 0;
         }
     }
-
 
     private OptionalInt extractCalorieThreshold(String query) {
         Matcher m = Pattern.compile("(\\d{2,4})\\s*(calo|kcal|cal|calories)?").matcher(query);
@@ -374,7 +498,8 @@ public class AIChatServiceImpl implements AIChatService {
     }
 
     private String parseJson(String raw) {
-        if (raw == null || raw.isBlank()) return "{}";
+        if (raw == null || raw.isBlank())
+            return "{}";
 
         int start = raw.indexOf("{");
         int end = raw.lastIndexOf("}");
@@ -422,7 +547,7 @@ public class AIChatServiceImpl implements AIChatService {
                     case '\t' -> sb.append("\\t");
                     case '\b' -> sb.append("\\b");
                     case '\f' -> sb.append("\\f");
-                    default   -> sb.append(String.format("\\u%04x", (int) c));
+                    default -> sb.append(String.format("\\u%04x", (int) c));
                 }
                 continue;
             }
@@ -435,7 +560,8 @@ public class AIChatServiceImpl implements AIChatService {
     @Transactional
     public String ingestFile(MultipartFile file) throws IOException {
         String fileName = file.getOriginalFilename();
-        if (fileName == null) return "Tên tệp không hợp lệ.";
+        if (fileName == null)
+            return "Tên tệp không hợp lệ.";
 
         if (fileName.endsWith(".xlsx")) {
             return ingestExcel(file, fileName);
@@ -444,14 +570,15 @@ public class AIChatServiceImpl implements AIChatService {
         String content = "";
         if (fileName.endsWith(".docx")) {
             try (XWPFDocument doc = new XWPFDocument(file.getInputStream());
-                 XWPFWordExtractor extractor = new XWPFWordExtractor(doc)) {
+                    XWPFWordExtractor extractor = new XWPFWordExtractor(doc)) {
                 content = extractor.getText();
             }
         } else {
             content = new String(file.getBytes(), StandardCharsets.UTF_8);
         }
 
-        if (content.isBlank()) return "Tệp trống hoặc không thể đọc nội dung.";
+        if (content.isBlank())
+            return "Tệp trống hoặc không thể đọc nội dung.";
 
         ingestData(content);
         return "Đã nạp tài liệu từ file " + fileName + " thành công";
@@ -466,35 +593,38 @@ public class AIChatServiceImpl implements AIChatService {
 
             for (int i = 2; i <= sheet.getLastRowNum(); i++) {
                 org.apache.poi.ss.usermodel.Row row = sheet.getRow(i);
-                if (row == null) continue;
+                if (row == null)
+                    continue;
 
-                String nhom   = getCellValue(row.getCell(1));
+                String nhom = getCellValue(row.getCell(1));
                 String tenMon = getCellValue(row.getCell(2));
 
                 if (!nhom.isBlank()) {
                     currentNhom = nhom;
                 }
 
-                if (tenMon.isBlank()) continue;
-                if (tenMon.equalsIgnoreCase("Tên Topping") || tenMon.equalsIgnoreCase("Tên Món / Combo")) continue;
+                if (tenMon.isBlank())
+                    continue;
+                if (tenMon.equalsIgnoreCase("Tên Topping") || tenMon.equalsIgnoreCase("Tên Món / Combo"))
+                    continue;
 
-                String giaM  = getCellValue(row.getCell(3));
-                String giaL  = getCellValue(row.getCell(4));
-                String tags  = getCellValue(row.getCell(5));
-                String calo  = getCellValue(row.getCell(6));
+                String giaM = getCellValue(row.getCell(3));
+                String giaL = getCellValue(row.getCell(4));
+                String tags = getCellValue(row.getCell(5));
+                String calo = getCellValue(row.getCell(6));
                 String logic = getCellValue(row.getCell(7));
 
                 String mainContent = String.format("Món: %s. Nhóm: %s. Đặc tính: %s.", tenMon, currentNhom, tags);
 
                 Document doc = new Document(mainContent);
-                doc.getMetadata().put("ten_mon",    tenMon);
-                doc.getMetadata().put("nhom",       currentNhom);
-                doc.getMetadata().put("gia_m",      giaM);
-                doc.getMetadata().put("gia_l",      giaL);
-                doc.getMetadata().put("tags",       tags);
-                doc.getMetadata().put("calories",   calo);
+                doc.getMetadata().put("ten_mon", tenMon);
+                doc.getMetadata().put("nhom", currentNhom);
+                doc.getMetadata().put("gia_m", giaM);
+                doc.getMetadata().put("gia_l", giaL);
+                doc.getMetadata().put("tags", tags);
+                doc.getMetadata().put("calories", calo);
                 doc.getMetadata().put("logic_goi_y", logic);
-                doc.getMetadata().put("source",     fileName);
+                doc.getMetadata().put("source", fileName);
 
                 String fullInfo = String.format("%s (%s) - Giá Size M: %s, L: %s. Đặc tính: %s. Gợi ý: %s",
                         tenMon, currentNhom, giaM, giaL, tags, logic);
@@ -512,7 +642,8 @@ public class AIChatServiceImpl implements AIChatService {
     }
 
     private String getCellValue(Cell cell) {
-        if (cell == null) return "";
+        if (cell == null)
+            return "";
         switch (cell.getCellType()) {
             case STRING:
                 return cell.getStringCellValue().trim();
@@ -539,7 +670,8 @@ public class AIChatServiceImpl implements AIChatService {
     @Override
     @Transactional
     public void ingestData(String content) {
-        if (content == null || content.isBlank()) return;
+        if (content == null || content.isBlank())
+            return;
 
         String sanitizedContent = content.replace("\u0000", "");
         TokenTextSplitter splitter = new TokenTextSplitter(800, 100, 5, 10000, true);

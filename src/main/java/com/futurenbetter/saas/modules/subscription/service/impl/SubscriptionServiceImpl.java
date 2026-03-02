@@ -21,6 +21,7 @@ import com.futurenbetter.saas.modules.subscription.repository.SubscriptionTransa
 import com.futurenbetter.saas.modules.subscription.service.CloudinaryStorageService;
 import com.futurenbetter.saas.modules.subscription.service.PdfExportService;
 import com.futurenbetter.saas.modules.subscription.service.SubscriptionService;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,7 +73,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     @Transactional
     public MomoPaymentResponse createSubscriptionWithMomo(SubscriptionRequest request) {
-        //1. Kiểm tra gói dịch vụ
+        // 1. Kiểm tra gói dịch vụ
         SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
                 .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
 
@@ -84,32 +85,33 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new BusinessException("Tên miền đã được sử dụng");
         }
 
-        //2. Tính tiền
+        // 2. Tính tiền
         Long amount = request.getBillingCycle() == BillingCycleEnum.MONTHLY
-                ? plan.getPriceMonthly() : plan.getPriceYearly();
+                ? plan.getPriceMonthly()
+                : plan.getPriceYearly();
 
         Map<String, Object> extraDataMap = new HashMap<>();
         extraDataMap.put("shopData", request);
         extraDataMap.put("type", "SUBSCRIPTION");
 
-        //3. Đóng gói thông tin shop vào extra data (Base64 JSON)
+        // 3. Đóng gói thông tin shop vào extra data (Base64 JSON)
         String extraData = "";
         try {
-            byte[] jsonBytes = objectMapper.writeValueAsBytes(request);
-            extraData = Base64.getUrlEncoder().withoutPadding().encodeToString(jsonBytes);
+            byte[] jsonBytes = objectMapper.writeValueAsBytes(extraDataMap);
+            extraData = Base64.getEncoder().encodeToString(jsonBytes);
 
         } catch (Exception e) {
             throw new BusinessException("Lỗi đóng gói thông tin shop");
         }
 
-        //4. Chuẩn bị tham số Momo
-        String orderId = "NEW_SHOP_" + System.currentTimeMillis();
+        // 4. Chuẩn bị tham số Momo
+        String orderId = "SHOP-" + System.currentTimeMillis();
         String requestId = String.valueOf(System.currentTimeMillis());
-        String orderInfo = "Dang ki dich vu cho shop" + request.getShopName();
-        String requestType =  "captureWallet";
+        String orderInfo = "Dang ki dich vu cho shop " + request.getShopName().replaceAll("[^a-zA-Z0-9 ]", "");
+        String requestType = "captureWallet";
         String amountStr = String.valueOf(amount);
 
-        //Tạo signature
+        // Tạo signature
         String rawHash = "accessKey=" + accessKey +
                 "&amount=" + amountStr +
                 "&extraData=" + extraData +
@@ -135,7 +137,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .build();
         subscriptionTransactionRepository.save(pendingTransaction);
 
-        //5. Gọi Momo API
+        // 5. Gọi Momo API
         Map<String, Object> body = new HashMap<>();
         body.put("partnerCode", partnerCode);
         body.put("requestId", requestId);
@@ -151,9 +153,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         RestTemplate restTemplate = new RestTemplate();
         try {
+            log.info("Sending MoMo Request (Subscription): Body={}", body);
             ResponseEntity<Map> response = restTemplate.postForEntity(momoApiUrl, body, Map.class);
+            log.info("MoMo Response (Subscription): {}", response.getBody());
             if (response.getBody() == null || response.getBody().get("payUrl") == null) {
-                throw new BusinessException("Momo trả về lỗi: " + response.getBody().get("message"));
+                String resultCode = response.getBody() != null ? String.valueOf(response.getBody().get("resultCode"))
+                        : "unknown";
+                String message = response.getBody() != null ? String.valueOf(response.getBody().get("message"))
+                        : "No message";
+                log.error("MoMo Subscription Error: resultCode={}, message={}", resultCode, message);
+                throw new BusinessException("Momo trả về lỗi: " + message + " (code: " + resultCode + ")");
             }
             String payUrl = (String) response.getBody().get("payUrl");
 
@@ -172,25 +181,27 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     public void handleMomoIpn(Map<String, String> payload) {
         String orderId = payload.get("orderId");
 
-        if (!"0".equals(payload.get("resultCode"))) return ;
+        if (!"0".equals(payload.get("resultCode")))
+            return;
 
         Optional<SubscriptionTransaction> existingTask = subscriptionTransactionRepository.findByOrderId(orderId);
         if (existingTask.isPresent() && existingTask.get().getStatus() == SubscriptionTransactionEnum.ACTIVE) {
-//            log.info("Giao dịch {} đã được xử lý trước đó, bỏ qua.", orderId);
+            // log.info("Giao dịch {} đã được xử lý trước đó, bỏ qua.", orderId);
             return;
         }
 
-        //1. Giải mã thông tin shop từ extra data
+        // 1. Giải mã thông tin shop từ extra data
         String extraData = payload.get("extraData");
         if (extraData == null || extraData.isEmpty()) {
             throw new BusinessException("Thiếu dữ liệu extraData");
         }
         SubscriptionRequest shopData;
         try {
-            byte[] decodedBytes = Base64.getUrlDecoder().decode(extraData);
-            shopData = objectMapper.readValue(decodedBytes, SubscriptionRequest.class);
+            byte[] decodedBytes = Base64.getDecoder().decode(extraData);
+            JsonNode rootNode = objectMapper.readTree(decodedBytes);
+            shopData = objectMapper.treeToValue(rootNode.get("shopData"), SubscriptionRequest.class);
         } catch (Exception e) {
-            throw new BusinessException("Không thể giải mã dữ liệu shop");
+            throw new BusinessException("Không thể giải mã dữ liệu shop: " + e.getMessage());
         }
 
         if (shopRepository.existsByEmail(shopData.getEmail()) ||
@@ -198,7 +209,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new BusinessException("Email hoặc tên miền đã được đăng ký trong lúc chờ thanh toán");
         }
 
-        //2. Lưu shop vào database
+        // 2. Lưu shop vào database
         Shop shop = new Shop();
         shop.setShopName(shopData.getShopName());
         shop.setAddress(shopData.getAddress());
@@ -208,7 +219,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         shop.setShopStatus(ShopStatus.ACTIVE);
         shop = shopRepository.save(shop);
 
-        //3. Tạo subscription và invoice với shopId
+        // 3. Tạo subscription và invoice với shopId
         SubscriptionPlan plan = subscriptionPlanRepository.findById(shopData.getSubscriptionPlanId()).get();
 
         ShopSubscription sub = ShopSubscription.builder()
@@ -220,7 +231,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .autoRenewal(shopData.getAutoRenewal())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
-                .endedAt(LocalDateTime.now().plusMonths(shopData.getBillingCycle()== BillingCycleEnum.MONTHLY ? 1 : 12))
+                .endedAt(
+                        LocalDateTime.now().plusMonths(shopData.getBillingCycle() == BillingCycleEnum.MONTHLY ? 1 : 12))
                 .build();
         shopSubscriptionRepository.save(sub);
 
@@ -244,18 +256,18 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //4. Lưu giao dịch
+        // 4. Lưu giao dịch
         SubscriptionTransaction transaction = existingTask.orElse(new SubscriptionTransaction());
-                    transaction.setInvoice(invoice);
-                    transaction.setShop(shop);
-                    transaction.setPlan(plan);
-                    transaction.setBillingCycle(shopData.getBillingCycle());
-                    transaction.setAmount(transaction.getAmount() + sub.getPrice());
-                    transaction.setIsIncome(true);
-                    transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);
-                    transaction.setPaymentGateway(PaymentGatewayEnum.MOMO);
-                    transaction.setUpdatedAt(LocalDateTime.now());
-                    transaction.setCreatedAt(LocalDateTime.now());
+        transaction.setInvoice(invoice);
+        transaction.setShop(shop);
+        transaction.setPlan(plan);
+        transaction.setBillingCycle(shopData.getBillingCycle());
+        transaction.setAmount(transaction.getAmount() + sub.getPrice());
+        transaction.setIsIncome(true);
+        transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);
+        transaction.setPaymentGateway(PaymentGatewayEnum.MOMO);
+        transaction.setUpdatedAt(LocalDateTime.now());
+        transaction.setCreatedAt(LocalDateTime.now());
         subscriptionTransactionRepository.save(transaction);
     }
 
@@ -281,10 +293,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         RestTemplate restTemplate = new RestTemplate();
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(momoApiUrl.replace("create", "query"), body, Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(momoApiUrl.replace("create", "query"), body,
+                    Map.class);
             return (Map<String, String>) response.getBody();
         } catch (Exception e) {
-//            log.error("Lỗi truy vấn giao dịch Momo: {}", e.getMessage());
+            // log.error("Lỗi truy vấn giao dịch Momo: {}", e.getMessage());
             return null;
         }
     }
@@ -305,7 +318,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
 
         Long amount = request.getBillingCycle() == BillingCycleEnum.MONTHLY
-                ? plan.getPriceMonthly() : plan.getPriceYearly();
+                ? plan.getPriceMonthly()
+                : plan.getPriceYearly();
 
         Shop shop = new Shop();
         shop.setShopName(request.getShopName());
@@ -473,26 +487,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         billingInvoiceRepository.flush();
     }
 
-    private String hmacSha256(String data, String key) {
-        try {
-            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
-
-            SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, "HmacSHA256");
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(secretKeySpec);
-
-            byte[] rawHmac = mac.doFinal(dataBytes);
-
-            StringBuilder sb = new StringBuilder(rawHmac.length * 2);
-            for (byte b : rawHmac) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi tạo signature: " + e.getMessage());
-        }
-    }
+    // hmacSha256 removed as it is now used from MomoUtils
 
     private String hmacSHA512(String key, String data) {
         try {

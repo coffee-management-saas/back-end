@@ -35,6 +35,9 @@ public class Product {
     @Column(name = "combo_price")
     Long comboPrice;
 
+    @Column(name = "price")
+    Long price;
+
     @Column(name = "created_at")
     LocalDateTime createdAt;
 

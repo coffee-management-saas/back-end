@@ -83,7 +83,7 @@ public class StockCheckServiceImpl implements StockCheckService {
                 .title("Bắt đầu phiên kiểm kê kho")
                 .message("Phiên kiểm kho " + session.getCode() + " bắt đầu lúc " + session.getCreatedAt() + ". Vui lòng cập nhật số lượng thực tế.")
                 .type(NotificationType.INVENTORY)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/stock-checks/" + session.getId())
                 .build();
@@ -126,7 +126,7 @@ public class StockCheckServiceImpl implements StockCheckService {
                 .title("Kiểm kê nguyên liệu đã được cập nhật")
                 .message("Số lượng thực tế của các nguyên liệu đã được cập nhật cho phiên kiểm kho " + session.getCode() + ". Vui lòng duyệt phiếu khi đã hoàn tất.")
                 .type(NotificationType.INVENTORY)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/stock-checks/" + session.getId())
                 .build();
@@ -226,7 +226,7 @@ public class StockCheckServiceImpl implements StockCheckService {
                 .title("Kiểm kê nguyên liệu hoàn thành")
                 .message("Phiên kiểm kho " + session.getCode() + " đã được " + (Boolean.TRUE.equals(request.getIsApproved()) ? "duyệt" : "hủy") + ". Vui lòng kiểm tra lại thẻ kho.")
                 .type(NotificationType.INVENTORY)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/stock-checks/" + session.getId())
                 .build();

@@ -13,6 +13,9 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderItemResponse {
     Long orderItemId;
+    Long productVariantId;
+    String productName;
+    String sizeName;
     Long unitPrice;
     Integer quantity;
     OrderItemStatus orderItemStatus;

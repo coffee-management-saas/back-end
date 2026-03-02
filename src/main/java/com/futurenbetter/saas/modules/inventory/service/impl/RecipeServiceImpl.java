@@ -66,7 +66,7 @@ public class RecipeServiceImpl implements RecipeService {
                 .title("Tạo công thức thành công")
                 .message("Tạo " + results.stream().count() + " công thức thành công")
                 .type(NotificationType.INVENTORY)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink(null)
                 .build();

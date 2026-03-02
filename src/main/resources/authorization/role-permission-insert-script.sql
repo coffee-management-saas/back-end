@@ -36,13 +36,14 @@ FROM public.role r
                                                            'order:create', 'order:read-history',
                                                            'category:create', 'category:read', 'category:read-detail',
                                                            'category:update', 'category:delete',
-                                                           'product:create', 'product:read', 'product:read-detail', 'product:update',
+                                                           'product:create', 'product:read', 'product:best-seller', 'product:read-detail', 'product:update', 'product:upload-image',
                                                            'product:update-allow-topping', 'product:read-allow-topping',
-                                                           'product-variant:create', 'product-variant:read',
+                                                           'product-variant:create', 'product-variant:read', 'product-variant:update',
                                                            'product-variant:read-detail', 'product-variant:read-by-product',
                                                            'membership-rank:read', 'membership-rank:create', 'membership-rank:update', 'membership-rank:delete', 'membership-rank:read-detail',
                                                            'shop:update', 'shop:read-detail',
-                                                           'dashboard:shop'
+                                                           'dashboard:shop', 'dashboard:shop-daily',
+                                                           'notification:read', 'notification:update'
     )
 WHERE r.name = 'SHOP';
 
@@ -53,7 +54,7 @@ FROM public.role r
          JOIN public.permission p ON p.permission_name IN (
                                                            'employee-unavailability:read', 'employee-unavailability:read-detail',
                                                            'employee-unavailability:create', 'employee-unavailability:update', 'employee-unavailability:delete',
-                                                           'employee:read-detail', 'employee:update'
+                                                           'employee:read-detail', 'employee:update',
                                                            'schedule:read', 'schedule:read-detail', 'schedule:read-by-employee',
                                                            'shift-template:read', 'shift-template:read-detail',
                                                            'inventory-invoice:import', 'inventory-invoice:read-by-filter', 'inventory-invoice:read-detail',
@@ -61,14 +62,15 @@ FROM public.role r
                                                            'recipe:read-by-variant', 'recipe:read-by-topping',
                                                            'order:create', 'order:read-history',
                                                            'category:read', 'category:read-detail',
-                                                           'product:read', 'product:read-detail', 'product:read-allow-topping',
-                                                           'product-variant:read', 'product-variant:read-detail', 'product-variant:read-by-product',
+                                                           'product:read', 'product:read-detail', 'product:best-seller', 'product:read-allow-topping',
+                                                           'product-variant:read', 'product-variant:read-detail', 'product-variant:read-by-product', 'product:upload-image',
                                                            'product-size:read', 'product-size:read-active',
                                                            'topping:read', 'topping:read-detail',
                                                            'promotion:read', 'promotion:read-detail',
                                                            'stock-check:update-count', 'stock-check:read-by-filter',
                                                            'membership-rank:read', 'membership-rank:read-detail',
-                                                           'shop:read-detail'
+                                                           'shop:read-detail',
+                                                           'notification:read', 'notification:update'
     )
 WHERE r.name = 'EMPLOYEE';
 
@@ -77,14 +79,15 @@ INSERT INTO public.role_permission (role_id, permission_id)
 SELECT r.role_id, p.permission_id
 FROM public.role r
          JOIN public.permission p ON p.permission_name IN (
-                                                           'order:create', 'order:read-history',
-                                                           'product:read', 'product:read-detail', 'product:read-allow-topping',
+                                                           'order:create', 'order:read-history', 'order:read',
+                                                           'product:read', 'product:read-detail', 'product:best-seller', 'product:read-allow-topping',
                                                            'product-variant:read', 'product-variant:read-detail', 'product-variant:read-by-product',
                                                            'product-size:read', 'product-size:read-active',
                                                            'topping:read', 'topping:read-detail',
                                                            'promotion:read', 'promotion:read-detail',
                                                            'category:read',
                                                            'membership-rank:read', 'membership-rank:read-detail',
-                                                           'shop:read-detail'
+                                                           'shop:read-detail',
+                                                           'notification:read', 'notification:update'
     )
 WHERE r.name = 'CUSTOMER';

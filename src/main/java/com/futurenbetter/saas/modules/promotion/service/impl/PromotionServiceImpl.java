@@ -92,7 +92,7 @@ public class PromotionServiceImpl implements PromotionService {
                 .title("Tạo promotion thành công")
                 .message("Tạo promotion " + savedPromotion.getPromotionName() + " thành công")
                 .type(NotificationType.PROMOTION)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/promotion/" + savedPromotion.getPromotionId())
                 .build();
@@ -172,7 +172,7 @@ public class PromotionServiceImpl implements PromotionService {
                 .title("Cập nhật promotion thành công")
                 .message("Cập nhật promotion " + savedPromotion.getPromotionName() + " thành công")
                 .type(NotificationType.PROMOTION)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/promotion/" + savedPromotion.getPromotionId())
                 .build();
@@ -199,7 +199,7 @@ public class PromotionServiceImpl implements PromotionService {
                 .title("Xóa promotion thành công")
                 .message("Xóa promotion " + promotion.getPromotionName() + " thành công")
                 .type(NotificationType.PROMOTION)
-                .recipientType("SHOP_ADMIN")
+                .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/promotion/" + promotion.getPromotionId())
                 .build();

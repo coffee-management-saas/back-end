@@ -40,6 +40,7 @@ public class ShopDailyReport {
     @Column(name = "total_orders")
     private Integer totalOrders;
 
-    @Column(name = "top_products_json", columnDefinition = "TEXT")
-    private String topProductsJson;
+    @Column(name = "using_vouchers_percentage")
+    private Double usingVouchersPercentage;
+
 }

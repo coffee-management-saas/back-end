@@ -27,6 +27,7 @@ import com.futurenbetter.saas.modules.order.entity.OrderItem;
 import com.futurenbetter.saas.modules.order.entity.ToppingPerOrderItem;
 import com.futurenbetter.saas.modules.order.enums.OrderItemStatus;
 import com.futurenbetter.saas.modules.order.enums.OrderStatus;
+import com.futurenbetter.saas.modules.order.enums.OrderType;
 import com.futurenbetter.saas.modules.order.enums.PaymentGateway;
 import com.futurenbetter.saas.modules.order.mapper.OrderMapper;
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
@@ -102,22 +103,21 @@ public class OrderServiceImpl implements OrderService {
         // 1. Lấy ShopId và Customer từ SecurityUtils
         Long currentShopId = SecurityUtils.getCurrentShopId();
         Long currentUserId = SecurityUtils.getCurrentUserId();
+        Customer currentCustomer = SecurityUtils.getCurrentCustomer();
         Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
-
-        Customer currentCustomer = customerRepository.findById(currentUserId)
-                .orElseThrow(() -> new BusinessException("Không tìm thấy thông tin khách hàng"));
 
         // 2. Khởi tạo Entity Order từ Request
         Order order = orderMapper.toOrder(request);
         order.setShop(shop);
-        order.setCustomer(currentCustomer);
+        order.setCustomer(currentCustomer); // Set customer cho order
 
-        OrderItemStatus initialItemStatus = (request.getPaymentGateway() == PaymentGateway.CASH)
-                ? OrderItemStatus.PAID
-                : OrderItemStatus.PENDING;
+        OrderItemStatus initialItemStatus = (request.getOrderType() == OrderType.OFFLINE
+                && request.getPaymentGateway() == PaymentGateway.CASH)
+                        ? OrderItemStatus.PAID
+                        : OrderItemStatus.PENDING;
 
-        Double totalBasePrice = 0.0;
+        long totalBasePrice = 0;
         List<OrderItem> items = new ArrayList<>();
 
         // 3. Xử lý từng Item trong đơn hàng
@@ -131,9 +131,9 @@ public class OrderServiceImpl implements OrderService {
             ProductVariant variant = productVariantRepository.findById(itemReq.getProductVariantId())
                     .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
             item.setProductVariant(variant);
-            item.setUnitPrice(variant.getPrice().longValue());
+            item.setUnitPrice(variant.getPrice());
 
-            long itemTotal = variant.getPrice().longValue() * itemReq.getQuantity();
+            long itemTotal = (variant.getPrice() * itemReq.getQuantity());
 
             // 4. Xử lý Toppings đi kèm
             if (itemReq.getToppingItems() != null && !itemReq.getToppingItems().isEmpty()) {
@@ -166,10 +166,10 @@ public class OrderServiceImpl implements OrderService {
                     request.getPromotionCode(),
                     currentShopId,
                     currentUserId,
-                    totalBasePrice.longValue());
+                    totalBasePrice);
 
             if (promotion.getPromotionType() == PromotionTypeEnum.ORDER) {
-                discountAmount = calculateDiscount(promotion, totalBasePrice.longValue());
+                discountAmount = calculateDiscount(promotion, totalBasePrice);
             } else if (promotion.getPromotionType() == PromotionTypeEnum.PRODUCT) {
                 if (promotion.getPromotionTargets() == null || promotion.getPromotionTargets().isEmpty()) {
                     throw new BusinessException("Mã khuyến mãi không có sản phẩm áp dụng");
@@ -204,22 +204,24 @@ public class OrderServiceImpl implements OrderService {
 
         // 6. Cập nhật thông tin tổng quát và lưu trữ
         order.setOrderItems(items);
-        order.setBasePrice(totalBasePrice.longValue());
+        order.setBasePrice(totalBasePrice);
         order.setDiscountAmount(discountAmount);
-        order.setPaidPrice(totalBasePrice.longValue() - discountAmount.longValue());
+        order.setPaidPrice(totalBasePrice - discountAmount);
         order.setProductQuantity(items.size());
         order.setPromotion(promotion);
 
-        if (request.getPaymentGateway() == PaymentGateway.CASH) {
+        if (request.getPaymentGateway() == PaymentGateway.CASH && request.getOrderType() == OrderType.OFFLINE) {
             order.setOrderStatus(OrderStatus.PAID);
+        } else {
+            order.setOrderStatus(OrderStatus.PENDING);
         }
 
         Order savedOrder = orderRepository.save(order);
 
-        // 7. Ghi nhận promotion usage nếu thanh toán bằng CASH
-        if (request.getPaymentGateway() == PaymentGateway.CASH) {
+        // 7. Ghi nhận promotion usage và xử lý nội bộ nếu đơn hàng đã được THANH TOÁN
+        // (thường là Offline Cash)
+        if (savedOrder.getOrderStatus() == OrderStatus.PAID) {
             triggerStockDeduction(savedOrder);
-            processCustomerPoints(savedOrder);
 
             if (promotion != null) {
                 promotionService.recordPromotionUsage(
@@ -232,80 +234,94 @@ public class OrderServiceImpl implements OrderService {
         }
 
         if (request.getPaymentGateway() == PaymentGateway.MOMO) {
-            String orderIdMomo = "ORD_" + savedOrder.getOrderId() + "_" + System.currentTimeMillis();
-            String requestId = String.valueOf(System.currentTimeMillis());
-            String orderInfo = "Thanh toan don hang #" + savedOrder.getOrderId();
-            String requestType = "captureWallet";
+            String payUrl = createMomoPayment(savedOrder, redirectUrl);
+            OrderResponse orderResponse = orderMapper.toOrderResponse(savedOrder);
+            orderResponse.setPayUrl(payUrl);
+            return orderResponse;
+        }
+        return orderMapper.toOrderResponse(savedOrder);
+    }
 
-            String extraData = "";
-            try {
-                Map<String, Object> extraDatamap = new HashMap<>();
-                extraDatamap.put("type", "ORDER");
-                extraDatamap.put("orderId", savedOrder.getOrderId());
+    private String createMomoPayment(Order order, String specificRedirectUrl) {
+        String effectiveRedirectUrl = (specificRedirectUrl != null && !specificRedirectUrl.isEmpty())
+                ? specificRedirectUrl
+                : redirectUrl;
 
-                byte[] jsonBytes = objectMapper.writeValueAsBytes(extraDatamap);
-                extraData = Base64.getUrlEncoder().withoutPadding().encodeToString(jsonBytes);
-            } catch (Exception e) {
-                throw new BusinessException("Lỗi chuẩn bị dữ liệu thanh toán");
-            }
+        String orderIdMomo = "ORD_" + order.getOrderId() + "_" + System.currentTimeMillis();
+        String requestId = String.valueOf(System.currentTimeMillis());
+        String orderInfo = "Thanh toan don hang " + order.getOrderId();
+        String requestType = "captureWallet";
 
-            String paidAmountStr = String.valueOf(savedOrder.getPaidPrice());
-            String rawHash = "accessKey=" + accessKey +
-                    "&amount=" + paidAmountStr +
-                    "&extraData=" + extraData +
-                    "&ipnUrl=" + ipnUrl +
-                    "&orderId=" + orderIdMomo +
-                    "&orderInfo=" + orderInfo +
-                    "&partnerCode=" + partnerCode +
-                    "&redirectUrl=" + redirectUrl +
-                    "&requestId=" + requestId +
-                    "&requestType=" + requestType;
-            String signature = momoUtils.hmacSha256(rawHash, secretKey);
+        String extraData = "";
+        try {
+            Map<String, Object> extraDatamap = new HashMap<>();
+            extraDatamap.put("type", "ORDER");
+            extraDatamap.put("orderId", order.getOrderId());
 
-            Map<String, Object> body = new HashMap<>();
-            body.put("partnerCode", partnerCode);
-            body.put("requestId", requestId);
-            body.put("amount", savedOrder.getPaidPrice());
-            body.put("orderId", orderIdMomo);
-            body.put("orderInfo", orderInfo);
-            body.put("redirectUrl", redirectUrl);
-            body.put("ipnUrl", ipnUrl);
-            body.put("requestType", requestType);
-            body.put("extraData", extraData);
-            body.put("signature", signature);
-            body.put("lang", "vi");
-
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<Map> response = restTemplate.postForEntity(momoApiUrl, body, Map.class);
-
-            if (response.getBody() != null && response.getBody().get("payUrl") != null) {
-                String payUrl = (String) response.getBody().get("payUrl");
-                OrderResponse orderResponse = orderMapper.toOrderResponse(savedOrder);
-                orderResponse.setPayUrl(payUrl);
-
-                generateNotification("Tạo đơn hàng thành công",
-                        "Bạn đã tạo đơn hàng #"
-                                + savedOrder.getOrderId()
-                                + " thành công với tổng giá trị "
-                                + savedOrder.getPaidPrice(),
-                        currentUserId,
-                        savedOrder.getOrderId());
-
-                return orderResponse;
-            } else {
-                throw new BusinessException("Lỗi kết nối cổng thanh toán MOMO");
-            }
+            byte[] jsonBytes = objectMapper.writeValueAsBytes(extraDatamap);
+            extraData = Base64.getEncoder().encodeToString(jsonBytes);
+        } catch (Exception e) {
+            throw new BusinessException("Lỗi chuẩn bị dữ liệu thanh toán");
         }
 
-        generateNotification("Tạo đơn hàng thành công",
-                "Bạn đã tạo đơn hàng #"
-                        + savedOrder.getOrderId()
-                        + " thành công với tổng giá trị "
-                        + savedOrder.getPaidPrice(),
-                currentUserId,
-                savedOrder.getOrderId());
+        String paidAmountStr = String.valueOf(order.getPaidPrice());
+        String rawHash = "accessKey=" + accessKey +
+                "&amount=" + paidAmountStr +
+                "&extraData=" + extraData +
+                "&ipnUrl=" + ipnUrl +
+                "&orderId=" + orderIdMomo +
+                "&orderInfo=" + orderInfo +
+                "&partnerCode=" + partnerCode +
+                "&redirectUrl=" + effectiveRedirectUrl +
+                "&requestId=" + requestId +
+                "&requestType=" + requestType;
+        String signature = momoUtils.hmacSha256(rawHash, secretKey);
 
-        return orderMapper.toOrderResponse(savedOrder);
+        Map<String, Object> body = new HashMap<>();
+        body.put("partnerCode", partnerCode);
+        body.put("requestId", requestId);
+        body.put("amount", order.getPaidPrice());
+        body.put("orderId", orderIdMomo);
+        body.put("orderInfo", orderInfo);
+        body.put("redirectUrl", effectiveRedirectUrl);
+        body.put("ipnUrl", ipnUrl);
+        body.put("requestType", requestType);
+        body.put("extraData", extraData);
+        body.put("signature", signature);
+        body.put("lang", "vi");
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<Map> response = restTemplate.postForEntity(momoApiUrl, body, Map.class);
+
+        if (response.getBody() != null && response.getBody().get("payUrl") != null) {
+            return (String) response.getBody().get("payUrl");
+        } else {
+            String resultCode = response.getBody() != null ? String.valueOf(response.getBody().get("resultCode"))
+                    : "unknown";
+            String message = response.getBody() != null ? String.valueOf(response.getBody().get("message"))
+                    : "No message";
+            throw new BusinessException(
+                    "Lỗi kết nối cổng thanh toán MOMO: " + message + " (code: " + resultCode + ")");
+        }
+    }
+
+    @Override
+    public OrderResponse initiatePayment(Long orderId, String returnUrl) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException("Đơn hàng không tồn tại"));
+
+        if (order.getOrderStatus() == OrderStatus.PAID) {
+            throw new BusinessException("Đơn hàng này đã được thanh toán");
+        }
+
+        // Hiện tại chỉ hỗ trợ MoMo (VNPAY có thể thêm sau)
+        order.setPaymentGateway(PaymentGateway.MOMO);
+        orderRepository.save(order);
+
+        String payUrl = createMomoPayment(order, returnUrl);
+        OrderResponse response = orderMapper.toOrderResponse(order);
+        response.setPayUrl(payUrl);
+        return response;
     }
 
     @Override
@@ -337,6 +353,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setOrderStatus(OrderStatus.PAID);
+        order.setPaymentGateway(PaymentGateway.MOMO); // Cập nhật lại gateway thực tế
         order.setUpdatedAt(LocalDateTime.now());
 
         if (order.getOrderItems() != null) {
@@ -347,7 +364,6 @@ public class OrderServiceImpl implements OrderService {
         }
         orderRepository.save(order);
         triggerStockDeduction(order);
-        processCustomerPoints(order);
 
         if (order.getPromotion() != null) {
             Long customerId = (order.getCustomer() != null) ? order.getCustomer().getId() : null;
@@ -421,13 +437,16 @@ public class OrderServiceImpl implements OrderService {
 
     private void processCustomerPoints(Order order) {
         Customer customer = order.getCustomer();
-        if (customer == null) return;
+        if (customer == null)
+            return;
 
         MembershipRank currentRank = customer.getMembershipRank();
-        if (currentRank == null || currentRank.getPointRate() == null) return;
+        if (currentRank == null || currentRank.getPointRate() == null)
+            return;
 
         int earnedPoints = (int) Math.floor(order.getPaidPrice() * currentRank.getPointRate());
-        if (earnedPoints <= 0) return;
+        if (earnedPoints <= 0)
+            return;
 
         int beforePoints = (customer.getTotalPoint() != null) ? customer.getTotalPoint().intValue() : 0;
         int afterPoints = beforePoints + earnedPoints;
@@ -476,7 +495,6 @@ public class OrderServiceImpl implements OrderService {
         notificationService.sendToUser(noti);
     }
 
-
     @Override
     public Page<OrderResponse> getOrderHistory(OrderFilter filter) {
         Long currentShopId = SecurityUtils.getCurrentShopId();
@@ -490,9 +508,31 @@ public class OrderServiceImpl implements OrderService {
 
         Page<Order> orderPage = orderRepository.findAll(
                 OrderSpecification.filter(currentShopId, filter),
-                filter.getPageable()
-        );
+                filter.getPageable());
 
         return orderPage.map(orderMapper::toOrderResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(Long orderId) {
+        Long currentShopId = SecurityUtils.getCurrentShopId();
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + orderId));
+
+        // Security check: must belong to current shop
+        if (!order.getShop().getId().equals(currentShopId)) {
+            throw new BusinessException("Đơn hàng không thuộc cửa hàng này");
+        }
+
+        // Optional: If customer, must belong to them
+        if (SecurityUtils.isCustomer()) {
+            Long currentCustomerId = SecurityUtils.getCurrentUserId();
+            if (order.getCustomer() == null || !order.getCustomer().getId().equals(currentCustomerId)) {
+                throw new BusinessException("Bạn không có quyền xem đơn hàng này");
+            }
+        }
+
+        return orderMapper.toOrderResponse(order);
     }
 }

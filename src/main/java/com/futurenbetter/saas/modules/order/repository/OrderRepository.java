@@ -1,12 +1,16 @@
 package com.futurenbetter.saas.modules.order.repository;
 
+import com.futurenbetter.saas.modules.dashboard.dto.projection.BestSellerProjection;
+import com.futurenbetter.saas.modules.dashboard.dto.projection.TopProductProjection;
 import com.futurenbetter.saas.modules.order.entity.Order;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
     @Query("SELECT SUM(o.paidPrice) FROM Order o WHERE o.shop.id = :shopId AND o.orderStatus = 'COMPLETED' AND o.createdAt >= :fromDate AND o.createdAt <= :toDate")
@@ -14,4 +18,46 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.shop.id = :shopId AND o.createdAt >= :fromDate AND o.createdAt <= :toDate")
     Integer countOrdersByShop(@Param("shopId") Long shopId, @Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.shop.id = :shopId AND o.createdAt >= :fromDate AND o.createdAt <= :toDate AND o.promotion.promotionId IS NOT NULL")
+    Integer countOdersByShopIdAndHasPromotionIsTrue(@Param("shopId") Long shopId, @Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
+
+    @Query("SELECT p.id AS productId, p.name AS productName, SUM(oi.quantity) AS totalQuantity " +
+            "FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.productVariant pv " + // Đi qua variant nếu project của bạn map OrderItem -> ProductVariant -> Product
+            "JOIN pv.product p " +
+            "WHERE o.shop.id = :shopId " +
+            "AND o.orderStatus = 'COMPLETED' " + // Chỉ tính các đơn đã hoàn thành
+            "AND o.createdAt >= :fromDate AND o.createdAt <= :toDate " +
+            "GROUP BY p.id, p.name " +
+            "ORDER BY totalQuantity DESC")
+    List<TopProductProjection> findTopSellingProducts(
+            @Param("shopId") Long shopId,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            Pageable pageable
+    );
+
+    @Query("SELECT p.id AS productId, " +
+            "p.name AS productName, " +
+            "p.image AS productImage, " +
+            "COALESCE(p.price, MIN(pv.price)) AS price, " +
+            "SUM(oi.quantity) AS totalQuantity, " +
+            "SUM(CAST(oi.quantity AS long) * oi.unitPrice) AS totalRevenue " +
+            "FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.productVariant pv " +
+            "JOIN pv.product p " +
+            "WHERE o.shop.id = :shopId " +
+            "AND o.orderStatus = 'PAID' " +
+            "AND p.createdAt >= :tenDaysAgo " +
+            "GROUP BY p.id, p.name, p.image, p.price, p.createdAt " +
+            "ORDER BY SUM(oi.quantity) DESC, " +
+            "SUM(CAST(oi.quantity AS long) * oi.unitPrice) DESC, " +
+            "p.createdAt DESC")
+    List<BestSellerProjection> getBestSellerProducts(
+            @Param("shopId") Long shopId,
+            @Param("tenDaysAgo") LocalDateTime tenDaysAgo,
+            Pageable pageable);
 }
