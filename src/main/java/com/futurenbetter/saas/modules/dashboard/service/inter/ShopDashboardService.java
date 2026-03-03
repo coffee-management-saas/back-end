@@ -8,7 +8,5 @@ import com.futurenbetter.saas.modules.dashboard.dto.response.ShopDashboardRespon
 import java.util.List;
 
 public interface ShopDashboardService {
-    List<ShopDashboardDailyResponse> getDaily(DashboardFilter filter);
-    ShopDashboardResponse getShopDashboard(DashboardFilter filter);
     List<BestSellerProjection> getBestSeller(Long shopId, int limit);
 }

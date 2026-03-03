@@ -11,4 +11,6 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
     Optional<Product> findByIdAndShopId(Long id, Long shopId);
     boolean existsByNameAndShopId(String name, Long shopId);
+
+    Integer countByShopId(Long id);
 }

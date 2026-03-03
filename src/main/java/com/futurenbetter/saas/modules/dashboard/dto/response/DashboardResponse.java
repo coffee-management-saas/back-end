@@ -10,12 +10,16 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class MonthlyProductSoldResponse {
+public class DashboardResponse {
     Long id;
     Long shopId;
-    Long productId;
-    String productName;
-    Integer quantitySold;
     String month;
     Integer year;
+    Double totalRevenue;
+    Integer totalOrders;
+    Integer totalProduct;
+    Integer newCustomers;
+    Integer returningCustomers;
+    Integer totalOfflineOrders;
+    Integer totalOnlineOrders;
 }

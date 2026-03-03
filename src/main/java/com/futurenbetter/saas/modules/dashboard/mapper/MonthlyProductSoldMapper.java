@@ -4,7 +4,6 @@ import com.futurenbetter.saas.modules.dashboard.dto.response.MonthlyProductSoldR
 import com.futurenbetter.saas.modules.dashboard.entity.MonthlyProductSold;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Mappings;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(

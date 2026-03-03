@@ -15,8 +15,7 @@ import java.util.Optional;
 
 public interface MonthlyProductSoldRepository extends JpaRepository<MonthlyProductSold, Long>, JpaSpecificationExecutor<MonthlyProductSold> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<MonthlyProductSold> findByShopIdAndProductIdAndYear(Long shopId, Long productId, Integer year);
-
+    Optional<MonthlyProductSold> findByShopIdAndProductIdAndYearAndMonth(Long shopId, Long productId, Integer year, Integer month);
     @Query(value = """
             WITH RankedProducts AS (
                 SELECT *,
