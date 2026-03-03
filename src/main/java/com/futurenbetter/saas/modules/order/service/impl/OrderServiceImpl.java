@@ -139,7 +139,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Bạn không có quyền tạo đơn hàng này");
         }
 
-        OrderItemStatus initialItemStatus = (request.getOrderType() == OrderType.OFFLINE
+        OrderItemStatus initialItemStatus = (request.getOrderType() == OrderType.OFFLINE || request.getOrderType() == OrderType.ONLINE
                 && request.getPaymentGateway() == PaymentGateway.CASH)
                         ? OrderItemStatus.PAID
                         : OrderItemStatus.PENDING;
@@ -237,8 +237,7 @@ public class OrderServiceImpl implements OrderService {
         order.setProductQuantity(items.size());
         order.setPromotion(promotion);
 
-        if (isStaff && request.getPaymentGateway() == PaymentGateway.CASH
-                && request.getOrderType() == OrderType.OFFLINE) {
+        if (request.getPaymentGateway() == PaymentGateway.CASH) {
             order.setOrderStatus(OrderStatus.PAID);
             updateMonthlyProductSold(order);
         } else {
