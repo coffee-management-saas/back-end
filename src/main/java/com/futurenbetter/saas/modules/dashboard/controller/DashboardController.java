@@ -9,6 +9,7 @@ import com.futurenbetter.saas.modules.dashboard.dto.response.SystemDashboardResp
 import com.futurenbetter.saas.modules.dashboard.service.inter.DashboardService;
 import com.futurenbetter.saas.modules.dashboard.service.inter.MonthlyProductSoldService;
 import com.futurenbetter.saas.modules.dashboard.service.inter.SystemDashboardService;
+import com.futurenbetter.saas.modules.dashboard.task.DashboardTask;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,6 +29,7 @@ public class DashboardController {
     private final SystemDashboardService systemDashboardService;
     private final MonthlyProductSoldService monthlyProductSoldService;
     private final DashboardService dashboardService;
+    private final DashboardTask dashboardTask;
 
     @GetMapping("/shop/overview/dashboard")
     @PreAuthorize("hasAuthority('dashboard:shop-daily')")
@@ -36,6 +38,18 @@ public class DashboardController {
                 HttpStatus.OK,
                 "Lấy dữ liệu Shop Dashboard theo ngày thành công",
                 dashboardService.getAll(year),
+                null
+        );
+    }
+
+    @GetMapping("/shop/overview/trigger")
+    @PreAuthorize("hasAuthority('dashboard:shop-daily')")
+    public ApiResponse<Void> trigger() {
+        dashboardTask.updateDashboardDaily();
+        return ApiResponse.success(
+                HttpStatus.OK,
+                "Trigger thành công",
+                null,
                 null
         );
     }
