@@ -20,6 +20,5 @@ public class OrderRequest {
     OrderType orderType;
     PaymentGateway paymentGateway;
     List<OrderItemRequest> orderItems;
-    LocalDateTime createdAt;
     String promotionCode;
 }

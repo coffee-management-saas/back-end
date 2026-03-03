@@ -211,6 +211,7 @@ public class OrderServiceImpl implements OrderService {
         order.setPaidPrice(totalBasePrice - discountAmount);
         order.setProductQuantity(items.size());
         order.setPromotion(promotion);
+        order.setCreatedAt(LocalDateTime.now());
 
         if (request.getPaymentGateway() == PaymentGateway.CASH && request.getOrderType() == OrderType.OFFLINE) {
             order.setOrderStatus(OrderStatus.PAID);

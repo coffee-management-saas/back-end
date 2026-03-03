@@ -7,13 +7,10 @@ import com.futurenbetter.saas.modules.dashboard.repository.DashboardRepository;
 import com.futurenbetter.saas.modules.order.enums.OrderStatus;
 import com.futurenbetter.saas.modules.order.enums.OrderType;
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
-import com.futurenbetter.saas.modules.order.service.OrderService;
 import com.futurenbetter.saas.modules.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -33,7 +30,7 @@ public class DashboardTask {
     private final CustomerService customerService;
 
 
-    @Scheduled(cron = "0 5 0 * * ?")
+    //@Scheduled(cron = "0 5 0 * * ?")
     @Transactional
     public void updateDashboardDaily() {
 
@@ -49,15 +46,13 @@ public class DashboardTask {
 
         shopRepository.findAll().forEach(shop -> {
             Dashboard currentDashboard = dashboardRepository.findByShopIdAndYearAndMonth(shop.getId(), year, month).orElse(null);
-
-            Long totalRevenue = orderRepository.calculateTotalRevenueByShop(shop.getId(),OrderStatus.PAID , start, end);
-            System.out.println(totalRevenue);
-            Integer totalOrders = orderRepository.countOrdersByShop(shop.getId(), start, end);
+            Long totalRevenue = orderRepository.calculateTotalRevenueByShop(shop.getId(),OrderStatus.PAID , startOfMonth, endOfMonth);
+            Integer totalOrders = orderRepository.countOrdersByShop(shop.getId(), startOfMonth, endOfMonth);
             Integer totalProducts = productRepository.countByShopId(shop.getId());
             Integer newCustomers = customerService.countNewCustomers(shop.getId(), startOfMonth, endOfMonth);
             Integer returningCustomers = customerService.countReturningCustomers(shop.getId(), startOfMonth, endOfMonth);
-            Integer totalOfflineOrders = orderRepository.countAllByOrderStatusAndOrderTypeAndShopIdAndCreatedAtBetween(OrderStatus.PAID, OrderType.OFFLINE, shop.getId(), start, end);
-            Integer totalOnlineOrders = orderRepository.countAllByOrderStatusAndOrderTypeAndShopIdAndCreatedAtBetween(OrderStatus.PAID, OrderType.ONLINE, shop.getId(), start, end);
+            Integer totalOfflineOrders = orderRepository.countAllByOrderStatusAndOrderTypeAndShopIdAndCreatedAtBetween(OrderStatus.PAID, OrderType.OFFLINE, shop.getId(), startOfMonth, endOfMonth);
+            Integer totalOnlineOrders = orderRepository.countAllByOrderStatusAndOrderTypeAndShopIdAndCreatedAtBetween(OrderStatus.PAID, OrderType.ONLINE, shop.getId(), startOfMonth, endOfMonth);
 
             if(totalRevenue == null) {
                 totalRevenue = 0l;
@@ -65,7 +60,7 @@ public class DashboardTask {
 
             if(currentDashboard == null) { // create
 
-                Dashboard newDashboard = Dashboard.builder()
+                currentDashboard = Dashboard.builder()
                         .shop(shop)
                         .year(year)
                         .month(month)
@@ -78,20 +73,19 @@ public class DashboardTask {
                         .totalOnlineOrders(totalOnlineOrders)
                         .build();
 
-                dashboardRepository.save(newDashboard);
+                dashboardRepository.save(currentDashboard);
             } else { // update
 
-                currentDashboard.setTotalRevenue(((currentDashboard.getTotalRevenue() != null) ? currentDashboard.getTotalRevenue() : 0) + totalRevenue);
-                currentDashboard.setTotalOrders(((currentDashboard.getTotalOrders() != null) ? currentDashboard.getTotalOrders() : 0) + totalOrders);
+                currentDashboard.setTotalRevenue((totalRevenue != null) ? totalRevenue : 0);
+                currentDashboard.setTotalOrders((totalOrders != null) ? totalOrders : 0);
                 currentDashboard.setTotalProduct(totalProducts);
                 currentDashboard.setNewCustomers(newCustomers);
                 currentDashboard.setReturningCustomers(returningCustomers);
-                currentDashboard.setTotalOfflineOrders(((currentDashboard.getTotalOfflineOrders() != null) ? currentDashboard.getTotalOfflineOrders() : 0) + totalOfflineOrders);
-                currentDashboard.setTotalOnlineOrders(((currentDashboard.getTotalOnlineOrders() != null) ? currentDashboard.getTotalOnlineOrders() : 0) + totalOnlineOrders);
+                currentDashboard.setTotalOfflineOrders((totalOfflineOrders != null) ? totalOfflineOrders : 0);
+                currentDashboard.setTotalOnlineOrders((totalOnlineOrders != null) ? totalOnlineOrders : 0);
 
                 dashboardRepository.save(currentDashboard);
             }
-            System.out.println(shop.getId() + " | Total Revenue: " + totalRevenue + " | Total Orders: " + totalOrders + " | Total Products: " + totalProducts + " | New Customers: " + newCustomers + " | Returning Customers: " + returningCustomers + " | Total Offline Orders: " + totalOfflineOrders + " | Total Online Orders: " + totalOnlineOrders);
         });
     }
 }

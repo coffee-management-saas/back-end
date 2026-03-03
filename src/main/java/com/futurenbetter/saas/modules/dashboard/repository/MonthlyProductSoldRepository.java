@@ -9,13 +9,14 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Month;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
 public interface MonthlyProductSoldRepository extends JpaRepository<MonthlyProductSold, Long>, JpaSpecificationExecutor<MonthlyProductSold> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<MonthlyProductSold> findByShopIdAndProductIdAndYearAndMonth(Long shopId, Long productId, Integer year, Integer month);
+    Optional<MonthlyProductSold> findByShopIdAndProductIdAndYearAndMonth(Long shop_id, Long product_id, Integer year, Month month);
     @Query(value = """
             WITH RankedProducts AS (
                 SELECT *,
