@@ -33,7 +33,7 @@ public class MonthlyProductSoldServiceImpl implements MonthlyProductSoldService 
         Month month = YearMonth.now().getMonth();
 
         MonthlyProductSold existingRecord = monthlyProductSoldRepository
-                .findByShopIdAndProductIdAndYearAndMonth(shop.getId(), product.getId(), year, month.getValue())
+                .findByShopIdAndProductIdAndYearAndMonth(shop.getId(), product.getId(), year, month)
                 .orElse(null);
 
         if(existingRecord != null) {
