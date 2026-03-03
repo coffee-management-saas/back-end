@@ -17,6 +17,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderRequest {
 
+    Long customerId;
     OrderType orderType;
     PaymentGateway paymentGateway;
     List<OrderItemRequest> orderItems;

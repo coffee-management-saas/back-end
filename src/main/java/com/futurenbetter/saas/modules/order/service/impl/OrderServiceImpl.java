@@ -103,14 +103,39 @@ public class OrderServiceImpl implements OrderService {
         // 1. Lấy ShopId và Customer từ SecurityUtils
         Long currentShopId = SecurityUtils.getCurrentShopId();
         Long currentUserId = SecurityUtils.getCurrentUserId();
+        List<String> roles = SecurityUtils.getCurrentUserRoles();
         Customer currentCustomer = SecurityUtils.getCurrentCustomer();
+
+        boolean isCustomer = roles.contains("ROLE_CUSTOMER") || roles.contains("CUSTOMER");
+        boolean isStaff = roles.contains("ROLE_EMPLOYEE") || roles.contains("EMPLOYEE");
+
         Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
         // 2. Khởi tạo Entity Order từ Request
         Order order = orderMapper.toOrder(request);
         order.setShop(shop);
-        order.setCustomer(currentCustomer); // Set customer cho order
+
+        Customer targetCustomer = null;
+        Long targetCustomerId = null;
+
+        if (isCustomer) {
+            targetCustomer = currentCustomer;
+            targetCustomerId = targetCustomer != null ? targetCustomer.getId() : currentUserId;
+            order.setCustomer(targetCustomer);
+        } else if (isStaff) {
+            if (request.getCustomerId() != null) {
+                targetCustomer = customerRepository.findById(request.getCustomerId())
+                        .orElseThrow(() -> new BusinessException("Khách hàng không tồn tại"));
+                targetCustomerId = currentUserId;
+                order.setCustomer(targetCustomer);
+            } else {
+                order.setCustomer(null);
+            }
+            // set Employee id
+        } else {
+            throw new BusinessException("Bạn không có quyền tạo đơn hàng này");
+        }
 
         OrderItemStatus initialItemStatus = (request.getOrderType() == OrderType.OFFLINE
                 && request.getPaymentGateway() == PaymentGateway.CASH)
@@ -210,7 +235,8 @@ public class OrderServiceImpl implements OrderService {
         order.setProductQuantity(items.size());
         order.setPromotion(promotion);
 
-        if (request.getPaymentGateway() == PaymentGateway.CASH && request.getOrderType() == OrderType.OFFLINE) {
+        if (isStaff && request.getPaymentGateway() == PaymentGateway.CASH
+                && request.getOrderType() == OrderType.OFFLINE) {
             order.setOrderStatus(OrderStatus.PAID);
         } else {
             order.setOrderStatus(OrderStatus.PENDING);
