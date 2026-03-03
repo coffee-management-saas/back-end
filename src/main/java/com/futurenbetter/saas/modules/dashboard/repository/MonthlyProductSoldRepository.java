@@ -2,7 +2,6 @@ package com.futurenbetter.saas.modules.dashboard.repository;
 
 import com.futurenbetter.saas.modules.dashboard.entity.MonthlyProductSold;
 import jakarta.persistence.LockModeType;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
@@ -24,7 +23,7 @@ public interface MonthlyProductSoldRepository extends JpaRepository<MonthlyProdu
                 FROM monthly_product_sold m
                 WHERE m.shop_id = :shopId 
                   AND m.year = :year
-            )
+            )           
             SELECT * FROM RankedProducts 
             WHERE row_num <= :limit
             """, nativeQuery = true)

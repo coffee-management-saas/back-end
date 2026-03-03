@@ -70,7 +70,7 @@ public class ProductController {
     }
 
     @GetMapping("{id}")
-    @PreAuthorize("hasAuthority('product:read-detail')")
+//    @PreAuthorize("hasAuthority('product:read-detail')")
     public ApiResponse<ProductResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -84,7 +84,7 @@ public class ProductController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('product:read')")
+//    @PreAuthorize("hasAuthority('product:read')")
     public ApiResponse<List<ProductResponse>> getAll(
             @ModelAttribute ProductFilter filter
     ) {
