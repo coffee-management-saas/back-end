@@ -13,6 +13,7 @@ import com.futurenbetter.saas.modules.auth.mapper.PointHistoryMapper;
 import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
 import com.futurenbetter.saas.modules.auth.repository.MembershipRankRepository;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
+import com.futurenbetter.saas.modules.dashboard.service.inter.MonthlyProductSoldService;
 import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceService;
 import com.futurenbetter.saas.modules.notification.entity.Notification;
 import com.futurenbetter.saas.modules.notification.enums.NotificationType;
@@ -78,6 +79,7 @@ public class OrderServiceImpl implements OrderService {
     private final PointHistoryMapper pointHistoryMapper;
     private final PointHistoryRepository pointHistoryRepository;
     private final NotificationService notificationService;
+    private final MonthlyProductSoldService monthlyProductSoldService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -238,6 +240,7 @@ public class OrderServiceImpl implements OrderService {
         if (isStaff && request.getPaymentGateway() == PaymentGateway.CASH
                 && request.getOrderType() == OrderType.OFFLINE) {
             order.setOrderStatus(OrderStatus.PAID);
+            updateMonthlyProductSold(order);
         } else {
             order.setOrderStatus(OrderStatus.PENDING);
         }
@@ -390,6 +393,7 @@ public class OrderServiceImpl implements OrderService {
         }
         orderRepository.save(order);
         triggerStockDeduction(order);
+        updateMonthlyProductSold(order);
 
         if (order.getPromotion() != null) {
             Long customerId = (order.getCustomer() != null) ? order.getCustomer().getId() : null;
@@ -560,5 +564,19 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return orderMapper.toOrderResponse(order);
+    }
+
+    private void updateMonthlyProductSold(Order order) {
+
+        if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+            return;
+        }
+
+        for (OrderItem item : order.getOrderItems()) {
+            monthlyProductSoldService.updateMonthlyProductSold(
+                    order.getShop(),
+                    item.getProductVariant().getProduct(),
+                    item.getQuantity());
+        }
     }
 }
