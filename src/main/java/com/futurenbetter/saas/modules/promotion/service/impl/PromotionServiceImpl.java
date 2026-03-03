@@ -135,6 +135,7 @@ public class PromotionServiceImpl implements PromotionService {
         return promotionRepository.findAllByShopIdAndPromotionStatus(
                 currentShopId, PromotionEnum.ACTIVE)
                 .stream()
+                .filter(p -> p.getEndDate() == null || p.getEndDate().isAfter(LocalDateTime.now()))
                 .map(promotionMapper::toResponse)
                 .toList();
     }

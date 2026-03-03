@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,4 +22,7 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
     Optional<Promotion> findByPromotionCodeAndShopIdWithTargets(
             @Param("promotionCode") String promotionCode,
             @Param("shopId") Long shopId);
+
+    @Query("SELECT p FROM Promotion p  WHERE p.promotionStatus = :status AND p.endDate < :now")
+    List<Promotion> findExpiredPromotions(@Param("status") PromotionEnum status, @Param("now") LocalDateTime now);
 }
