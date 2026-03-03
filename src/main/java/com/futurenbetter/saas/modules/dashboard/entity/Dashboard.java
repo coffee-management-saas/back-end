@@ -40,7 +40,7 @@ public class Dashboard {
     private Integer year;
 
     @Column(name = "total_revenue")
-    private Double totalRevenue;
+    private Long totalRevenue;
 
     @Column(name = "total_orders")
     private Integer totalOrders;
