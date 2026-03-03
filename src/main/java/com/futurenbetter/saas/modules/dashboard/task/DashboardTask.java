@@ -50,16 +50,17 @@ public class DashboardTask {
         shopRepository.findAll().forEach(shop -> {
             Dashboard currentDashboard = dashboardRepository.findByShopIdAndYearAndMonth(shop.getId(), year, month).orElse(null);
 
-            Double totalRevenue = orderRepository.calculateTotalRevenueByShop(shop.getId(), start, end);
-            Integer totalOrders = orderRepository.countOrdersByShop(shop.getId(), start, end).intValue();
-            Integer totalProducts = productRepository.countByShopId(shop.getId()).intValue();
-            Integer newCustomers = customerService.countNewCustomers(shop.getId(), startOfMonth, endOfMonth).intValue();
-            Integer returningCustomers = customerService.countReturningCustomers(shop.getId(), startOfMonth, endOfMonth).intValue();
-            Integer totalOfflineOrders = orderRepository.countAllByOrderStatusAndOrderTypeAndShopIdAndCreatedAtBetween(OrderStatus.PAID, OrderType.OFFLINE, shop.getId(), start, end).intValue();
-            Integer totalOnlineOrders = orderRepository.countAllByOrderStatusAndOrderTypeAndShopIdAndCreatedAtBetween(OrderStatus.PAID, OrderType.ONLINE, shop.getId(), start, end).intValue();
+            Long totalRevenue = orderRepository.calculateTotalRevenueByShop(shop.getId(),OrderStatus.PAID , start, end);
+            System.out.println(totalRevenue);
+            Integer totalOrders = orderRepository.countOrdersByShop(shop.getId(), start, end);
+            Integer totalProducts = productRepository.countByShopId(shop.getId());
+            Integer newCustomers = customerService.countNewCustomers(shop.getId(), startOfMonth, endOfMonth);
+            Integer returningCustomers = customerService.countReturningCustomers(shop.getId(), startOfMonth, endOfMonth);
+            Integer totalOfflineOrders = orderRepository.countAllByOrderStatusAndOrderTypeAndShopIdAndCreatedAtBetween(OrderStatus.PAID, OrderType.OFFLINE, shop.getId(), start, end);
+            Integer totalOnlineOrders = orderRepository.countAllByOrderStatusAndOrderTypeAndShopIdAndCreatedAtBetween(OrderStatus.PAID, OrderType.ONLINE, shop.getId(), start, end);
 
             if(totalRevenue == null) {
-                totalRevenue = 0.0;
+                totalRevenue = 0l;
             }
 
             if(currentDashboard == null) { // create
@@ -90,6 +91,7 @@ public class DashboardTask {
 
                 dashboardRepository.save(currentDashboard);
             }
+            System.out.println(shop.getId() + " | Total Revenue: " + totalRevenue + " | Total Orders: " + totalOrders + " | Total Products: " + totalProducts + " | New Customers: " + newCustomers + " | Returning Customers: " + returningCustomers + " | Total Offline Orders: " + totalOfflineOrders + " | Total Online Orders: " + totalOnlineOrders);
         });
     }
 }

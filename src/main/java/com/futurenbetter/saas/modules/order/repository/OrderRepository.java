@@ -15,8 +15,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
-    @Query("SELECT SUM(o.paidPrice) FROM Order o WHERE o.shop.id = :shopId AND o.orderStatus = 'COMPLETED' AND o.createdAt >= :fromDate AND o.createdAt <= :toDate")
-    Double calculateTotalRevenueByShop(@Param("shopId") Long shopId, @Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
+
+    @Query("SELECT COALESCE(SUM(o.paidPrice), 0L) FROM Order o " +
+            "WHERE o.shop.id = :shopId " +
+            "AND o.orderStatus = :status " +
+            "AND o.createdAt >= :fromDate AND o.createdAt <= :toDate")
+    Long calculateTotalRevenueByShop(
+            @Param("shopId") Long shopId,
+            @Param("status") OrderStatus status, // Truyền trực tiếp Enum vào
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate
+    );
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.shop.id = :shopId AND o.createdAt >= :fromDate AND o.createdAt <= :toDate")
     Integer countOrdersByShop(@Param("shopId") Long shopId, @Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
