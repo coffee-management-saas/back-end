@@ -17,5 +17,7 @@ public interface MonthlyProductSoldMapper {
     @Mapping(target = "quantitySold", source = "quantitySold")
     @Mapping(target = "shopId", source = "shop.id")
     @Mapping(target = "productId", source = "product.id")
+    @Mapping(target = "month", source = "month")
+    @Mapping(target = "year", source = "year")
     MonthlyProductSoldResponse toResponse(MonthlyProductSold monthlyProductSold);
 }

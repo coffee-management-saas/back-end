@@ -15,15 +15,15 @@ import java.util.Optional;
 
 public interface MonthlyProductSoldRepository extends JpaRepository<MonthlyProductSold, Long>, JpaSpecificationExecutor<MonthlyProductSold> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<MonthlyProductSold> findByShopIdAndProductIdAndYearMonth(Long shopId, Long productId, YearMonth yearMonth);
+    Optional<MonthlyProductSold> findByShopIdAndProductIdAndYear(Long shopId, Long productId, Integer year);
 
     @Query(value = """
             WITH RankedProducts AS (
                 SELECT *,
                        ROW_NUMBER() OVER(PARTITION BY month ORDER BY quantity_sold DESC) as row_num
-                FROM monthly_product_sold
-                WHERE shop_id = :shopId 
-                  AND YEAR(month) = :year
+                FROM monthly_product_sold m
+                WHERE m.shop_id = :shopId 
+                  AND m.year = :year
             )
             SELECT * FROM RankedProducts 
             WHERE row_num <= :limit

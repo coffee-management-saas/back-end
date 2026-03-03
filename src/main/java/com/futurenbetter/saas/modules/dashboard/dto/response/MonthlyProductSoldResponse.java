@@ -13,4 +13,6 @@ public class MonthlyProductSoldResponse {
     private Long productId;
     private String productName;
     private Integer quantitySold;
+    private String month;
+    private Integer year;
 }

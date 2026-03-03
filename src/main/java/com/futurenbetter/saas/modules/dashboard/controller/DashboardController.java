@@ -3,10 +3,13 @@ package com.futurenbetter.saas.modules.dashboard.controller;
 import com.futurenbetter.saas.common.dto.response.ApiResponse;
 import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.modules.dashboard.dto.filter.DashboardFilter;
+import com.futurenbetter.saas.modules.dashboard.dto.filter.MonthlyProductSoldFilter;
 import com.futurenbetter.saas.modules.dashboard.dto.projection.BestSellerProjection;
+import com.futurenbetter.saas.modules.dashboard.dto.response.MonthlyProductSoldResponse;
 import com.futurenbetter.saas.modules.dashboard.dto.response.ShopDashboardDailyResponse;
 import com.futurenbetter.saas.modules.dashboard.dto.response.ShopDashboardResponse;
 import com.futurenbetter.saas.modules.dashboard.dto.response.SystemDashboardResponse;
+import com.futurenbetter.saas.modules.dashboard.service.inter.MonthlyProductSoldService;
 import com.futurenbetter.saas.modules.dashboard.service.inter.ShopDashboardService;
 import com.futurenbetter.saas.modules.dashboard.service.inter.SystemDashboardService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ public class DashboardController {
 
     private final ShopDashboardService shopDashboardService;
     private final SystemDashboardService systemDashboardService;
+    private final MonthlyProductSoldService monthlyProductSoldService;
 
     @GetMapping("/shop/overview/daily")
     @PreAuthorize("hasAuthority('dashboard:shop-daily')")
@@ -41,11 +45,11 @@ public class DashboardController {
 
     @GetMapping("/shop/overview")
     @PreAuthorize("hasAuthority('dashboard:shop')")
-    public ApiResponse<ShopDashboardResponse> getShopOverview(DashboardFilter filter) {
+    public ApiResponse<List<MonthlyProductSoldResponse>> getShopOverview(MonthlyProductSoldFilter filter) {
         return ApiResponse.success(
                 HttpStatus.OK,
                 "Lấy dữ liệu Shop Dashboard thành công",
-                shopDashboardService.getShopDashboard(filter),
+                monthlyProductSoldService.getAll(filter),
                 null
         );
     }

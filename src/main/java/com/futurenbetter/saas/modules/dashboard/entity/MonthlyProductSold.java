@@ -17,6 +17,7 @@ import java.time.YearMonth;
                 @UniqueConstraint(columnNames = {
                         "shop_id",
                         "product_id",
+                        "year",
                         "month"
                 })
         }
@@ -37,7 +38,10 @@ public class MonthlyProductSold {
     private Shop shop;
 
     @Column(name = "month", nullable = false)
-    private YearMonth yearMonth;
+    private Month month;
+
+    @Column(name = "year", nullable = false)
+    private Integer year;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)

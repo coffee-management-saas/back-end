@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Month;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -28,9 +29,11 @@ public class MonthlyProductSoldServiceImpl implements MonthlyProductSoldService 
     @Transactional
     public boolean updateMonthlyProductSold(Shop shop, Product product, Integer quantitySold) {
 
-        YearMonth currentMonth = YearMonth.now();
+        Integer year = YearMonth.now().getYear();
+        Month month = YearMonth.now().getMonth();
+
         MonthlyProductSold existingRecord = monthlyProductSoldRepository
-                .findByShopIdAndProductIdAndYearMonth(shop.getId(), product.getId(), currentMonth)
+                .findByShopIdAndProductIdAndYear(shop.getId(), product.getId(), year)
                 .orElse(null);
 
         if(existingRecord != null) {
@@ -39,7 +42,8 @@ public class MonthlyProductSoldServiceImpl implements MonthlyProductSoldService 
             var newRecord = MonthlyProductSold.builder()
                     .shop(shop)
                     .product(product)
-                    .yearMonth(currentMonth)
+                    .month(month)
+                    .year(year)
                     .quantitySold(quantitySold)
                     .build();
             monthlyProductSoldRepository.save(newRecord);
