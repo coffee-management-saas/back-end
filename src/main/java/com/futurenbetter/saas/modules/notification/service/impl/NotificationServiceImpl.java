@@ -61,12 +61,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
     public NotificationResponse markAsRead(Long notificationId) {
 
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
 
-        notification.setRead(true);
+        notification.setIsRead(true);
 
         Notification result = notificationRepository.save(notification);
 

@@ -12,5 +12,6 @@ import org.mapstruct.ReportingPolicy;
 )
 public interface NotificationMapper {
     @Mapping(target = "shopId", source = "shop.id")
+//    @Mapping(target = "isRead", source = "isRead")
     NotificationResponse toResponse(Notification notification);
 }
