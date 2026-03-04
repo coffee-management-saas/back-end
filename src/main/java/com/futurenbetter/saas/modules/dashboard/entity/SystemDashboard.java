@@ -11,7 +11,6 @@ import java.time.Month;
         name = "system_dashboards",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {
-                        "shop_id",
                         "year",
                         "month"
                 })
@@ -35,16 +34,18 @@ public class SystemDashboard {
     private Integer year;
 
     @Column(name = "total_revenue")
-    private Long totalRevenue;
+    private Long totalRevenue; // từ amount trong billing invoice
 
     @Column(name = "total_subscriptions")
-    private Integer totalSubscriptions;
+    private Integer totalSubscriptions; // count trong shop_subscription với status = ACTIVE
 
     @Column(name = "new_shops")
-    private Integer newShops;
+    private Integer newShops; // count trong shop với created_at trong tháng và năm tương ứng
 
     @Column(name = "returning_shops")
-    private Integer returningShops;
+    private Integer returningShops; // count trong shop với created_at trước tháng và năm tương ứng, nhưng có shop_subscription với created_at trong tháng và năm tương ứng
+
+    private Long totalExpenses; // tổng chi phí vận hành hệ thống trong tháng, có thể lấy từ một bảng khác nếu có
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;

@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryController {
 
-        private final CategoryService categoryService;
+    private final CategoryService categoryService;
 
     @PostMapping
     @PreAuthorize("hasAuthority('category:create')")
@@ -52,7 +52,7 @@ public class CategoryController {
     }
 
     @GetMapping("{id}")
-//    @PreAuthorize("hasAuthority('category:read-detail')")
+    @PreAuthorize("hasAuthority('category:read-detail')")
     public ApiResponse<CategoryResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -66,25 +66,25 @@ public class CategoryController {
     }
 
     @GetMapping
-//    @PreAuthorize("hasAuthority('category:read')")
+    @PreAuthorize("hasAuthority('category:read')")
     public ApiResponse<List<CategoryResponse>> getAll(
             @ModelAttribute BaseFilter filter
     ) {
         Page<CategoryResponse> page = categoryService.getAll(filter);
 
-                PageMeta meta = PageMeta.builder()
-                                .currentPage(page.getNumber() + 1)
-                                .size(page.getSize())
-                                .lastPage(page.getTotalPages())
-                                .totalElements(page.getTotalElements())
-                                .build();
+        PageMeta meta = PageMeta.builder()
+                .currentPage(page.getNumber() + 1)
+                .size(page.getSize())
+                .lastPage(page.getTotalPages())
+                .totalElements(page.getTotalElements())
+                .build();
 
-                return ApiResponse.success(
-                                HttpStatus.OK,
-                                "Get categories successfully",
-                                page.getContent(),
-                                meta);
-        }
+        return ApiResponse.success(
+                HttpStatus.OK,
+                "Get categories successfully",
+                page.getContent(),
+                meta);
+    }
 
     @DeleteMapping("{id}")
     @PreAuthorize("hasAuthority('category:delete')")

@@ -113,4 +113,8 @@ VALUES
     (NOW(), NOW(), 'customer:read-detail', 'Xem chi tiết khách hàng', 'ACTIVE'),
     (NOW(), NOW(), 'customer:delete', 'Xóa khách hàng', 'ACTIVE'),
     (NOW(), NOW(), 'customer:update', 'Cập nhật hồ sơ khách hàng', 'ACTIVE'),
-    (NOW(), NOW(), 'customer:me', 'Xem hoặc cập nhật hồ sơ cá nhân', 'ACTIVE');
+    (NOW(), NOW(), 'customer:me', 'Xem hoặc cập nhật hồ sơ cá nhân', 'ACTIVE'),
+
+
+    (NOW(), NOW(), 'system-transaction:create', 'Tạo transaction system', 'ACTIVE'),
+    (NOW(), NOW(), 'system-transaction:read', 'Cập nhật transaction system', 'ACTIVE');
