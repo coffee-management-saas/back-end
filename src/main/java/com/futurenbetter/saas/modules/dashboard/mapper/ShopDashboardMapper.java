@@ -1,7 +1,7 @@
 package com.futurenbetter.saas.modules.dashboard.mapper;
 
-import com.futurenbetter.saas.modules.dashboard.dto.response.DashboardResponse;
-import com.futurenbetter.saas.modules.dashboard.entity.Dashboard;
+import com.futurenbetter.saas.modules.dashboard.dto.response.ShopDashboardResponse;
+import com.futurenbetter.saas.modules.dashboard.entity.ShopDashboard;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -10,7 +10,7 @@ import org.mapstruct.ReportingPolicy;
         componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
-public interface DashboardMapper {
+public interface ShopDashboardMapper {
     @Mapping(target = "shopId", source = "shop.id")
-    DashboardResponse toResponse(Dashboard dashboard);
+    ShopDashboardResponse toResponse(ShopDashboard shopDashboard);
 }

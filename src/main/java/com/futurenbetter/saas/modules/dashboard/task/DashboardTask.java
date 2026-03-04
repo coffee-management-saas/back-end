@@ -2,14 +2,15 @@ package com.futurenbetter.saas.modules.dashboard.task;
 
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.auth.service.CustomerService;
-import com.futurenbetter.saas.modules.dashboard.entity.Dashboard;
-import com.futurenbetter.saas.modules.dashboard.repository.DashboardRepository;
+import com.futurenbetter.saas.modules.dashboard.entity.ShopDashboard;
+import com.futurenbetter.saas.modules.dashboard.repository.ShopDashboardRepository;
 import com.futurenbetter.saas.modules.order.enums.OrderStatus;
 import com.futurenbetter.saas.modules.order.enums.OrderType;
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
 import com.futurenbetter.saas.modules.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,16 +24,16 @@ import java.time.YearMonth;
 @Slf4j
 public class DashboardTask {
 
-    private final DashboardRepository dashboardRepository;
+    private final ShopDashboardRepository shopDashboardRepository;
     private final ShopRepository shopRepository;
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final CustomerService customerService;
 
 
-    //@Scheduled(cron = "0 5 0 * * ?")
+    @Scheduled(cron = "0 5 0 * * ?")
     @Transactional
-    public void updateDashboardDaily() {
+    public void updateShopDashboardDaily() {
 
         log.info("[DashboardTask] Bắt đầu tổng hợp dữ liệu Dashboard Daily...");
 
@@ -45,7 +46,7 @@ public class DashboardTask {
         LocalDateTime endOfMonth = YearMonth.now().atEndOfMonth().atTime(23, 59, 59, 999999999);
 
         shopRepository.findAll().forEach(shop -> {
-            Dashboard currentDashboard = dashboardRepository.findByShopIdAndYearAndMonth(shop.getId(), year, month).orElse(null);
+            ShopDashboard currentShopDashboard = shopDashboardRepository.findByShopIdAndYearAndMonth(shop.getId(), year, month).orElse(null);
             Long totalRevenue = orderRepository.calculateTotalRevenueByShop(shop.getId(),OrderStatus.PAID , startOfMonth, endOfMonth);
             Integer totalOrders = orderRepository.countOrdersByShop(shop.getId(), startOfMonth, endOfMonth);
             Integer totalProducts = productRepository.countByShopId(shop.getId());
@@ -58,9 +59,9 @@ public class DashboardTask {
                 totalRevenue = 0l;
             }
 
-            if(currentDashboard == null) { // create
+            if(currentShopDashboard == null) { // create
 
-                currentDashboard = Dashboard.builder()
+                currentShopDashboard = ShopDashboard.builder()
                         .shop(shop)
                         .year(year)
                         .month(month)
@@ -73,18 +74,18 @@ public class DashboardTask {
                         .totalOnlineOrders(totalOnlineOrders)
                         .build();
 
-                dashboardRepository.save(currentDashboard);
+                shopDashboardRepository.save(currentShopDashboard);
             } else { // update
 
-                currentDashboard.setTotalRevenue((totalRevenue != null) ? totalRevenue : 0);
-                currentDashboard.setTotalOrders((totalOrders != null) ? totalOrders : 0);
-                currentDashboard.setTotalProduct(totalProducts);
-                currentDashboard.setNewCustomers(newCustomers);
-                currentDashboard.setReturningCustomers(returningCustomers);
-                currentDashboard.setTotalOfflineOrders((totalOfflineOrders != null) ? totalOfflineOrders : 0);
-                currentDashboard.setTotalOnlineOrders((totalOnlineOrders != null) ? totalOnlineOrders : 0);
+                currentShopDashboard.setTotalRevenue((totalRevenue != null) ? totalRevenue : 0);
+                currentShopDashboard.setTotalOrders((totalOrders != null) ? totalOrders : 0);
+                currentShopDashboard.setTotalProduct(totalProducts);
+                currentShopDashboard.setNewCustomers(newCustomers);
+                currentShopDashboard.setReturningCustomers(returningCustomers);
+                currentShopDashboard.setTotalOfflineOrders((totalOfflineOrders != null) ? totalOfflineOrders : 0);
+                currentShopDashboard.setTotalOnlineOrders((totalOnlineOrders != null) ? totalOnlineOrders : 0);
 
-                dashboardRepository.save(currentDashboard);
+                shopDashboardRepository.save(currentShopDashboard);
             }
         });
     }

@@ -9,7 +9,7 @@ import java.time.Month;
 
 @Entity
 @Table(
-        name = "dashboards",
+        name = "shop_dashboards",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {
                         "shop_id",
@@ -23,7 +23,7 @@ import java.time.Month;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Dashboard {
+public class ShopDashboard {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
