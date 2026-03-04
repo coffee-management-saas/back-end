@@ -45,8 +45,8 @@ public class Notification {
     @Column(name = "reference_link")
     String referenceLink; // "/orders/123" hoặc "/inventory/stock-check/45"
 
-    @Column(name = "is_read")
-    boolean isRead = false;
+    @Column(name = "is_read", nullable = false)
+    Boolean isRead;
 
     @Column(name = "created_at")
     LocalDateTime createdAt;
@@ -54,5 +54,8 @@ public class Notification {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        if(this.isRead == null) {
+            this.isRead = false;
+        }
     }
 }
