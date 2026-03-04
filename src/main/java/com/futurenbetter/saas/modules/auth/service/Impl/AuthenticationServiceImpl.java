@@ -142,7 +142,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 validateLogin(password, userProfile.getPassword(), userProfile.getShop(), shopId);
 
                 Notification noti = Notification.builder()
-                        .title("Chúc mừng shop_user login thành công")
+                        .title("Chúc mừng shop admin login thành công")
                         .message("abc")
                         .type(NotificationType.AUTHENTICATION)
                         .recipientType("SHOP")
@@ -162,7 +162,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 validateLogin(password, userProfile.getPassword(), userProfile.getShop(), shopId);
 
                 Notification noti = Notification.builder()
-                        .title("Chúc mừng shop_user login thành công")
+                        .title("Chúc mừng nhân viên login thành công")
                         .message("abc")
                         .type(NotificationType.AUTHENTICATION)
                         .recipientType("EMPLOYEE")
