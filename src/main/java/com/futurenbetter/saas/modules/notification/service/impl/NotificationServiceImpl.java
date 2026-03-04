@@ -32,7 +32,9 @@ public class NotificationServiceImpl implements NotificationService {
                 savedNotification.getRecipientType(),
                 savedNotification.getRecipientId());
 
-        messagingTemplate.convertAndSend(destination, savedNotification);
+        NotificationResponse notificationResponse = notificationMapper.toResponse(savedNotification);
+
+        messagingTemplate.convertAndSend(destination, notificationResponse);
     }
 
     @Transactional
@@ -50,9 +52,10 @@ public class NotificationServiceImpl implements NotificationService {
     public Page<NotificationResponse> getAll(NotificationFilter filter) {
 
         Long shopId = SecurityUtils.getCurrentShopId();
+        Long recipientId = SecurityUtils.getCurrentUserId();
 
         return notificationRepository.findAll(
-                NotificationSpecification.filter(filter, shopId),
+                NotificationSpecification.filter(filter, shopId, recipientId),
                         filter.getPageable()
                 ).map(notificationMapper::toResponse);
     }

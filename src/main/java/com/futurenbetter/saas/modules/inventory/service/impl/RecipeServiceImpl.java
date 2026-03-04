@@ -68,7 +68,8 @@ public class RecipeServiceImpl implements RecipeService {
                 .type(NotificationType.INVENTORY)
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
-                .referenceLink(null)
+                .referenceLink("api/inventory/recipes/save-batch" )
+                .shop(shop)
                 .build();
 
         notificationService.sendToUser(noti);

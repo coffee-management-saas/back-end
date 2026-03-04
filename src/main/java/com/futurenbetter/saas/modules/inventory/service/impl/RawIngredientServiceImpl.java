@@ -49,6 +49,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/ingredients/" + result.getId())
+                .shop(entity.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -77,6 +78,7 @@ public class RawIngredientServiceImpl implements RawIngredientService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/ingredients/" + result.getId())
+                .shop(entity.getShop())
                 .build();
 
         notificationService.sendToUser(noti);

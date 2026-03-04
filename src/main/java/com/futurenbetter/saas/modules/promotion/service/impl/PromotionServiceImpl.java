@@ -95,6 +95,7 @@ public class PromotionServiceImpl implements PromotionService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/promotion/" + savedPromotion.getPromotionId())
+                .shop(savedPromotion.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -176,6 +177,7 @@ public class PromotionServiceImpl implements PromotionService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/promotion/" + savedPromotion.getPromotionId())
+                .shop(savedPromotion.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -203,6 +205,7 @@ public class PromotionServiceImpl implements PromotionService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/promotion/" + promotion.getPromotionId())
+                .shop(promotion.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
