@@ -53,6 +53,7 @@ public class SizeServiceImpl implements SizeService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/sizes/" + result.getId())
+                .shop(result.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -85,6 +86,7 @@ public class SizeServiceImpl implements SizeService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/sizes/" + result.getId())
+                .shop(result.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -136,6 +138,7 @@ public class SizeServiceImpl implements SizeService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/sizes/" + size.getId())
+                .shop(size.getShop())
                 .build();
 
         notificationService.sendToUser(noti);

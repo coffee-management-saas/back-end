@@ -57,6 +57,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/categories/" + result.getId())
+                .shop(category.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -91,6 +92,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/categories/" + result.getId())
+                .shop(category.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -131,6 +133,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/categories/" + category.getId())
+                .shop(category.getShop())
                 .build();
 
         notificationService.sendToUser(noti);

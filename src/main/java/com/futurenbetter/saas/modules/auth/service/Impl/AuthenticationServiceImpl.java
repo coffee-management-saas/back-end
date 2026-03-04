@@ -116,6 +116,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .recipientType("CUSTOMER")
                     .recipientId(customer.getId())
                     .referenceLink("/customer/auth/" + customer.getId())
+                    .shop(customer.getShop())
                     .build();
 
             notificationService.sendToUser(noti);
@@ -148,6 +149,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                         .recipientType("SHOP")
                         .recipientId(userProfile.getUserProfileId())
                         .referenceLink("/shop/auth/" + userProfile.getUserProfileId())
+                        .shop(userProfile.getShop())
                         .build();
 
                 notificationService.sendToUser(noti);
@@ -168,6 +170,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                         .recipientType("EMPLOYEE")
                         .recipientId(userProfile.getUserProfileId())
                         .referenceLink("/shop/auth/" + userProfile.getUserProfileId())
+                        .shop(userProfile.getShop())
                         .build();
 
                 notificationService.sendToUser(noti);
@@ -428,7 +431,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .userProfileId(savedEmployee.getUserProfileId())
                 .weeklyHourLimit(request.getWeeklyHourLimit())
                 .build());
-        // trả về password cho shop-admin lưu lại gửi cho nhân viên
+
+        Notification noti = Notification.builder()
+                .title("Tạo nhân viên mới")
+                .message("Nhân viên đã dược tạo thành công: " + savedEmployee.getFullname())
+                .type(NotificationType.EMPLOYEE)
+                .recipientType("SHOP")
+                .recipientId(shop.getOwner().getUserProfileId())
+                .referenceLink("/employee/employees/" + savedEmployee.getUserProfileId())
+                .shop(shop)
+                .build();
+        notificationService.sendToShopRole(noti, "SHOP_ADMIN");
+
         return userProfileMapper.toEmployeeResponse(savedEmployee, employee);
     }
 

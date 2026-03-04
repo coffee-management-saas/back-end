@@ -133,6 +133,7 @@ public class InventoryInvoiceServiceImpl implements InventoryInvoiceService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/invoices/" + invoice.getId())
+                .shop(shop)
                 .build();
 
         notificationService.sendToUser(noti);

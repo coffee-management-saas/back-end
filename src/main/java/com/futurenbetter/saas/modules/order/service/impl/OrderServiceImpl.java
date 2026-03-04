@@ -511,20 +511,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    void generateNotification(String title, String message, Long recipientId, Long orderId) {
-
-        Notification noti = Notification.builder()
-                .title(title)
-                .message(message)
-                .type(NotificationType.ORDER)
-                .recipientType("CUSTOMER")
-                .recipientId(recipientId)
-                .referenceLink("api/orders/" + orderId)
-                .build();
-
-        notificationService.sendToUser(noti);
-    }
-
     @Override
     public Page<OrderResponse> getOrderHistory(OrderFilter filter) {
         Long currentShopId = SecurityUtils.getCurrentShopId();
