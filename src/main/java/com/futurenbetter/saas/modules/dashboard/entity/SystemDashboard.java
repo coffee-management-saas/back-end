@@ -1,6 +1,5 @@
 package com.futurenbetter.saas.modules.dashboard.entity;
 
-import com.futurenbetter.saas.modules.auth.entity.Shop;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,10 +8,9 @@ import java.time.Month;
 
 @Entity
 @Table(
-        name = "dashboards",
+        name = "system_dashboards",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {
-                        "shop_id",
                         "year",
                         "month"
                 })
@@ -23,15 +21,11 @@ import java.time.Month;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Dashboard {
+public class SystemDashboard {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shop_id", nullable = false)
-    private Shop shop;
 
     @Column(name = "month", nullable = false)
     private Month month;
@@ -40,25 +34,19 @@ public class Dashboard {
     private Integer year;
 
     @Column(name = "total_revenue")
-    private Long totalRevenue;
+    private Long totalRevenue; // từ amount trong billing invoice
 
-    @Column(name = "total_orders")
-    private Integer totalOrders;
+    @Column(name = "total_subscriptions")
+    private Integer totalSubscriptions; // count trong shop_subscription với status = ACTIVE
 
-    @Column(name = "total_product")
-    private Integer totalProduct;
+    @Column(name = "new_shops")
+    private Integer newShops; // count trong shop với created_at trong tháng và năm tương ứng
 
-    @Column(name = "new_customers")
-    private Integer newCustomers;
+    @Column(name = "returning_shops")
+    private Integer returningShops; // count trong shop với created_at trước tháng và năm tương ứng, nhưng có shop_subscription với created_at trong tháng và năm tương ứng
 
-    @Column(name = "returning_customers")
-    private Integer returningCustomers;
-
-    @Column(name = "total_offline_orders")
-    private Integer totalOfflineOrders;
-
-    @Column(name = "total_online_orders")
-    private Integer totalOnlineOrders;
+    @Column(name = "total_expenses")
+    private Long totalExpenses; // tổng chi phí vận hành hệ thống trong tháng, có thể lấy từ một bảng khác nếu có
 
     @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt;

@@ -15,4 +15,5 @@ public interface ShopRepository extends JpaRepository<Shop, Long>, JpaSpecificat
     boolean existsByEmail(String email);
     @Query("SELECT COUNT(s) FROM Shop s WHERE s.createdAt >= :fromDate AND s.createdAt <= :toDate")
     Integer countNewShops(@Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
+
 }
