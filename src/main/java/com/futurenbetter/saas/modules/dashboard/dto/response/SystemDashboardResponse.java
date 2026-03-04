@@ -19,5 +19,6 @@ public class SystemDashboardResponse {
     Integer totalSubscriptions;
     Integer newShops;
     Integer returningShops;
+    Long totalExpenses;
     LocalDateTime createdAt;
 }

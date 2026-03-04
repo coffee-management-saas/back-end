@@ -102,9 +102,9 @@ VALUES
     (NOW(), NOW(), 'shop:update', 'Cập nhật cửa hàng', 'ACTIVE'),
     (NOW(), NOW(), 'shop:delete', 'Xóa cửa hàng', 'ACTIVE'),
 
-    (NOW(), NOW(), 'shopDashboard:shop', 'Dashboard của cửa hàng', 'ACTIVE'),
-    (NOW(), NOW(), 'shopDashboard:shop-daily', 'Dashboard hằng ngày của cửa hàng', 'ACTIVE'),
-    (NOW(), NOW(), 'shopDashboard:system', 'Dashboard hằng tháng của system', 'ACTIVE'),
+    (NOW(), NOW(), 'dashboard:shop', 'Dashboard của cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'dashboard:shop-daily', 'Dashboard hằng ngày của cửa hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'dashboard:system', 'Dashboard hằng tháng của system', 'ACTIVE'),
 
     (NOW(), NOW(), 'notification:read', 'Xem thông báo', 'ACTIVE'),
     (NOW(), NOW(), 'notification:update', 'cập nhật thông báo', 'ACTIVE'),

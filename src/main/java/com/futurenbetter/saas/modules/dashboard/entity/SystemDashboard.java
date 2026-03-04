@@ -45,6 +45,7 @@ public class SystemDashboard {
     @Column(name = "returning_shops")
     private Integer returningShops; // count trong shop với created_at trước tháng và năm tương ứng, nhưng có shop_subscription với created_at trong tháng và năm tương ứng
 
+    @Column(name = "total_expenses")
     private Long totalExpenses; // tổng chi phí vận hành hệ thống trong tháng, có thể lấy từ một bảng khác nếu có
 
     @Column(name = "created_at", nullable = false)
