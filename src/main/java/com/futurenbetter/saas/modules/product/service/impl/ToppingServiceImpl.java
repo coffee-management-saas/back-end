@@ -52,6 +52,7 @@ public class ToppingServiceImpl implements ToppingService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/toppings/" + result.getId())
+                .shop(topping.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -78,6 +79,7 @@ public class ToppingServiceImpl implements ToppingService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/toppings/" + result.getId())
+                .shop(topping.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -116,6 +118,7 @@ public class ToppingServiceImpl implements ToppingService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/toppings/" + topping.getId())
+                .shop(topping.getShop())
                 .build();
 
         notificationService.sendToUser(noti);

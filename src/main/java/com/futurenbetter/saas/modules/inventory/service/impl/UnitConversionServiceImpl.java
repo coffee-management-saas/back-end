@@ -55,6 +55,7 @@ public class UnitConversionServiceImpl implements UnitConversionService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/unit-conversions/" + entity.getId())
+                .shop(entity.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -82,6 +83,7 @@ public class UnitConversionServiceImpl implements UnitConversionService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/unit-conversions/" + result.getId())
+                .shop(entity.getShop())
                 .build();
 
         notificationService.sendToUser(noti);

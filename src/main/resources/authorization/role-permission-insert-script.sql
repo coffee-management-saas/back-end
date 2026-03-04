@@ -43,7 +43,8 @@ FROM public.role r
                                                            'membership-rank:read', 'membership-rank:create', 'membership-rank:update', 'membership-rank:delete', 'membership-rank:read-detail',
                                                            'shop:update', 'shop:read-detail',
                                                            'dashboard:shop', 'dashboard:shop-daily',
-                                                           'notification:read', 'notification:update'
+                                                           'notification:read', 'notification:update',
+                                                           'customer:read', 'customer:read-detail', 'customer:update', 'customer:delete', 'customer:me'
     )
 WHERE r.name = 'SHOP';
 
@@ -70,7 +71,8 @@ FROM public.role r
                                                            'stock-check:update-count', 'stock-check:read-by-filter',
                                                            'membership-rank:read', 'membership-rank:read-detail',
                                                            'shop:read-detail',
-                                                           'notification:read', 'notification:update'
+                                                           'notification:read', 'notification:update',
+                                                           'customer:read', 'customer:read-detail'
     )
 WHERE r.name = 'EMPLOYEE';
 
@@ -88,6 +90,7 @@ FROM public.role r
                                                            'category:read',
                                                            'membership-rank:read', 'membership-rank:read-detail',
                                                            'shop:read-detail',
-                                                           'notification:read', 'notification:update'
+                                                           'notification:read', 'notification:update',
+                                                           'customer:read', 'customer:read-detail', 'customer:delete', 'customer:me'
     )
 WHERE r.name = 'CUSTOMER';

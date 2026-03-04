@@ -65,6 +65,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/variants/" + result.getId())
+                .shop(product.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -99,6 +100,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/variants/" + result.getId())
+                .shop(variant.getShop())
                 .build();
 
         notificationService.sendToUser(noti);

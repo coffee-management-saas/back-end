@@ -86,6 +86,7 @@ public class StockCheckServiceImpl implements StockCheckService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/stock-checks/" + session.getId())
+                .shop(shop)
                 .build();
 
         notificationService.sendToUser(noti);
@@ -129,6 +130,7 @@ public class StockCheckServiceImpl implements StockCheckService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/stock-checks/" + session.getId())
+                .shop(session.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -229,6 +231,7 @@ public class StockCheckServiceImpl implements StockCheckService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/inventory/stock-checks/" + session.getId())
+                .shop(session.getShop())
                 .build();
 
         notificationService.sendToUser(noti);

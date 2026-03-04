@@ -11,4 +11,5 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class NotificationFilter extends BaseFilter {
     Boolean isRead;
+    String recipientType; // "CUSTOMER", "SHOP", "EMPLOYEE", "SYSTEM"
 }

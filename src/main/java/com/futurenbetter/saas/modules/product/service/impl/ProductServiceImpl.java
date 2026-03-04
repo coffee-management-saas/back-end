@@ -80,6 +80,7 @@ public class ProductServiceImpl implements ProductService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/products/" + result.getId())
+                .shop(shop)
                 .build();
 
         notificationService.sendToUser(noti);
@@ -113,6 +114,7 @@ public class ProductServiceImpl implements ProductService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/products/" + result.getId())
+                .shop(product.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -169,6 +171,7 @@ public class ProductServiceImpl implements ProductService {
                 .recipientType("SHOP")
                 .recipientId(shopAdminId)
                 .referenceLink("api/product/products/" + product)
+                .shop(product.getShop())
                 .build();
 
         notificationService.sendToUser(noti);

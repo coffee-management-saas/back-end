@@ -48,8 +48,9 @@ public class EmployeeUnavailabilityServiceImpl implements EmployeeUnavailability
                 .message(employee.getUserProfile().getFullname() + " đã tạo lịch nghỉ từ " + request.getStartTime() + " đến " + request.getEndTime())
                 .type(NotificationType.EMPLOYEE)
                 .recipientType("EMPLOYEE")
-                .recipientId(employee.getEmployeeId())
+                .recipientId(employee.getUserProfile().getUserProfileId())
                 .referenceLink("api/employee/unavailability/" + result.getEmployeeUnavailabilityId())
+                .shop(employee.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -75,8 +76,9 @@ public class EmployeeUnavailabilityServiceImpl implements EmployeeUnavailability
                 .message(entity.getEmployee().getUserProfile().getFullname() + " đã cập nhật lịch nghỉ từ " + request.getStartTime() + " đến " + request.getEndTime())
                 .type(NotificationType.EMPLOYEE)
                 .recipientType("EMPLOYEE")
-                .recipientId(entity.getEmployee().getEmployeeId())
+                .recipientId(entity.getEmployee().getUserProfile().getUserProfileId())
                 .referenceLink("api/employee/unavailability/" + result.getEmployeeUnavailabilityId())
+                .shop(entity.getShop())
                 .build();
 
         notificationService.sendToUser(noti);
@@ -112,8 +114,9 @@ public class EmployeeUnavailabilityServiceImpl implements EmployeeUnavailability
                 .message(entity.getEmployee().getUserProfile().getFullname() + " đã xóa lịch nghỉ từ " + entity.getStartTime() + " đến " + entity.getEndTime())
                 .type(NotificationType.EMPLOYEE)
                 .recipientType("EMPLOYEE")
-                .recipientId(entity.getEmployee().getEmployeeId())
+                .recipientId(entity.getEmployee().getUserProfile().getUserProfileId())
                 .referenceLink("api/employee/unavailability/" + entity.getEmployeeUnavailabilityId())
+                .shop(entity.getShop())
                 .build();
 
         notificationService.sendToUser(noti);

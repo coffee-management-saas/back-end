@@ -107,4 +107,10 @@ VALUES
     (NOW(), NOW(), 'dashboard:system', 'Dashboard hằng tháng của system', 'ACTIVE'),
 
     (NOW(), NOW(), 'notification:read', 'Xem thông báo', 'ACTIVE'),
-    (NOW(), NOW(), 'notification:update', 'cập nhật thông báo', 'ACTIVE');
+    (NOW(), NOW(), 'notification:update', 'cập nhật thông báo', 'ACTIVE'),
+
+    (NOW(), NOW(), 'customer:read', 'Xem danh sách khách hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'customer:read-detail', 'Xem chi tiết khách hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'customer:delete', 'Xóa khách hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'customer:update', 'Cập nhật hồ sơ khách hàng', 'ACTIVE'),
+    (NOW(), NOW(), 'customer:me', 'Xem hoặc cập nhật hồ sơ cá nhân', 'ACTIVE');
