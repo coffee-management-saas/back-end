@@ -1,16 +1,21 @@
 package com.futurenbetter.saas.modules.auth.service.Impl;
 
 import com.futurenbetter.saas.common.exception.BusinessException;
+import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.auth.dto.filter.CustomerFilter;
 import com.futurenbetter.saas.modules.auth.dto.request.UpdateProfileRequest;
 import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
+import com.futurenbetter.saas.modules.auth.enums.CustomerStatus;
 import com.futurenbetter.saas.modules.auth.mapper.CustomerMapper;
 import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
 import com.futurenbetter.saas.modules.auth.service.CustomerService;
+import com.futurenbetter.saas.modules.auth.spec.CustomerSpecification;
 import com.futurenbetter.saas.modules.order.entity.Order;
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,5 +73,31 @@ public class CustomerServiceImpl implements CustomerService {
             }
         }
         return total;
+    }
+
+    @Override
+    public Page<CustomerResponse> getCustomers(CustomerFilter filter) {
+
+        Long shopId = SecurityUtils.getCurrentShopId();
+
+        return customerRepository.findAll(CustomerSpecification.filter(filter, shopId), filter.getPageable())
+                .map(customerMapper::toResponse);
+    }
+
+    @Override
+    public CustomerResponse deleteCustomer(Long customerId) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy người dùng"));
+
+        customer.setStatus(CustomerStatus.DELETED);
+        customerRepository.save(customer);
+        return customerMapper.toResponse(customer);
+    }
+
+    @Override
+    public CustomerResponse getCustomerById(Long customerId) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy người dùng"));
+        return customerMapper.toResponse(customer);
     }
 }
