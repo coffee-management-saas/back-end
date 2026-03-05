@@ -60,7 +60,7 @@ public class DashboardTask {
         shopRepository.findAll().forEach(shop -> {
             ShopDashboard currentShopDashboard = shopDashboardRepository.findByShopIdAndYearAndMonth(shop.getId(), year, month).orElse(null);
             Long totalRevenue = orderRepository.calculateTotalRevenueByShop(shop.getId(), OrderStatus.PAID, startOfMonth, endOfMonth);
-            Integer totalOrders = orderRepository.countOrdersByShop(shop.getId(), startOfMonth, endOfMonth);
+            Integer totalOrders = orderRepository.countOrdersByShop(shop.getId(), startOfMonth, endOfMonth, OrderStatus.PAID);
             Integer totalProducts = productRepository.countByShopId(shop.getId());
             Integer newCustomers = customerService.countNewCustomers(shop.getId(), startOfMonth, endOfMonth);
             Integer returningCustomers = customerService.countReturningCustomers(shop.getId(), startOfMonth, endOfMonth);
