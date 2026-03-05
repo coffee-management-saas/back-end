@@ -27,8 +27,8 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
             @Param("toDate") LocalDateTime toDate
     );
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.shop.id = :shopId AND o.createdAt >= :fromDate AND o.createdAt <= :toDate")
-    Integer countOrdersByShop(@Param("shopId") Long shopId, @Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.shop.id = :shopId AND o.createdAt >= :fromDate AND o.createdAt <= :toDate AND o.orderStatus = :status")
+    Integer countOrdersByShop(@Param("shopId") Long shopId, @Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate, @Param("status") OrderStatus status);
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.shop.id = :shopId AND o.createdAt >= :fromDate AND o.createdAt <= :toDate AND o.promotion.promotionId IS NOT NULL")
     Integer countOdersByShopIdAndHasPromotionIsTrue(@Param("shopId") Long shopId, @Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
