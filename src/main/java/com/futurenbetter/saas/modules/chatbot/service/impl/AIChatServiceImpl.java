@@ -4,7 +4,6 @@ import com.futurenbetter.saas.modules.chatbot.dto.request.ChatRequest;
 import com.futurenbetter.saas.modules.chatbot.dto.response.AIOrderResponse;
 import com.futurenbetter.saas.modules.chatbot.service.AIChatService;
 
-import com.futurenbetter.saas.modules.order.enums.PaymentGateway;
 import java.text.Normalizer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -72,9 +71,6 @@ public class AIChatServiceImpl implements AIChatService {
         String queryLower = currentMessage.toLowerCase();
         String refinedQuery = currentMessage;
 
-        // Nếu tin nhắn quá ngắn (ví dụ: "ok", "đúng rồi", "xác nhận"),
-        // bổ sung thêm nội dung tin nhắn trước đó của khách để search menu chính xác
-        // hơn.
         if (currentMessage.length() < 15 && history != null && !history.isBlank()) {
             String lastUserMsg = "";
             String[] segments = history.split("Khách: ");
@@ -122,7 +118,6 @@ public class AIChatServiceImpl implements AIChatService {
 
         if (isCalorieRankQuery || isCalorieQuery || isTagQuery || isBroadMenuQuery) {
             List<Document> allDocs = getAllDocuments();
-            // Chỉ lấy các variants liên quan đến các docs này để tối ưu performance
             List<ProductVariant> shopVariants = getVariantsForDocs(allDocs);
 
             if (isCalorieRankQuery) {
@@ -152,7 +147,6 @@ public class AIChatServiceImpl implements AIChatService {
             context = buildDefaultContext(similarDocuments, shopVariants);
         }
 
-        // Bổ sung thông tin Topping khả dụng
         String toppingContext = buildToppingContext();
         String finalContext = context + "\n\n" + toppingContext;
 
@@ -215,7 +209,6 @@ public class AIChatServiceImpl implements AIChatService {
 
             if ("ORDER".equals(aiResult.action()) && aiResult.orderRequest() != null) {
                 try {
-                    // Validation: Kiểm tra xem tất cả items đã có ProductVariantId chưa
                     boolean hasInvalidItem = aiResult.orderRequest().getOrderItems().stream()
                             .anyMatch(item -> item.getProductVariantId() == null || item.getProductVariantId() <= 0);
 
@@ -225,9 +218,14 @@ public class AIChatServiceImpl implements AIChatService {
                                 null, false, null);
                     }
 
-                    // Đảm bảo không bị lỗi Null Gateway
-                    if (aiResult.orderRequest().getPaymentGateway() == null) {
-                        aiResult.orderRequest().setPaymentGateway(PaymentGateway.CASH);
+                    aiResult.orderRequest().setOrderType(com.futurenbetter.saas.modules.order.enums.OrderType.ONLINE);
+                    aiResult.orderRequest().setPaymentGateway(null);
+
+                    if (aiResult.orderRequest().getOrderItems() == null
+                            || aiResult.orderRequest().getOrderItems().isEmpty()) {
+                        return new AIOrderResponse("INFO",
+                                "Tôi chưa thấy danh sách món trong đơn hàng. Bạn vui lòng chọn món muốn đặt nhé!",
+                                null, false, null);
                     }
 
                     OrderResponse createdOrder = orderService.createOrder(aiResult.orderRequest());
@@ -439,7 +437,6 @@ public class AIChatServiceImpl implements AIChatService {
         if (name == null)
             return "";
 
-        // Chuyển về chữ thường và thay thế các từ đặc biệt
         String normalized = name.toLowerCase()
                 .replace("oolong", "ô long")
                 .replace("(signature)", "")
@@ -448,13 +445,10 @@ public class AIChatServiceImpl implements AIChatService {
                 .replace(".", "")
                 .trim();
 
-        // Loại bỏ dấu tiếng Việt (Normalizer NFD + Regex)
         normalized = Normalizer.normalize(normalized, Normalizer.Form.NFD);
         normalized = normalized.replaceAll("\\p{M}", "");
         normalized = normalized.replace("đ", "d");
 
-        // Loại bỏ toàn bộ khoảng trắng và các ký tự không phải chữ/số để so sánh tuyệt
-        // đối
         return normalized.replaceAll("[^a-z0-9]", "").trim();
     }
 

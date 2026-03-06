@@ -19,4 +19,6 @@ public interface OrderService {
     OrderResponse getOrderById(Long orderId);
 
     OrderResponse initiatePayment(Long orderId, String returnUrl);
+
+    OrderResponse confirmCashPayment(Long orderId);
 }

@@ -111,6 +111,10 @@ public class OrderServiceImpl implements OrderService {
         boolean isCustomer = roles.contains("ROLE_CUSTOMER") || roles.contains("CUSTOMER");
         boolean isStaff = roles.contains("ROLE_EMPLOYEE") || roles.contains("EMPLOYEE");
 
+        if (currentShopId == null) {
+            throw new BusinessException("Không tìm thấy thông tin cửa hàng. Vui lòng đăng nhập lại.");
+        }
+
         Shop shop = shopRepository.findById(currentShopId)
                 .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
 
@@ -139,10 +143,13 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Bạn không có quyền tạo đơn hàng này");
         }
 
-        OrderItemStatus initialItemStatus = (request.getOrderType() == OrderType.OFFLINE || request.getOrderType() == OrderType.ONLINE
-                && request.getPaymentGateway() == PaymentGateway.CASH)
-                        ? OrderItemStatus.PAID
-                        : OrderItemStatus.PENDING;
+        // Chỉ auto-PAID khi là đơn OFFLINE + thanh toán CASH (nhân viên thu tiền mặt
+        // trực tiếp)
+        // Đơn ONLINE + CASH (chatbot, web): giữ PENDING để khách xác nhận trên trang
+        // checkout
+        boolean isOfflineCash = request.getOrderType() == OrderType.OFFLINE
+                && request.getPaymentGateway() == PaymentGateway.CASH;
+        OrderItemStatus initialItemStatus = isOfflineCash ? OrderItemStatus.PAID : OrderItemStatus.PENDING;
 
         long totalBasePrice = 0;
         List<OrderItem> items = new ArrayList<>();
@@ -155,6 +162,10 @@ public class OrderServiceImpl implements OrderService {
             item.setCreatedAt(LocalDateTime.now());
             item.setUpdatedAt(LocalDateTime.now());
 
+            if (itemReq.getProductVariantId() == null) {
+                throw new BusinessException("Mã sản phẩm không được để trống");
+            }
+
             ProductVariant variant = productVariantRepository.findById(itemReq.getProductVariantId())
                     .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
             item.setProductVariant(variant);
@@ -166,6 +177,10 @@ public class OrderServiceImpl implements OrderService {
             if (itemReq.getToppingItems() != null && !itemReq.getToppingItems().isEmpty()) {
                 List<ToppingPerOrderItem> toppings = new ArrayList<>();
                 for (ToppingItemRequest topReq : itemReq.getToppingItems()) {
+                    if (topReq.getToppingId() == null) {
+                        throw new BusinessException("Mã topping không được để trống");
+                    }
+
                     Topping topping = toppingRepository.findById(topReq.getToppingId())
                             .orElseThrow(() -> new BusinessException("Topping không tồn tại"));
 
@@ -238,10 +253,12 @@ public class OrderServiceImpl implements OrderService {
         order.setPromotion(promotion);
         order.setCreatedAt(LocalDateTime.now());
 
-        if (request.getPaymentGateway() == PaymentGateway.CASH) {
+        if (isOfflineCash) {
+            // Đơn OFFLINE thanh toán tiền mặt: hoàn thành ngay
             order.setOrderStatus(OrderStatus.PAID);
             updateMonthlyProductSold(order);
         } else {
+            // Đơn ONLINE (CASH hoặc MOMO): giữ PENDING, khách sẽ xác nhận thanh toán sau
             order.setOrderStatus(OrderStatus.PENDING);
         }
 
@@ -335,6 +352,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public OrderResponse initiatePayment(Long orderId, String returnUrl) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException("Đơn hàng không tồn tại"));
@@ -355,34 +373,94 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void handleMomoOrderIpn(Map<String, String> payload) {
-        String momoOrderId = payload.get("orderId");
-        String resultCode = payload.get("resultCode");
-
-        if (!"0".equals(resultCode)) {
-            return;
-        }
-
-        Long realOrderId;
-        try {
-            if (momoOrderId == null || !momoOrderId.contains("_")) {
-                throw new IllegalArgumentException("Mã orderId không đúng định dạng: " + momoOrderId);
-            }
-            String[] parts = momoOrderId.split("_");
-            realOrderId = Long.parseLong(parts[1]);
-        } catch (Exception e) {
-            throw new BusinessException("Định dạng orderId từ cổng thanh toán không hợp lệ");
-        }
-
-        Order order = orderRepository.findById(realOrderId)
-                .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + realOrderId));
+    public OrderResponse confirmCashPayment(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException("Đơn hàng không tồn tại"));
 
         if (order.getOrderStatus() == OrderStatus.PAID) {
+            throw new BusinessException("Đơn hàng này đã được thanh toán");
+        }
+
+        // Đơn hàng từ chatbot ban đầu tạo là ONLINE/CASH PENDING
+        // Giờ khách chọn xác nhận thanh toán tiền mặt
+        order.setOrderStatus(OrderStatus.PAID);
+        order.setPaymentGateway(PaymentGateway.CASH);
+        order.setUpdatedAt(LocalDateTime.now());
+
+        if (order.getOrderItems() != null) {
+            order.getOrderItems().forEach(item -> {
+                item.setOrderItemStatus(OrderItemStatus.PAID);
+                item.setUpdatedAt(LocalDateTime.now());
+            });
+        }
+
+        Order savedOrder = orderRepository.save(order);
+
+        triggerStockDeduction(savedOrder);
+        updateMonthlyProductSold(savedOrder);
+        processCustomerPoints(savedOrder);
+        generateUploadInvoice(savedOrder);
+
+        return orderMapper.toOrderResponse(savedOrder);
+    }
+
+    @Override
+    @Transactional
+    public void handleMomoOrderIpn(Map<String, String> payload) {
+        log.info("Handling MoMo IPN/Callback with payload: {}", payload);
+        String momoOrderId = payload.get("orderId");
+        String resultCode = payload.get("resultCode");
+        String extraData = payload.get("extraData");
+
+        if (!"0".equals(resultCode)) {
+            log.warn("MoMo payment failed or cancelled. ResultCode: {}, OrderId: {}", resultCode, momoOrderId);
             return;
         }
 
+        Long realOrderId = null;
+
+        // Ưu tiên lấy orderId từ extraData nếu có
+        if (extraData != null && !extraData.isEmpty()) {
+            try {
+                Map<String, Object> data = momoUtils.decodeExtraData(extraData);
+                if (data != null && "ORDER".equals(data.get("type"))) {
+                    Object oid = data.get("orderId");
+                    if (oid != null) {
+                        realOrderId = Long.parseLong(String.valueOf(oid));
+                        log.info("Extracted realOrderId from extraData: {}", realOrderId);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not extract orderId from extraData: {}", e.getMessage());
+            }
+        }
+
+        if (realOrderId == null) {
+            try {
+                if (momoOrderId == null || !momoOrderId.contains("_")) {
+                    throw new IllegalArgumentException("Mã orderId không đúng định dạng: " + momoOrderId);
+                }
+                String[] parts = momoOrderId.split("_");
+                realOrderId = Long.parseLong(parts[1]);
+                log.info("Extracted realOrderId from momoOrderId: {}", realOrderId);
+            } catch (Exception e) {
+                log.error("Failed to parse orderId from MoMo payload: {}", e.getMessage());
+                throw new BusinessException("Định dạng orderId từ cổng thanh toán không hợp lệ");
+            }
+        }
+
+        Long finalRealOrderId = realOrderId;
+        Order order = orderRepository.findById(realOrderId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + finalRealOrderId));
+
+        if (order.getOrderStatus() == OrderStatus.PAID) {
+            log.info("Order {} is already marked as PAID. Skipping update.", realOrderId);
+            return;
+        }
+
+        log.info("Updating order {} status to PAID", realOrderId);
         order.setOrderStatus(OrderStatus.PAID);
-        order.setPaymentGateway(PaymentGateway.MOMO); // Cập nhật lại gateway thực tế
+        order.setPaymentGateway(PaymentGateway.MOMO);
         order.setUpdatedAt(LocalDateTime.now());
 
         if (order.getOrderItems() != null) {
@@ -392,18 +470,31 @@ public class OrderServiceImpl implements OrderService {
             });
         }
         orderRepository.save(order);
-        triggerStockDeduction(order);
+
+        try {
+            triggerStockDeduction(order);
+        } catch (Exception e) {
+            log.error("Failed to deduct stock for order {}: {}", realOrderId, e.getMessage());
+            throw e;
+        }
+
         updateMonthlyProductSold(order);
 
         if (order.getPromotion() != null) {
             Long customerId = (order.getCustomer() != null) ? order.getCustomer().getId() : null;
-            promotionService.recordPromotionUsage(
-                    order.getPromotion().getPromotionId(),
-                    customerId,
-                    order.getShop().getId(),
-                    order.getDiscountAmount());
+            try {
+                promotionService.recordPromotionUsage(
+                        order.getPromotion().getPromotionId(),
+                        customerId,
+                        order.getShop().getId(),
+                        order.getDiscountAmount());
+            } catch (Exception e) {
+                log.error("Failed to record promotion usage for order {}: {}", realOrderId, e.getMessage());
+            }
         }
+
         generateUploadInvoice(order);
+        log.info("Order {} processed successfully", realOrderId);
     }
 
     private Long calculateDiscount(Promotion promotion, Long baseAmount) {
