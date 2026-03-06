@@ -32,19 +32,20 @@ public class MomoCallbackController {
 
     @PostMapping("/ipn")
     public ResponseEntity<Void> handleMomoIpn(@RequestBody Map<String, Object> payload) {
+        log.info("Received MoMo IPN: {}", payload);
         Map<String, String> stringPayload = new HashMap<>();
         payload.forEach((k, v) -> stringPayload.put(k, v != null ? String.valueOf(v) : null));
 
         String extraData = stringPayload.get("extraData");
-
         String type = momoUtils.decodeType(extraData);
+        log.info("Decoded IPN type: {}", type);
 
         if ("SUBSCRIPTION".equals(type)) {
             subscriptionService.handleMomoIpn(stringPayload);
         } else if ("ORDER".equals(type)) {
             orderService.handleMomoOrderIpn(stringPayload);
         } else {
-            log.warn("Unknown type: {}", type);
+            log.warn("Unknown IPN type: {}", type);
         }
 
         return ResponseEntity.ok().build();
@@ -53,9 +54,13 @@ public class MomoCallbackController {
     @GetMapping("/callback")
     public ResponseEntity<String> handleMomoRedirect(
             @RequestParam Map<String, String> params) {
+        log.info("Received MoMo Redirect Callback: {}", params);
         String extraData = params.get("extraData");
         String type = momoUtils.decodeType(extraData);
         String resultCode = params.get("resultCode");
+
+        log.info("Decoded Redirect type: {}, resultCode: {}", type, resultCode);
+
         if ("SUBSCRIPTION".equals(type)) {
             String targetUrl = frontendUrl + "/subscription/momo-callback";
             return ResponseEntity.status(HttpStatus.FOUND)
@@ -68,18 +73,23 @@ public class MomoCallbackController {
                 try {
                     orderService.handleMomoOrderIpn(params);
                 } catch (Exception e) {
-                    log.error("Error confirming order during redirect: {}", e.getMessage());
+                    log.error("Error confirming order during redirect: {}", e.getMessage(), e);
                 }
+            } else {
+                log.warn("Payment failed for orderId (composite): {}, resultCode: {}", orderId, resultCode);
             }
 
             String targetUrl = frontendUrl + "/checkout?resultCode=" + (resultCode != null ? resultCode : "")
                     + "&orderId="
                     + orderId;
 
+            log.info("Redirecting to frontend: {}", targetUrl);
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(targetUrl))
                     .build();
         }
+
+        log.warn("Received invalid or unknown type from MoMo: {}", type);
         return ResponseEntity.badRequest().body("Invalid request");
     }
 }
