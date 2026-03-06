@@ -15,8 +15,6 @@ import com.futurenbetter.saas.modules.auth.repository.MembershipRankRepository;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.dashboard.service.inter.MonthlyProductSoldService;
 import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceService;
-import com.futurenbetter.saas.modules.notification.entity.Notification;
-import com.futurenbetter.saas.modules.notification.enums.NotificationType;
 import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import com.futurenbetter.saas.modules.order.dto.filter.OrderFilter;
 import com.futurenbetter.saas.modules.order.dto.request.OrderItemRequest;
@@ -28,7 +26,6 @@ import com.futurenbetter.saas.modules.order.entity.OrderItem;
 import com.futurenbetter.saas.modules.order.entity.ToppingPerOrderItem;
 import com.futurenbetter.saas.modules.order.enums.OrderItemStatus;
 import com.futurenbetter.saas.modules.order.enums.OrderStatus;
-import com.futurenbetter.saas.modules.order.enums.OrderType;
 import com.futurenbetter.saas.modules.order.enums.PaymentGateway;
 import com.futurenbetter.saas.modules.order.mapper.OrderMapper;
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
@@ -80,6 +77,7 @@ public class OrderServiceImpl implements OrderService {
     private final PointHistoryRepository pointHistoryRepository;
     private final NotificationService notificationService;
     private final MonthlyProductSoldService monthlyProductSoldService;
+    private final AsyncOrderTaskServiceImpl asyncOrderTaskService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -127,7 +125,6 @@ public class OrderServiceImpl implements OrderService {
 
         if (isCustomer) {
             targetCustomer = currentCustomer;
-            targetCustomerId = targetCustomer != null ? targetCustomer.getId() : currentUserId;
             order.setCustomer(targetCustomer);
         } else if (isStaff) {
             if (request.getCustomerId() != null) {
@@ -143,13 +140,9 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Bạn không có quyền tạo đơn hàng này");
         }
 
-        // Chỉ auto-PAID khi là đơn OFFLINE + thanh toán CASH (nhân viên thu tiền mặt
-        // trực tiếp)
-        // Đơn ONLINE + CASH (chatbot, web): giữ PENDING để khách xác nhận trên trang
-        // checkout
-        boolean isOfflineCash = request.getOrderType() == OrderType.OFFLINE
-                && request.getPaymentGateway() == PaymentGateway.CASH;
-        OrderItemStatus initialItemStatus = isOfflineCash ? OrderItemStatus.PAID : OrderItemStatus.PENDING;
+        // Thanh toán tiền mặt (OFFLINE hoặc ONLINE): hoàn thành ngay theo yêu cầu
+        boolean isCash = request.getPaymentGateway() == PaymentGateway.CASH;
+        OrderItemStatus initialItemStatus = isCash ? OrderItemStatus.PAID : OrderItemStatus.PENDING;
 
         long totalBasePrice = 0;
         List<OrderItem> items = new ArrayList<>();
@@ -253,12 +246,10 @@ public class OrderServiceImpl implements OrderService {
         order.setPromotion(promotion);
         order.setCreatedAt(LocalDateTime.now());
 
-        if (isOfflineCash) {
-            // Đơn OFFLINE thanh toán tiền mặt: hoàn thành ngay
+        if (isCash) {
             order.setOrderStatus(OrderStatus.PAID);
             updateMonthlyProductSold(order);
         } else {
-            // Đơn ONLINE (CASH hoặc MOMO): giữ PENDING, khách sẽ xác nhận thanh toán sau
             order.setOrderStatus(OrderStatus.PENDING);
         }
 
@@ -268,15 +259,18 @@ public class OrderServiceImpl implements OrderService {
         // (thường là Offline Cash)
         if (savedOrder.getOrderStatus() == OrderStatus.PAID) {
             triggerStockDeduction(savedOrder);
+            processCustomerPoints(savedOrder);
 
             if (promotion != null) {
+
                 promotionService.recordPromotionUsage(
                         promotion.getPromotionId(),
                         currentUserId,
                         currentShopId,
                         discountAmount);
             }
-            generateUploadInvoice(savedOrder);
+            asyncOrderTaskService.generateAndUploadInvoice(savedOrder.getOrderId());
+
         }
 
         if (request.getPaymentGateway() == PaymentGateway.MOMO) {
@@ -361,7 +355,6 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Đơn hàng này đã được thanh toán");
         }
 
-        // Hiện tại chỉ hỗ trợ MoMo (VNPAY có thể thêm sau)
         order.setPaymentGateway(PaymentGateway.MOMO);
         orderRepository.save(order);
 
@@ -381,8 +374,6 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Đơn hàng này đã được thanh toán");
         }
 
-        // Đơn hàng từ chatbot ban đầu tạo là ONLINE/CASH PENDING
-        // Giờ khách chọn xác nhận thanh toán tiền mặt
         order.setOrderStatus(OrderStatus.PAID);
         order.setPaymentGateway(PaymentGateway.CASH);
         order.setUpdatedAt(LocalDateTime.now());
@@ -399,7 +390,7 @@ public class OrderServiceImpl implements OrderService {
         triggerStockDeduction(savedOrder);
         updateMonthlyProductSold(savedOrder);
         processCustomerPoints(savedOrder);
-        generateUploadInvoice(savedOrder);
+        asyncOrderTaskService.generateAndUploadInvoice(savedOrder.getOrderId());
 
         return orderMapper.toOrderResponse(savedOrder);
     }
@@ -407,19 +398,17 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void handleMomoOrderIpn(Map<String, String> payload) {
-        log.info("Handling MoMo IPN/Callback with payload: {}", payload);
+        log.info("[MOMO IPN] Received payload: {}", payload);
         String momoOrderId = payload.get("orderId");
         String resultCode = payload.get("resultCode");
         String extraData = payload.get("extraData");
 
         if (!"0".equals(resultCode)) {
-            log.warn("MoMo payment failed or cancelled. ResultCode: {}, OrderId: {}", resultCode, momoOrderId);
             return;
         }
 
         Long realOrderId = null;
 
-        // Ưu tiên lấy orderId từ extraData nếu có
         if (extraData != null && !extraData.isEmpty()) {
             try {
                 Map<String, Object> data = momoUtils.decodeExtraData(extraData);
@@ -427,38 +416,42 @@ public class OrderServiceImpl implements OrderService {
                     Object oid = data.get("orderId");
                     if (oid != null) {
                         realOrderId = Long.parseLong(String.valueOf(oid));
-                        log.info("Extracted realOrderId from extraData: {}", realOrderId);
                     }
                 }
             } catch (Exception e) {
-                log.warn("Could not extract orderId from extraData: {}", e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        if (realOrderId == null && momoOrderId != null && momoOrderId.contains("_")) {
+            try {
+                String[] parts = momoOrderId.split("_");
+                if (parts.length > 1) {
+                    realOrderId = Long.parseLong(parts[1]);
+                }
+            } catch (Exception e) {
             }
         }
 
         if (realOrderId == null) {
-            try {
-                if (momoOrderId == null || !momoOrderId.contains("_")) {
-                    throw new IllegalArgumentException("Mã orderId không đúng định dạng: " + momoOrderId);
-                }
-                String[] parts = momoOrderId.split("_");
-                realOrderId = Long.parseLong(parts[1]);
-                log.info("Extracted realOrderId from momoOrderId: {}", realOrderId);
-            } catch (Exception e) {
-                log.error("Failed to parse orderId from MoMo payload: {}", e.getMessage());
-                throw new BusinessException("Định dạng orderId từ cổng thanh toán không hợp lệ");
-            }
+            return;
         }
 
+        // 2. Load order and update status
         Long finalRealOrderId = realOrderId;
         Order order = orderRepository.findById(realOrderId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + finalRealOrderId));
 
         if (order.getOrderStatus() == OrderStatus.PAID) {
-            log.info("Order {} is already marked as PAID. Skipping update.", realOrderId);
             return;
         }
 
-        log.info("Updating order {} status to PAID", realOrderId);
+        try {
+            orderRepository.updateOrderStatus(realOrderId, OrderStatus.PAID, LocalDateTime.now());
+        } catch (Exception e) {
+                    e.getMessage();
+        }
+
         order.setOrderStatus(OrderStatus.PAID);
         order.setPaymentGateway(PaymentGateway.MOMO);
         order.setUpdatedAt(LocalDateTime.now());
@@ -469,32 +462,42 @@ public class OrderServiceImpl implements OrderService {
                 item.setUpdatedAt(LocalDateTime.now());
             });
         }
-        orderRepository.save(order);
 
+        order = orderRepository.save(order);
+
+        // 3. Secondary tasks (non-blocking for the payment status)
         try {
             triggerStockDeduction(order);
         } catch (Exception e) {
-            log.error("Failed to deduct stock for order {}: {}", realOrderId, e.getMessage());
-            throw e;
         }
 
-        updateMonthlyProductSold(order);
+        try {
+            updateMonthlyProductSold(order);
+        } catch (Exception e) {
+        }
 
-        if (order.getPromotion() != null) {
-            Long customerId = (order.getCustomer() != null) ? order.getCustomer().getId() : null;
-            try {
+        try {
+            if (order.getPromotion() != null) {
+                Long customerId = (order.getCustomer() != null) ? order.getCustomer().getId() : null;
                 promotionService.recordPromotionUsage(
                         order.getPromotion().getPromotionId(),
                         customerId,
                         order.getShop().getId(),
                         order.getDiscountAmount());
-            } catch (Exception e) {
-                log.error("Failed to record promotion usage for order {}: {}", realOrderId, e.getMessage());
             }
+        } catch (Exception e) {
         }
 
-        generateUploadInvoice(order);
-        log.info("Order {} processed successfully", realOrderId);
+        try {
+            processCustomerPoints(order);
+        } catch (Exception e) {
+        }
+
+        try {
+            asyncOrderTaskService.generateAndUploadInvoice(order.getOrderId());
+        } catch (Exception e) {
+        }
+
     }
 
     private Long calculateDiscount(Promotion promotion, Long baseAmount) {
@@ -544,20 +547,13 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private void generateUploadInvoice(Order order) {
-        try {
-            byte[] pdfData = pdfExportService.generateOrderPdf(order);
-            String fileName = "INV_" + order.getOrderId() + "_" + System.currentTimeMillis();
-            String invoiceUrl = cloudinaryStorageService.uploadFile(pdfData, fileName, "order_invoices");
-            order.setInvoiceUrl(invoiceUrl);
-            orderRepository.save(order);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void processCustomerPoints(Order order) {
-        Customer customer = order.getCustomer();
+        if (order.getCustomer() == null)
+            return;
+
+        // Re-fetch customer to ensure attached state and access to lazy fields
+        Customer customer = customerRepository.findById(order.getCustomer().getId())
+                .orElse(null);
         if (customer == null)
             return;
 

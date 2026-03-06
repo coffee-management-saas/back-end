@@ -24,7 +24,8 @@ public class MomoUtils {
             if (extraData.contains("%")) {
                 decodedString = java.net.URLDecoder.decode(extraData, StandardCharsets.UTF_8);
             }
-            byte[] decodeBytes = Base64.getDecoder().decode(decodedString);
+            String base64String = decodedString.replace('-', '+').replace('_', '/');
+            byte[] decodeBytes = Base64.getDecoder().decode(base64String);
             return objectMapper.readValue(decodeBytes, Map.class);
         } catch (Exception e) {
             return null;
