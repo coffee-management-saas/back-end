@@ -4,5 +4,6 @@ public enum ApplyStatus {
     SHOP,
     SYSTEM,
     CUSTOMER,
-    EMPLOYEE
+    EMPLOYEE,
+    CUSTOMER_SYSTEM
 }

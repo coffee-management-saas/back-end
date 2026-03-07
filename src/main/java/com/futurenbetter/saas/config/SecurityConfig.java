@@ -44,6 +44,7 @@ public class SecurityConfig {
                                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/auth/**", "/api/system/auth/**").permitAll()
+                                                .requestMatchers("/api/auth/register-customer-system").permitAll()
                                                 .requestMatchers("/api/customers/me").permitAll()
                                                 .requestMatchers("/api/momo/**").permitAll()
                                                 .requestMatchers("/api/subscriptions/momo-callback/**").permitAll()
