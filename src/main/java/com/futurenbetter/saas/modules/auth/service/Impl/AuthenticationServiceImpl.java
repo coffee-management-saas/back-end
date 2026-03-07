@@ -323,14 +323,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new BusinessException("Mật khẩu không chính xác");
         }
 
-        boolean isSystemUser = admin.getRoles().stream()
-                .anyMatch(role -> ApplyStatus.SYSTEM.equals(role.getRole()));
+        boolean isAuthorized = admin.getRoles().stream()
+                .anyMatch(role -> ApplyStatus.SYSTEM.equals(role.getRole()) ||
+                        ApplyStatus.CUSTOMER_SYSTEM.equals(role.getRole()));
 
-        if (!isSystemUser) {
+        if (!isAuthorized) {
             throw new BusinessException("Bạn không có quyền truy cập");
         }
 
-        String acccessToken = jwtService.generateAccessToken(admin.getUsername(), null, "SYSTEM");
+        String roleName = admin.getRoles().stream()
+                .anyMatch(role -> ApplyStatus.CUSTOMER_SYSTEM.equals(role.getRole()))
+                        ? "CUSTOMER_SYSTEM"
+                        : "SYSTEM";
+
+        String acccessToken = jwtService.generateAccessToken(admin.getUsername(), null, roleName);
         String refreshToken = jwtService.generateRefreshToken(admin.getUsername());
 
         admin.setRefreshToken(refreshToken);
@@ -340,7 +346,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return SystemAdminLoginResponse.builder()
                 .accessToken(acccessToken)
                 .refreshToken(refreshToken)
-                .role("SYSTEM")
+                .role(roleName)
                 .build();
     }
 
@@ -394,6 +400,43 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         UserProfile savedAdmin = userProfileRepository.save(admin);
         return userProfileMapper.toAdminResponse(savedAdmin);
+    }
+
+    @Override
+    @Transactional
+    public CustomerResponse registerCustomerSystem(CustomerRegistrationRequest request) {
+        if (customerRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException("Email đã tồn tại");
+        }
+        if (customerRepository.existsByUsername(request.getUsername())) {
+            throw new BusinessException("Tên đăng nhập đã tồn tại");
+        }
+
+        Role role = roleRepository.findByRole(ApplyStatus.CUSTOMER_SYSTEM)
+                .orElseThrow(() -> new BusinessException("Role CUSTOMER_SYSTEM chưa được cấu hình"));
+
+        Customer customer = customerMapper.toEntity(request);
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        customer.setPassword(encodedPassword);
+        customer.setStatus(CustomerStatus.ACTIVE);
+        customer.setRole(role);
+        customer.setShop(null);
+        customer = customerRepository.save(customer);
+
+        UserProfile profile = UserProfile.builder()
+                .username(request.getUsername())
+                .password(encodedPassword)
+                .email(request.getEmail())
+                .fullname(request.getFullname())
+                .address(request.getAddress())
+                .status(UserProfileEnum.ACTIVE)
+                .roles(Set.of(role))
+                .shop(null)
+                .build();
+
+        userProfileRepository.save(profile);
+
+        return customerMapper.toResponse(customer);
     }
 
     @Override
