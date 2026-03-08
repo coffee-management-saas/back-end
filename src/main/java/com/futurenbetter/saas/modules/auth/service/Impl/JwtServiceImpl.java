@@ -62,13 +62,14 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public Customer getCustomerByToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(getSigninKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+//        Claims claims = Jwts.parser()
+//                .verifyWith(getSigninKey())
+//                .build()
+//                .parseSignedClaims(token)
+//                .getPayload();
         String username = extractUsername(token);
-        return customerRepository.findByUsername(username).orElse(null);
+        Customer customer = customerRepository.findByUsername(username).orElse(null);
+        return customer;
     }
 
     @Override

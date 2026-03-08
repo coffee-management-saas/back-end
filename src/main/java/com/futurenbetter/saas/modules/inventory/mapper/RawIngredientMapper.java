@@ -5,10 +5,7 @@ import com.futurenbetter.saas.modules.inventory.dto.response.RawIngredientRespon
 import com.futurenbetter.saas.modules.inventory.entity.RawIngredient;
 import org.mapstruct.*;
 
-@Mapper(
-        componentModel = "spring",
-        unmappedTargetPolicy = ReportingPolicy.IGNORE
-)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface RawIngredientMapper {
 
     @Mapping(target = "totalStockQuantity", ignore = true)
@@ -16,7 +13,7 @@ public interface RawIngredientMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "shop", ignore = true)
-    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "inventoryStatus", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     RawIngredient toEntity(RawIngredientRequest request);

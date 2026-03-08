@@ -1,8 +1,7 @@
 package com.futurenbetter.saas.modules.inventory.entity;
 
-import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.inventory.enums.InputUnit;
-import com.futurenbetter.saas.modules.inventory.enums.Status;
+import com.futurenbetter.saas.modules.inventory.enums.InventoryStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -38,7 +37,7 @@ public class InventoryInvoiceDetail {
     InputUnit inputUnit;
 
     @Column(name = "input_quantity", nullable = false)
-    Integer inputQuantity;
+    Double inputQuantity;
 
     @Column(name = "converted_quantity", nullable = false)
     Double convertedQuantity;
@@ -60,12 +59,12 @@ public class InventoryInvoiceDetail {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    Status status;
+    InventoryStatus inventoryStatus;
 
     @PrePersist
     public void onCreate() {
-        if (status == null) {
-            status = Status.ACTIVE;
+        if (inventoryStatus == null) {
+            inventoryStatus = InventoryStatus.ACTIVE;
         }
         createdAt = LocalDateTime.now();
         updatedAt = createdAt;

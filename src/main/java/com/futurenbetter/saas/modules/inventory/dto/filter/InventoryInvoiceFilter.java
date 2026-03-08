@@ -1,7 +1,7 @@
 package com.futurenbetter.saas.modules.inventory.dto.filter;
 
 import com.futurenbetter.saas.common.dto.request.BaseFilter;
-import com.futurenbetter.saas.modules.inventory.enums.Status;
+import com.futurenbetter.saas.modules.inventory.enums.InventoryStatus;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,5 +20,5 @@ public class InventoryInvoiceFilter extends BaseFilter {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     LocalDateTime toDate;
     Long createdBy;
-    Status status;
+    InventoryStatus inventoryStatus;
 }

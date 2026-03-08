@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.modules.promotion.entity;
 
 import com.futurenbetter.saas.modules.auth.entity.Shop;
+import com.futurenbetter.saas.modules.product.entity.Product;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,5 +28,7 @@ public class PromotionTarget {
     @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 }

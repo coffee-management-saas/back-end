@@ -50,6 +50,9 @@ public class SubscriptionPlan {
     @Column(name = "status")
     private SubscriptionPlanEnum subscriptionPlanStatus;
 
+    @OneToMany(mappedBy = "plan")
+    private List<SubscriptionTransaction> transactions;
+
     @OneToMany(mappedBy = "plan", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<ShopSubscription> shopSubscriptions;
 }

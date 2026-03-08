@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class RawIngredientController {
     private final RawIngredientService rawIngredientService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('raw-ingredient:create')")
     public ApiResponse<RawIngredientResponse> create(
             @RequestBody @Valid RawIngredientRequest request
     ) {
@@ -36,6 +38,7 @@ public class RawIngredientController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('raw-ingredient:read-by-filter')")
     public ApiResponse<List<RawIngredientResponse>> getByFilter(
             @ModelAttribute RawIngredientFilter filter
     ) {
@@ -57,6 +60,7 @@ public class RawIngredientController {
     }
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAuthority('raw-ingredient:read-detail')")
     public ApiResponse<RawIngredientResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -71,6 +75,7 @@ public class RawIngredientController {
     }
 
     @PutMapping("{id}")
+    @PreAuthorize("hasAuthority('raw-ingredient:update')")
     public ApiResponse<RawIngredientResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid RawIngredientRequest request

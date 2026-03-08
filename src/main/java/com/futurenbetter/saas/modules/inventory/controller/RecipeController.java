@@ -7,6 +7,7 @@ import com.futurenbetter.saas.modules.inventory.service.inter.RecipeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,46 +20,30 @@ public class RecipeController {
     private final RecipeService recipeService;
 
     @PostMapping
-    public ApiResponse<RecipeResponse> create(
-            @RequestBody @Valid RecipeRequest request
-    ) {
-        RecipeResponse response = recipeService.create(request);
+    @PreAuthorize("hasAuthority('recipe:create')")
+    public ApiResponse<List<RecipeResponse>> create(
+            @RequestBody @Valid RecipeRequest request) {
+        List<RecipeResponse> response = recipeService.create(request);
 
         return ApiResponse.success(
                 HttpStatus.CREATED,
-                "Create recipe successfully",
+                "Create/Update recipe successfully",
                 response,
-                null
-        );
-    }
-
-    @PutMapping("{id}")
-    public ApiResponse<RecipeResponse> update(
-            @PathVariable Long id,
-            @RequestBody @Valid RecipeRequest request
-    ) {
-        RecipeResponse response = recipeService.update(id, request);
-
-        return ApiResponse.success(
-                HttpStatus.OK,
-                "Update recipe successfully",
-                response,
-                null
-        );
+                null);
     }
 
     @GetMapping("variant/{variantId}")
+    @PreAuthorize("hasAuthority('recipe:read-by-variant')")
     public ApiResponse<List<RecipeResponse>> getByVariant(
-            @PathVariable Long variantId
-    ) {
+            @PathVariable Long variantId) {
         List<RecipeResponse> response = recipeService.getByVariant(variantId);
         return ApiResponse.success(HttpStatus.OK, "Get recipes by variant successfully", response, null);
     }
 
     @GetMapping("topping/{toppingId}")
+    @PreAuthorize("hasAuthority('recipe:read-by-topping')")
     public ApiResponse<List<RecipeResponse>> getByTopping(
-            @PathVariable Long toppingId
-    ) {
+            @PathVariable Long toppingId) {
         List<RecipeResponse> response = recipeService.getByTopping(toppingId);
         return ApiResponse.success(HttpStatus.OK, "Get recipes by topping successfully", response, null);
     }
