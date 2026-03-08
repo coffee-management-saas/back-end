@@ -16,14 +16,25 @@ public class MomoUtils {
 
     private final ObjectMapper objectMapper;
 
-    public String decodeType(String extraData) {
+    public Map<String, Object> decodeExtraData(String extraData) {
+        if (extraData == null || extraData.isEmpty())
+            return null;
         try {
-            byte[] decodeBytes = Base64.getDecoder().decode(extraData);
-            Map<String, Object> data = objectMapper.readValue(decodeBytes, Map.class);
-            return (String) data.get("type");
+            String decodedString = extraData;
+            if (extraData.contains("%")) {
+                decodedString = java.net.URLDecoder.decode(extraData, StandardCharsets.UTF_8);
+            }
+            String base64String = decodedString.replace('-', '+').replace('_', '/');
+            byte[] decodeBytes = Base64.getDecoder().decode(base64String);
+            return objectMapper.readValue(decodeBytes, Map.class);
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public String decodeType(String extraData) {
+        Map<String, Object> data = decodeExtraData(extraData);
+        return data != null ? (String) data.get("type") : null;
     }
 
     public String hmacSha256(String data, String key) {

@@ -36,15 +36,15 @@ public class MomoCallbackController {
         payload.forEach((k, v) -> stringPayload.put(k, v != null ? String.valueOf(v) : null));
 
         String extraData = stringPayload.get("extraData");
-
         String type = momoUtils.decodeType(extraData);
 
         if ("SUBSCRIPTION".equals(type)) {
             subscriptionService.handleMomoIpn(stringPayload);
-        } else if ("ORDER".equals(type)) {
+        } else if ("ORDER".equals(type)
+                || (stringPayload.get("orderId") != null && stringPayload.get("orderId").startsWith("ORD_"))) {
             orderService.handleMomoOrderIpn(stringPayload);
         } else {
-            log.warn("Unknown type: {}", type);
+            log.warn("Unknown IPN type: {}. Payload keys: {}", type, stringPayload.keySet());
         }
 
         return ResponseEntity.ok().build();
@@ -56,20 +56,23 @@ public class MomoCallbackController {
         String extraData = params.get("extraData");
         String type = momoUtils.decodeType(extraData);
         String resultCode = params.get("resultCode");
+
         if ("SUBSCRIPTION".equals(type)) {
             String targetUrl = frontendUrl + "/subscription/momo-callback";
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(targetUrl))
                     .build();
-        } else if ("ORDER".equals(type)) {
+        } else if ("ORDER".equals(type)
+                || (params.get("orderId") != null && params.get("orderId").startsWith("ORD_"))) {
             String orderId = params.getOrDefault("orderId", "");
 
             if ("0".equals(resultCode)) {
                 try {
                     orderService.handleMomoOrderIpn(params);
                 } catch (Exception e) {
-                    log.error("Error confirming order during redirect: {}", e.getMessage());
                 }
+            } else {
+                log.warn("Payment failed for orderId: {}, resultCode: {}", orderId, resultCode);
             }
 
             String targetUrl = frontendUrl + "/checkout?resultCode=" + (resultCode != null ? resultCode : "")
@@ -80,6 +83,7 @@ public class MomoCallbackController {
                     .location(URI.create(targetUrl))
                     .build();
         }
+
         return ResponseEntity.badRequest().body("Invalid request");
     }
 }

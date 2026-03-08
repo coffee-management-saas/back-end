@@ -1,9 +1,12 @@
 package com.futurenbetter.saas.modules.auth.controller;
 
+import com.futurenbetter.saas.modules.auth.dto.request.CustomerRegistrationRequest;
 import com.futurenbetter.saas.modules.auth.dto.request.SystemAdminLoginRequest;
 import com.futurenbetter.saas.modules.auth.dto.request.SystemAdminRegistrationRequest;
+import com.futurenbetter.saas.modules.auth.dto.response.CustomerResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminLoginResponse;
 import com.futurenbetter.saas.modules.auth.dto.response.SystemAdminRegistrationResponse;
+import com.futurenbetter.saas.modules.auth.enums.ApplyStatus;
 import com.futurenbetter.saas.modules.auth.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,5 +32,12 @@ public class SystemAdminAuthController {
     @PostMapping("/login")
     public ResponseEntity<SystemAdminLoginResponse> login(@RequestBody SystemAdminLoginRequest request) {
         return ResponseEntity.ok(authService.loginSystemAdmin(request));
+    }
+
+    @PostMapping("/register-customer-system")
+    public ResponseEntity<CustomerResponse> registerCustomerSystem(
+            @RequestBody CustomerRegistrationRequest request) {
+        CustomerResponse response = authService.registerCustomerSystem(request);
+        return ResponseEntity.ok(response);
     }
 }

@@ -63,4 +63,11 @@ public class OrderController {
         OrderResponse response = orderService.initiatePayment(id, returnUrl);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{id}/confirm-cash")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> confirmCashPayment(@PathVariable Long id) {
+        OrderResponse response = orderService.confirmCashPayment(id);
+        return ResponseEntity.ok(response);
+    }
 }
