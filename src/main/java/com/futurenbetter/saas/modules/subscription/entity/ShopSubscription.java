@@ -24,11 +24,11 @@ public class ShopSubscription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long shopSubscriptionId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "subscription_plan_id")
     private SubscriptionPlan plan;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "shop_id")
     private Shop shop;
 

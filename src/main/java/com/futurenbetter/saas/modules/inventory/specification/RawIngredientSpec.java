@@ -29,8 +29,8 @@ public class RawIngredientSpec {
                 predicates.add(cb.equal(root.get("storageType"), filter.getStorageType()));
             }
 
-            if (filter.getStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
+            if (filter.getInventoryStatus() != null) {
+                predicates.add(cb.equal(root.get("inventoryStatus"), filter.getInventoryStatus()));
             }
 
             query.distinct(true);

@@ -1,6 +1,5 @@
 package com.futurenbetter.saas.modules.promotion.entity;
 
-
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.promotion.enums.DiscountTypeEnum;
 import com.futurenbetter.saas.modules.promotion.enums.PromotionEnum;
@@ -47,13 +46,16 @@ public class Promotion {
     private DiscountTypeEnum discountType;
 
     @Column(name = "discount_value")
-    private Float discountValue;
+    private Long discountValue;
 
     @Column(name = "max_discount_amount")
-    private Float maxDiscountAmount;
+    private Long maxDiscountAmount;
 
     @Column(name = "usage_limit_per_user")
     private int usageLimitPerUser;
+
+    @Column(name = "image_url", nullable = true)
+    private String imageUrl;
 
     @Column(name = "start_date")
     private LocalDateTime startDate;
@@ -71,7 +73,7 @@ public class Promotion {
     @Column(name = "promotion_status")
     private PromotionEnum promotionStatus;
 
-    @OneToMany(mappedBy = "promotion", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "promotion", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PromotionTarget> promotionTargets;
 
     @OneToMany(mappedBy = "promotion", cascade = CascadeType.ALL)

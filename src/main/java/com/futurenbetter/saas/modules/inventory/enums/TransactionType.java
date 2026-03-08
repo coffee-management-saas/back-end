@@ -5,5 +5,6 @@ public enum TransactionType {
     SALE_DEDUCT,
     STOCK_CHECK_ADJUST,
     EXPIRED_DISCARD,
-    RETURN
+    RETURN,
+    EXPORT
 }

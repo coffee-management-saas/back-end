@@ -1,24 +1,25 @@
 package com.futurenbetter.saas.modules.auth.entity;
 
 import com.futurenbetter.saas.modules.auth.enums.CustomerStatus;
+import com.futurenbetter.saas.modules.order.entity.Order;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "customers")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(name = "username")
@@ -46,6 +47,12 @@ public class Customer {
     @Column(name = "status")
     private CustomerStatus status;
 
+    @Column(name = "total_point")
+    private Double totalPoint;
+
+    @Column(name = "refresh_token")
+    private String refreshToken;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -56,4 +63,22 @@ public class Customer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rank_id")
     private MembershipRank membershipRank;
+
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<Order> orders;
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "customer")
+    private List<PointHistory> pointHistories;
+
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id")
+    private Role role;
 }

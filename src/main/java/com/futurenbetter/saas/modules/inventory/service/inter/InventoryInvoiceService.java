@@ -7,6 +7,10 @@ import org.springframework.data.domain.Page;
 
 public interface InventoryInvoiceService {
     InventoryInvoiceResponse importStock(InventoryInvoiceRequest request);
+
     Page<InventoryInvoiceResponse> getAll(InventoryInvoiceFilter filter);
+
     InventoryInvoiceResponse getDetail(Long id);
+
+    void deductStock(Long shopId, Long variantId, Long toppingId, Double quantity, Long orderId);
 }

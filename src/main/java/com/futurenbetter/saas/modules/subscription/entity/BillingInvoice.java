@@ -22,15 +22,15 @@ public class BillingInvoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long billingInvoiceId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "shop_id")
     private Shop shop;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "subscription_id")
     private ShopSubscription shopSubscription;
 
-    @OneToOne(mappedBy = "invoice", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private SubscriptionTransaction transaction;
 
     @Column(name = "amount")

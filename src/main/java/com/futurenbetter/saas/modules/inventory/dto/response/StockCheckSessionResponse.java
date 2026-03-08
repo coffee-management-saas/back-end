@@ -1,6 +1,6 @@
 package com.futurenbetter.saas.modules.inventory.dto.response;
 
-import com.futurenbetter.saas.modules.inventory.enums.Status;
+import com.futurenbetter.saas.modules.inventory.enums.InventoryStatus;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +17,7 @@ public class StockCheckSessionResponse {
     String code;
     LocalDateTime startedAt;
     LocalDateTime completedAt;
-    Status status;
+    InventoryStatus inventoryStatus;
     String createdByName;
     Boolean isApproved;
     List<StockCheckDetailResponse> details;

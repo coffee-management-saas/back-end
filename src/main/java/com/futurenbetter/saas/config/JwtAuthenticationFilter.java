@@ -1,13 +1,19 @@
 package com.futurenbetter.saas.config;
 
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
+import com.futurenbetter.saas.modules.auth.entity.UserProfile;
+import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
+import com.futurenbetter.saas.modules.auth.repository.UserProfileRepository;
 import com.futurenbetter.saas.modules.auth.service.JwtService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,17 +23,25 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final CustomerRepository customerRepository;
+    private final UserProfileRepository userProfileRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -38,32 +52,82 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String token = authHeader.substring(7);
 
         try {
-            Claims claims = jwtService.extractAllClaims(token);
-            String username = claims.getSubject();
-            String role = claims.get("role", String.class);
+            String username = jwtService.extractUsername(token);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
 
-                // 3. Bạn có thể để principal là username hoặc query đúng bảng tùy theo role
-                Object principal = username;
-                if ("CUSTOMER".equals(role)) {
-                    principal = jwtService.getCustomerByToken(token);
+                // Lấy toàn bộ claims để đọc dữ liệu
+                Claims claims = jwtService.extractAllClaims(token);
+                String userType = claims.get("user_type", String.class);
+                String authenRole = claims.get("role", String.class);
+
+                // 1. LẤY SHOP_ID TỪ CLAIMS (Dùng Number để an toàn tránh lỗi ClassCastException giữa Integer và Long)
+                Number shopIdNum = claims.get("shopId", Number.class);
+                Long shopId = (shopIdNum != null) ? shopIdNum.longValue() : null;
+
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                Object principal = null;
+
+                if ("CUSTOMER".equals(authenRole)) {
+                    Customer customer = customerRepository.findByUsername(username).orElse(null);
+                    if (customer != null) {
+                        principal = customer;
+
+                        if (customer.getRole() != null) {
+                            authorities.add(new SimpleGrantedAuthority("ROLE_" + customer.getRole().getName().toUpperCase()));
+                            if (customer.getRole().getPermissions() != null) {
+                                authorities.addAll(customer.getRole().getPermissions().stream()
+                                        .map(permission -> new SimpleGrantedAuthority(permission.getPermissionName()))
+                                        .collect(Collectors.toList()));
+                            }
+                        } else {
+                            authorities.add(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
+                        }
+                    }
+                }
+                else { // apply cho shop, employee, và system
+                    UserProfile userProfile = userProfileRepository.findByUsername(username).orElse(null);
+                    if (userProfile != null) {
+                        principal = userProfile;
+
+                        if (userProfile.getRoles() != null) {
+                            userProfile.getRoles().forEach(role -> {
+                                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()));
+
+                                if (role.getPermissions() != null) {
+                                    authorities.addAll(role.getPermissions().stream()
+                                            .map(permission -> new SimpleGrantedAuthority(permission.getPermissionName()))
+                                            .collect(Collectors.toList()));
+                                }
+                            });
+                        }
+                    }
                 }
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        principal,
-                        null,
-                        authorities
-                );
+                if (principal != null) {
+                    List<GrantedAuthority> uniqueAuthorities = authorities.stream()
+                            .distinct()
+                            .collect(Collectors.toList());
 
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            principal,
+                            null,
+                            uniqueAuthorities
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                    // 2. LƯU SHOP_ID VÀO TENANT_CONTEXT
+                    if (shopId != null) {
+                        TenantContext.setCurrentShopId(shopId);
+                    }
+                } else {
+                    log.warn("User not found: {}", username);
+                }
             }
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
         }
-
         filterChain.doFilter(request, response);
     }
 }

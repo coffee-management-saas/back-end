@@ -7,12 +7,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import lombok.ToString;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table(name = "user_profile")
+@Table(
+        name = "user_profile",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_shop_email",
+                        columnNames = {"shop_id", "email"}
+                )
+        }
+)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -36,7 +45,7 @@ public class UserProfile {
     @Column(name = "phone")
     private String phone;
 
-    @Column(name = "email", unique = true)
+    @Column(name = "email")
     private String email;
 
     @Column(name = "address")
@@ -44,6 +53,9 @@ public class UserProfile {
 
     @Column(name = "dob")
     private LocalDateTime dob;
+
+    @Column(name = "refresh_token")
+    private String refreshToken;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -55,6 +67,7 @@ public class UserProfile {
     @Enumerated(EnumType.STRING)
     private UserProfileEnum status;
 
+    @ToString.Exclude
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_role",
@@ -63,7 +76,19 @@ public class UserProfile {
     )
     private Set<Role> roles;
 
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
+
+    @ToString.Exclude
     @OneToMany(mappedBy = "owner")
     private List<Shop> ownedShops;
+
+    @PrePersist
+    public void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = createdAt;
+    }
 }
 
