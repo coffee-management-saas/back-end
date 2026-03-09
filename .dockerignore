@@ -1,0 +1,27 @@
+# Bỏ qua các file build và log
+target/
+*.log
+*.tmp
+*.jar
+
+# Bỏ qua Git
+.git
+.gitignore
+
+# Bỏ qua file cấu hình nhạy cảm (quan trọng để bảo mật)
+.env
+src/main/resources/.env
+
+# Bỏ qua các thư mục của IDE
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+
+# Bỏ qua tài liệu
+README.md
+
+# Bỏ qua cấu hình Docker (không cần đưa vào trong image)
+docker-compose.yaml
+Dockerfile

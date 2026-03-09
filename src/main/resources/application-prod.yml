@@ -1,9 +1,10 @@
 server:
   port: ${PORT:8080}
+  forward-headers-strategy: framework
 
 spring:
   application:
-    name: ${APPLICATION_NAME:future_saas}
+    name: ${APPLICATION_NAME:saas}
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5434}/${DB_NAME:future_saas}?options=-c%20TimeZone=Asia/Ho_Chi_Minh}
@@ -20,10 +21,12 @@ spring:
     properties:
       hibernate:
         format_sql: false
+        jdbc:
+          time_zone: Asia/Ho_Chi_Minh
 
   sql:
     init:
-      mode: always
+      mode: never
 
   ai:
     openai:
@@ -39,9 +42,7 @@ spring:
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       embedding:
-        enabled: true
-        options:
-          model: nomic-embed-text
+        enabled: false
 
     vectorstore:
       pgvector:
@@ -52,29 +53,36 @@ spring:
         table-name: vector_store
 
 jwt:
-  secret: ${JWT_SECRET:9a4f2c8d3b7a1e5f2g8h4j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e}
+  secret: ${JWT_SECRET}
   access-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 momo:
-  partner-code: ${MOMO_PARTNER_CODE:MOMO}
-  access-key: ${MOMO_ACCESS_KEY:F8BBA842ECF85}
-  secret-key: ${MOMO_SECRET_KEY:K951B6PE1waDMi640xX08PD3vg6EkVlz}
-  api-url: ${MOMO_API_URL:https://test-payment.momo.vn/v2/gateway/api/create}
-  redirect-url: ${MOMO_REDIRECT_URL:http://localhost:3000/api/momo/callback}
-  ipn-url: ${MOMO_IPN_URL:http://localhost:8080/api/momo/ipn}
-  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  partner-code: ${MOMO_PARTNER_CODE}
+  access-key: ${MOMO_ACCESS_KEY}
+  secret-key: ${MOMO_SECRET_KEY}
+  api-url: ${MOMO_API_URL}
+  redirect-url: ${MOMO_REDIRECT_URL}
+  ipn-url: ${MOMO_IPN_URL}
+  frontend-url: ${FRONTEND_URL}
 
 cloudinary:
-  cloud-name: ${CLOUD_NAME:dmen8hyem}
-  api-key: ${CLOUD_API_KEY:622878251667519}
-  api-secret: ${CLOUD_API_SECRET:_o0mYsM0cWRNbO3VHu8NYk6yjbw}
+  cloud-name: ${CLOUD_NAME}
+  api-key: ${CLOUD_API_KEY}
+  api-secret: ${CLOUD_API_SECRET}
 
 vnpay:
-  api-url: ${VNPAY_API_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
-  tmn-code: ${VNPAY_TMN_CODE:D08O3Z1K}
-  hash-secret: ${VNPAY_HASH_SECRET:9OQ1FB8DYHDQRP4PZEV7ZDCBRKDVLFAG}
-  return-url: ${VNPAY_RETURN_URL:http://localhost:8080/api/subscriptions/vnpay-return}
+  api-url: ${VNPAY_API_URL}
+  tmn-code: ${VNPAY_TMN_CODE}
+  hash-secret: ${VNPAY_HASH_SECRET}
+  return-url: ${VNPAY_RETURN_URL}
   version: "2.1.0"
   command: "pay"
   order-type: "other"
+
+logging:
+  level:
+    root: INFO
+    org.springframework: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
