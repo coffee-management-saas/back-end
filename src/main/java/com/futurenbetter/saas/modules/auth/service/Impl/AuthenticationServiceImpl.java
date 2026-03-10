@@ -475,16 +475,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .weeklyHourLimit(request.getWeeklyHourLimit())
                 .build());
 
-        Notification noti = Notification.builder()
-                .title("Tạo nhân viên mới")
-                .message("Nhân viên đã dược tạo thành công: " + savedEmployee.getFullname())
-                .type(NotificationType.EMPLOYEE)
-                .recipientType("SHOP")
-                .recipientId(shop.getOwner().getUserProfileId())
-                .referenceLink("/employee/employees/" + savedEmployee.getUserProfileId())
-                .shop(shop)
-                .build();
-        notificationService.sendToShopRole(noti, "SHOP_ADMIN");
+//        Notification noti = Notification.builder()
+//                .title("Tạo nhân viên mới")
+//                .message("Nhân viên đã dược tạo thành công: " + savedEmployee.getFullname())
+//                .type(NotificationType.EMPLOYEE)
+//                .recipientType("SHOP")
+//                .recipientId(shop.getOwner().getUserProfileId())
+//                .referenceLink("/employee/employees/" + savedEmployee.getUserProfileId())
+//                .shop(shop)
+//                .build();
+        //notificationService.sendToShopRole(noti, "SHOP");
 
         return userProfileMapper.toEmployeeResponse(savedEmployee, employee);
     }
