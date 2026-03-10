@@ -1,6 +1,5 @@
 package com.futurenbetter.saas.common.multitenancy;
 
-
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,7 +13,7 @@ import java.io.IOException;
 public class TenantFilter implements Filter {
     private final ShopRepository shopRepository;
 
-    //lấy domain từ httpRequest để xác định shopId
+    // lấy domain từ httpRequest để xác định shopId
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -30,8 +29,8 @@ public class TenantFilter implements Filter {
         if (host != null) {
             String domain = host.contains(":") ? host.split(":")[0] : host;
 
-            if (domain.equals("localhost") || domain.equals("127.0.0.1")) {
-                //fix cứng để test local
+            if (domain.equals("localhost") || domain.equals("127.0.0.1") || domain.equals("futurebetter.online")) {
+                // fix cứng để test local và production khi chưa cấu hình DB domain đầy đủ
                 domain = "abc-shop.com";
             }
 
