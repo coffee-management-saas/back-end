@@ -16,5 +16,6 @@ public interface ShopMapper {
     Shop toEntity(ShopRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "shopStatus", source = "status")
     void updateShopFromRequest(ShopRequest request, @MappingTarget Shop shop);
 }

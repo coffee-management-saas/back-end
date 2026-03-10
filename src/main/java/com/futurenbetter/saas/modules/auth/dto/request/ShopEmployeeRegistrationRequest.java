@@ -7,7 +7,6 @@ import lombok.Data;
 @Data
 @Builder
 public class ShopEmployeeRegistrationRequest extends SystemAdminRegistrationRequest{
-    private Long shopId;
     private EmployeeType employeeType;
     private Double hourlyWage;
     private Double weeklyHourLimit;
