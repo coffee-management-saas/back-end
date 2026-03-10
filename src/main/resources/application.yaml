@@ -61,8 +61,8 @@ momo:
   access-key: ${MOMO_ACCESS_KEY:F8BBA842ECF85}
   secret-key: ${MOMO_SECRET_KEY:K951B6PE1waDMi640xX08PD3vg6EkVlz}
   api-url: ${MOMO_API_URL:https://test-payment.momo.vn/v2/gateway/api/create}
-  redirect-url: ${MOMO_REDIRECT_URL:http://localhost:3000/api/momo/callback}
-  ipn-url: ${MOMO_IPN_URL:http://localhost:8080/api/momo/ipn}
+  redirect-url: ${MOMO_REDIRECT_URL:https://protozoological-nonrateably-elena.ngrok-free.dev/api/momo/callback}
+  ipn-url: ${MOMO_IPN_URL:https://protozoological-nonrateably-elena.ngrok-free.dev/api/momo/ipn}
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
 
 cloudinary:

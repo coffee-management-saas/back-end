@@ -185,8 +185,19 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             return;
 
         Optional<SubscriptionTransaction> existingTask = subscriptionTransactionRepository.findByOrderId(orderId);
+
+        // Idempotency: Đã xử lý thành công trước đó
         if (existingTask.isPresent() && existingTask.get().getStatus() == SubscriptionTransactionEnum.ACTIVE) {
-            // log.info("Giao dịch {} đã được xử lý trước đó, bỏ qua.", orderId);
+            return;
+        }
+
+        // Idempotency: shop và invoice đã có nhưng chưa ACTIVE
+        if (existingTask.isPresent() && existingTask.get().getShop() != null
+                && existingTask.get().getInvoice() != null) {
+            SubscriptionTransaction tx = existingTask.get();
+            tx.setStatus(SubscriptionTransactionEnum.ACTIVE);
+            tx.setUpdatedAt(LocalDateTime.now());
+            subscriptionTransactionRepository.save(tx);
             return;
         }
 
@@ -195,6 +206,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (extraData == null || extraData.isEmpty()) {
             throw new BusinessException("Thiếu dữ liệu extraData");
         }
+
         SubscriptionRequest shopData;
         try {
             byte[] decodedBytes = Base64.getDecoder().decode(extraData);
@@ -204,28 +216,42 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             throw new BusinessException("Không thể giải mã dữ liệu shop: " + e.getMessage());
         }
 
-        if (shopRepository.existsByEmail(shopData.getEmail()) ||
-                shopRepository.existsByDomain(shopData.getDomain())) {
-            throw new BusinessException("Email hoặc tên miền đã được đăng ký trong lúc chờ thanh toán");
+        // Check trùng email/domain (chỉ nếu shop chưa được tạo)
+        Shop existingShop = existingTask.isPresent() ? existingTask.get().getShop() : null;
+        if (existingShop == null) {
+            if (shopRepository.existsByEmail(shopData.getEmail())) {
+                throw new BusinessException("Email " + shopData.getEmail() + " đã được đăng ký");
+            }
+            if (shopRepository.existsByDomain(shopData.getDomain())) {
+                throw new BusinessException("Tên miền " + shopData.getDomain() + " đã được đăng ký");
+            }
         }
 
-        // 2. Lưu shop vào database
-        Shop shop = new Shop();
-        shop.setShopName(shopData.getShopName());
-        shop.setAddress(shopData.getAddress());
-        shop.setPhone(shopData.getPhone());
-        shop.setEmail(shopData.getEmail());
-        shop.setDomain(shopData.getDomain());
-        shop.setShopStatus(ShopStatus.ACTIVE);
-        shop = shopRepository.save(shop);
+        // 2. Lưu shop
+        Shop shop;
+        if (existingShop != null) {
+            shop = existingShop;
+        } else {
+            shop = new Shop();
+            shop.setShopName(shopData.getShopName());
+            shop.setAddress(shopData.getAddress());
+            shop.setPhone(shopData.getPhone());
+            shop.setEmail(shopData.getEmail());
+            shop.setDomain(shopData.getDomain());
+            shop.setShopStatus(ShopStatus.ACTIVE);
+            shop = shopRepository.save(shop);
+        }
 
-        // 3. Tạo subscription và invoice với shopId
-        SubscriptionPlan plan = subscriptionPlanRepository.findById(shopData.getSubscriptionPlanId()).get();
+        // 3. Tạo subscription và invoice
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(shopData.getSubscriptionPlanId())
+                .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
+
+        Long paidAmount = Long.parseLong(payload.get("amount"));
 
         ShopSubscription sub = ShopSubscription.builder()
                 .shop(shop)
                 .plan(plan)
-                .price(Long.parseLong(payload.get("amount")))
+                .price(paidAmount)
                 .billingCycleStatus(shopData.getBillingCycle())
                 .subscriptionPlanStatus(SubscriptionPlanEnum.ACTIVE)
                 .autoRenewal(shopData.getAutoRenewal())
@@ -239,36 +265,46 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         BillingInvoice invoice = BillingInvoice.builder()
                 .shop(shop)
                 .shopSubscription(sub)
-                .amount(sub.getPrice())
+                .amount(paidAmount)
                 .status(InvoiceEnum.PAID)
                 .dueDate(LocalDateTime.now().plusHours(1))
                 .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
         billingInvoiceRepository.save(invoice);
 
+        // Export PDF (không fail nếu lỗi)
         try {
             byte[] pdfContent = pdfExportService.generateInvoicePdf(invoice);
             String fileName = "Invoice_" + invoice.getBillingInvoiceId();
-
-            String pdfUrl = cloudinaryStorageService.uploadFile(pdfContent, fileName, "invoices");
+            String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
             invoice.setPdfUrl(pdfUrl);
             billingInvoiceRepository.save(invoice);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Lỗi tạo PDF invoice: {}", e.getMessage());
         }
-        // 4. Lưu giao dịch
+
+        // 4. Cập nhật transaction
         SubscriptionTransaction transaction = existingTask.orElse(new SubscriptionTransaction());
+        if (transaction.getOrderId() == null) {
+            transaction.setOrderId(orderId);
+        }
         transaction.setInvoice(invoice);
         transaction.setShop(shop);
         transaction.setPlan(plan);
         transaction.setBillingCycle(shopData.getBillingCycle());
-        transaction.setAmount(transaction.getAmount() + sub.getPrice());
+        transaction.setAmount(paidAmount);
         transaction.setIsIncome(true);
         transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);
         transaction.setPaymentGateway(PaymentGatewayEnum.MOMO);
         transaction.setUpdatedAt(LocalDateTime.now());
-        transaction.setCreatedAt(LocalDateTime.now());
+        if (transaction.getCreatedAt() == null) {
+            transaction.setCreatedAt(LocalDateTime.now());
+        }
         subscriptionTransactionRepository.save(transaction);
+
+        invoice.setTransaction(transaction);
+        billingInvoiceRepository.save(invoice);
     }
 
     @Override
