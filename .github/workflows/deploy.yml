@@ -49,6 +49,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/${{ secrets.EC2_USER }}/back-end
-            docker compose pull
-            docker compose up -d
-            docker image prune -f
+            sudo docker compose pull
+            sudo docker compose up -d
+            sudo docker image prune -f
