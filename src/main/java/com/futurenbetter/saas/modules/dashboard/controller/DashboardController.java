@@ -32,7 +32,7 @@ public class DashboardController {
     private final DashboardTask dashboardTask;
 
     @GetMapping("/shop/overview/dashboard")
-    @PreAuthorize("hasAuthority('dashboard:shop-daily')")
+    //@PreAuthorize("hasAuthority('dashboard:shop-daily')")
     public ApiResponse<List<ShopDashboardResponse>> getShopDailyDashboard(@RequestParam int year) {
         return ApiResponse.success(
                 HttpStatus.OK,
@@ -43,7 +43,7 @@ public class DashboardController {
     }
 
     @GetMapping("/shop/overview/trigger")
-    @PreAuthorize("hasAuthority('dashboard:shop-daily')")
+    //@PreAuthorize("hasAuthority('dashboard:shop-daily')")
     public ApiResponse<Void> triggerShop() {
         dashboardTask.updateShopDashboardDaily();
         return ApiResponse.success(
@@ -55,7 +55,7 @@ public class DashboardController {
     }
 
     @GetMapping("/shop/overview/top-products")
-    @PreAuthorize("hasAuthority('dashboard:shop')")
+    //@PreAuthorize("hasAuthority('dashboard:shop')")
     public ApiResponse<List<MonthlyProductSoldResponse>> getShopOverview(MonthlyProductSoldFilter filter) {
         return ApiResponse.success(
                 HttpStatus.OK,
@@ -67,7 +67,7 @@ public class DashboardController {
 
 
     @GetMapping("/system/overview/dashboard")
-    @PreAuthorize("hasAuthority('dashboard:system')")
+    //@PreAuthorize("hasAuthority('dashboard:system')")
     public ApiResponse<List<SystemDashboardResponse>> getSystemDailyDashboard(@RequestParam int year) {
         return ApiResponse.success(
                 HttpStatus.OK,
@@ -78,7 +78,7 @@ public class DashboardController {
     }
 
     @GetMapping("/system/overview/trigger")
-    @PreAuthorize("hasAuthority('dashboard:system')")
+    //@PreAuthorize("hasAuthority('dashboard:system')")
     public ApiResponse<Void> triggerSystem() {
         dashboardTask.updateSystemDashboardDaily();
         return ApiResponse.success(
