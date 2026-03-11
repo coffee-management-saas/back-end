@@ -443,13 +443,8 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + finalRealOrderId));
 
         if (order.getOrderStatus() == OrderStatus.PAID) {
+            log.info("[MOMO IPN] Order {} already PAID, skipping.", realOrderId);
             return;
-        }
-
-        try {
-            orderRepository.updateOrderStatus(realOrderId, OrderStatus.PAID, LocalDateTime.now());
-        } catch (Exception e) {
-                    e.getMessage();
         }
 
         order.setOrderStatus(OrderStatus.PAID);
@@ -464,16 +459,19 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order = orderRepository.save(order);
+        log.info("[MOMO IPN] Order {} successfully updated to PAID.", realOrderId);
 
         // 3. Secondary tasks (non-blocking for the payment status)
         try {
             triggerStockDeduction(order);
         } catch (Exception e) {
+            log.error("[MOMO IPN] Stock deduction failed for order {}: {}", realOrderId, e.getMessage());
         }
 
         try {
             updateMonthlyProductSold(order);
         } catch (Exception e) {
+            log.error("[MOMO IPN] Monthly product sold update failed for order {}: {}", realOrderId, e.getMessage());
         }
 
         try {
@@ -486,16 +484,19 @@ public class OrderServiceImpl implements OrderService {
                         order.getDiscountAmount());
             }
         } catch (Exception e) {
+            log.error("[MOMO IPN] Promotion usage recording failed for order {}: {}", realOrderId, e.getMessage());
         }
 
         try {
             processCustomerPoints(order);
         } catch (Exception e) {
+            log.error("[MOMO IPN] Customer points processing failed for order {}: {}", realOrderId, e.getMessage());
         }
 
         try {
             asyncOrderTaskService.generateAndUploadInvoice(order.getOrderId());
         } catch (Exception e) {
+            log.error("[MOMO IPN] Invoice generation failed for order {}: {}", realOrderId, e.getMessage());
         }
 
     }

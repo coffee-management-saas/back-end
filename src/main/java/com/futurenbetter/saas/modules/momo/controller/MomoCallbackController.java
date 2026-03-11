@@ -44,7 +44,7 @@ public class MomoCallbackController {
                 || (stringPayload.get("orderId") != null && stringPayload.get("orderId").startsWith("ORD_"))) {
             orderService.handleMomoOrderIpn(stringPayload);
         } else {
-            log.warn("Unknown IPN type: {}. Payload keys: {}", type, stringPayload.keySet());
+            log.warn("Unknown MoMo IPN type: {}", type);
         }
 
         return ResponseEntity.ok().build();
@@ -56,15 +56,17 @@ public class MomoCallbackController {
         String extraData = params.get("extraData");
         String type = momoUtils.decodeType(extraData);
         String resultCode = params.get("resultCode");
+        String orderId = params.getOrDefault("orderId", "");
 
         if ("SUBSCRIPTION".equals(type)) {
-            String targetUrl = frontendUrl + "/subscription/momo-callback";
+            String targetUrl = frontendUrl + "/subscription/momo-callback?resultCode="
+                    + (resultCode != null ? resultCode : "")
+                    + "&orderId=" + orderId;
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(targetUrl))
                     .build();
         } else if ("ORDER".equals(type)
                 || (params.get("orderId") != null && params.get("orderId").startsWith("ORD_"))) {
-            String orderId = params.getOrDefault("orderId", "");
 
             if ("0".equals(resultCode)) {
                 try {
