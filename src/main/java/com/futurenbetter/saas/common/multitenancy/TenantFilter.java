@@ -29,11 +29,15 @@ public class TenantFilter implements Filter {
         if (host != null) {
             String domain = host.contains(":") ? host.split(":")[0] : host;
 
-            if (domain.equals("localhost") || domain.equals("127.0.0.1")) {
-                // fix cứng để test local: map về domain shop có trong DB
+            // Map về domain mặc định có trong DB khi request từ:
+            // - localhost / 127.0.0.1 (test local)
+            // - IP address bất kỳ, ví dụ 54.95.117.37 (truy cập Swagger qua IP EC2)
+            if (domain.equals("localhost")
+                    || domain.equals("127.0.0.1")
+                    || domain.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
                 domain = "futurebetter.online";
             }
-            // Giữ nguyên mọi domain khác (futurebetter.online, subdomain, v.v.)
+            // Giữ nguyên mọi domain chữ (futurebetter.online, subdomain, v.v.)
             // để tra cứu đúng trong DB
 
             final String finalDomain = domain.toLowerCase();
