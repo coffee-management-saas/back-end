@@ -30,14 +30,11 @@ public class TenantFilter implements Filter {
             String domain = host.contains(":") ? host.split(":")[0] : host;
 
             if (domain.equals("localhost") || domain.equals("127.0.0.1")) {
-                // fix cứng để test local
-                domain = "abc-shop.com";
-            } else if (domain.equals("futurebetter.online") || domain.equals("www.futurebetter.online")) {
-                // request đến domain gốc (không có subdomain) -> dùng shop mặc định
-                domain = "abc-shop.com";
+                // fix cứng để test local: map về domain shop có trong DB
+                domain = "futurebetter.online";
             }
-            // Nếu là subdomain dạng: abc-shop.futurebetter.online
-            // thì giữ nguyên domain để tra cứu trong DB
+            // Giữ nguyên mọi domain khác (futurebetter.online, subdomain, v.v.)
+            // để tra cứu đúng trong DB
 
             final String finalDomain = domain.toLowerCase();
 

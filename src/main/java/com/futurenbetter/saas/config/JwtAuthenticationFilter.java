@@ -40,8 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -61,7 +60,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String userType = claims.get("user_type", String.class);
                 String authenRole = claims.get("role", String.class);
 
-                // 1. LẤY SHOP_ID TỪ CLAIMS (Dùng Number để an toàn tránh lỗi ClassCastException giữa Integer và Long)
+                // 1. LẤY SHOP_ID TỪ CLAIMS (Dùng Number để an toàn tránh lỗi ClassCastException
+                // giữa Integer và Long)
                 Number shopIdNum = claims.get("shopId", Number.class);
                 Long shopId = (shopIdNum != null) ? shopIdNum.longValue() : null;
 
@@ -74,7 +74,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         principal = customer;
 
                         if (customer.getRole() != null) {
-                            authorities.add(new SimpleGrantedAuthority("ROLE_" + customer.getRole().getName().toUpperCase()));
+                            authorities.add(
+                                    new SimpleGrantedAuthority("ROLE_" + customer.getRole().getName().toUpperCase()));
                             if (customer.getRole().getPermissions() != null) {
                                 authorities.addAll(customer.getRole().getPermissions().stream()
                                         .map(permission -> new SimpleGrantedAuthority(permission.getPermissionName()))
@@ -84,8 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             authorities.add(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
                         }
                     }
-                }
-                else { // apply cho shop, employee, và system
+                } else { // apply cho shop, employee, và system
                     UserProfile userProfile = userProfileRepository.findByUsername(username).orElse(null);
                     if (userProfile != null) {
                         principal = userProfile;
@@ -96,7 +96,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                                 if (role.getPermissions() != null) {
                                     authorities.addAll(role.getPermissions().stream()
-                                            .map(permission -> new SimpleGrantedAuthority(permission.getPermissionName()))
+                                            .map(permission -> new SimpleGrantedAuthority(
+                                                    permission.getPermissionName()))
                                             .collect(Collectors.toList()));
                                 }
                             });
@@ -112,13 +113,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             principal,
                             null,
-                            uniqueAuthorities
-                    );
+                            uniqueAuthorities);
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
                     // 2. LƯU SHOP_ID VÀO TENANT_CONTEXT
-                    if (shopId != null) {
+                    // Ưu tiên shopId từ TenantFilter (theo domain request).
+                    // Chỉ dùng shopId từ JWT nếu TenantFilter chưa set (TenantContext còn null).
+                    if (shopId != null && TenantContext.getCurrentShopId() == null) {
                         TenantContext.setCurrentShopId(shopId);
                     }
                 } else {
