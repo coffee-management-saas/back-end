@@ -16,6 +16,8 @@ public class CorsConfig {
             "http://localhost:5173",
             "http://futurebetter.online",
             "https://futurebetter.online",
+            "http://*.futurebetter.online", // tất cả subdomain shop (http)
+            "https://*.futurebetter.online", // tất cả subdomain shop (https)
             "http://127.0.0.1:5500" // test live server
     );
 
