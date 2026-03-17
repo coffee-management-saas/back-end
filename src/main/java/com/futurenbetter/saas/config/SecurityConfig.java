@@ -18,17 +18,17 @@ import org.springframework.web.cors.CorsUtils;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private static final String[] strings = {
-            "/api/**",
-            "/v3/api-docs/**",
-            "/api/swagger-ui/**",
-            "/api/swagger-ui.html",
-            "/api/docs/**",
-            "/swagger-ui/**",
-            "/ws/**",
-    };
-    private final AuthenticationService authenticationService;
-        private static final String[] PUBLIC_ENDPOINTS = strings;
+        // Chỉ permit Swagger UI và WebSocket - KHÔNG permit /api/** (quá rộng)
+        private static final String[] SWAGGER_ENDPOINTS = {
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/api/swagger-ui/**",
+                        "/api/docs/**",
+                        "/ws/**",
+        };
+
+        private final AuthenticationService authenticationService;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -36,22 +36,25 @@ public class SecurityConfig {
                 return http
                                 .cors(Customizer.withDefaults())
                                 .csrf(AbstractHttpConfigurer::disable)
-                                // .authorizeHttpRequests(auth -> auth
-                                // .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
-                                // .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                                // .anyRequest().authenticated()
-                                // )
                                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/api/auth/**", "/api/system/auth/**").permitAll()
+                                                // Swagger UI và WebSocket
+                                                .requestMatchers(SWAGGER_ENDPOINTS).permitAll()
+                                                // CORS preflight
+                                                .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
+                                                // Auth endpoints (login, register)
+                                                .requestMatchers("/api/auth/**").permitAll()
                                                 .requestMatchers("/api/auth/register-customer-system").permitAll()
+                                                // System auth
+                                                .requestMatchers("/api/system/auth/**").permitAll()
+                                                .requestMatchers("/api/system/**").permitAll()
+                                                // Public customer info
                                                 .requestMatchers("/api/customers/me").permitAll()
+                                                // Payment callbacks (MoMo, VNPAY gọi từ bên ngoài, không có token)
                                                 .requestMatchers("/api/momo/**").permitAll()
                                                 .requestMatchers("/api/subscriptions/momo-callback/**").permitAll()
                                                 .requestMatchers("/api/subscriptions/vnpay-return").permitAll()
-                                                .requestMatchers("/api/system/**").permitAll()//.hasAuthority("SYSTEM")
-                                                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                                                .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
+                                                // Tất cả request còn lại phải authenticate
                                                 .anyRequest().authenticated())
                                 .formLogin(AbstractHttpConfigurer::disable)
                                 .httpBasic(AbstractHttpConfigurer::disable)
