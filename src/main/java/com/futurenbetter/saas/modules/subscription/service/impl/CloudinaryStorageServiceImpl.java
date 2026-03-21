@@ -17,6 +17,7 @@ public class CloudinaryStorageServiceImpl implements CloudinaryStorageService {
 
     @Override
     public String uploadInvoice(byte[] data, String fileName) {
+        System.out.println("Uploading invoice: " + fileName);
         return uploadFile(data, fileName, "invoices");
     }
 

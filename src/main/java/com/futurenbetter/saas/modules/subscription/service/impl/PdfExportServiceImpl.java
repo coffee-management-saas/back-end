@@ -24,6 +24,7 @@ public class PdfExportServiceImpl implements PdfExportService {
 
     @Override
     public byte[] generateInvoicePdf(BillingInvoice billingInvoice) {
+        System.out.println("Generating PDF for BillingInvoice ID: " + billingInvoice.getBillingInvoiceId());
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.A4);
             PdfWriter.getInstance(document, out);
@@ -113,6 +114,7 @@ public class PdfExportServiceImpl implements PdfExportService {
             document.close();
             return out.toByteArray();
         } catch (Exception e) {
+            System.out.println("Error generating PDF for BillingInvoice ID: " + billingInvoice.getBillingInvoiceId());
             throw new RuntimeException("Lỗi thiết kế hóa đơn Tiếng Việt", e);
         }
     }

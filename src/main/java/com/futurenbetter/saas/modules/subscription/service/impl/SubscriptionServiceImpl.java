@@ -247,6 +247,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         billingInvoiceRepository.save(invoice);
 
         try {
+            System.out.println("start generating pdf");
             byte[] pdfContent = pdfExportService.generateInvoicePdf(invoice);
             String fileName = "Invoice_" + invoice.getBillingInvoiceId();
 
