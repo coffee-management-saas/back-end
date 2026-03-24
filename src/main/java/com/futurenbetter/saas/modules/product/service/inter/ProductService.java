@@ -17,4 +17,5 @@ public interface ProductService {
     void updateAllowToppings(Long productId, List<Long> toppingIds);
     List<Long> getAllowToppingIds(Long productId);
     ProductResponse uploadImage(Long productId, MultipartFile image) throws IOException;
+    List<ProductResponse> getAllProducts();
 }

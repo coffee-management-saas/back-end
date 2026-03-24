@@ -1,13 +1,13 @@
 server:
-  port: ${PORT:8080}
+  port: ${PORT}
   forward-headers-strategy: framework
 
 spring:
   application:
-    name: ${APPLICATION_NAME:saas}
+    name: ${APPLICATION_NAME}
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?options=-c%20TimeZone=Asia/Ho_Chi_Minh}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?options=-c%20TimeZone=Asia/Ho_Chi_Minh
     username: ${SPRING_DATASOURCE_USERNAME:${DB_USER}}
     password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD}}
     driver-class-name: org.postgresql.Driver
@@ -30,34 +30,39 @@ spring:
 
   ai:
     openai:
-      api-key: ${GROQ_API_KEY}
-      base-url: https://api.groq.com/openai
+      base-url: ${CHAT_URL}
+      api-key: ${CHAT_KEY_1}
+      extend-key:
+        key-2: ${CHAT_KEY_2}
+        key-3: ${CHAT_KEY_3}
+        key-4: ${CHAT_KEY_4}
+      embedding:
+        base-url: ${EMBEDDING_URL}
+        api-key: ${EMBEDDING_KEY}
+        options:
+          model: ${EMBEDDING_MODEL}
       chat:
         options:
-          model: llama-3.3-70b-versatile
+          model: ${CHAT_MODEL}
           temperature: 0.7
-      embedding:
-        enabled: false
-
-    ollama:
-      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-      embedding:
-        enabled: true
-        options:
-          model: nomic-embed-text
-
-    vectorstore:
-      pgvector:
-        initialize-schema: true
-        index-type: HNSW
-        distance-type: COSINE_DISTANCE
-        dimensions: 768
-        table-name: vector_store
+    retry:
+      max-attempts: 10
+      backoff:
+        initial-interval: 2s
+        max-interval: 120s
+        multiplier: 5
+      on-client-errors: false
+      exclude-on-http-codes:
+        - 400
+        - 401
+        - 403
+        - 404
+      on-http-codes:
 
 jwt:
   secret: ${JWT_SECRET}
-  access-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
-  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+  access-expiration: ${JWT_ACCESS_EXPIRATION}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION}
 
 momo:
   partner-code: ${MOMO_PARTNER_CODE}

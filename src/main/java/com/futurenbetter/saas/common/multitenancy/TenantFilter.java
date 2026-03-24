@@ -35,7 +35,8 @@ public class TenantFilter implements Filter {
             if (domain.equals("localhost")
                     || domain.equals("127.0.0.1")
                     || domain.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
-                domain = "futurebetter.online";
+//                domain = "futurebetter.online";
+                domain = "abc-shop.com";
             }
             // Giữ nguyên mọi domain chữ (futurebetter.online, subdomain, v.v.)
             // để tra cứu đúng trong DB
