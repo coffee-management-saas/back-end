@@ -15,4 +15,5 @@ public interface ProductVariantService {
     List<ProductVariantResponse> getByProductId(Long productId);
 
     Page<ProductVariantResponse> getAll(ProductVariantFilter filter);
+    List<ProductVariantResponse> getAllProduct();
 }
