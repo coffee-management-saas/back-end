@@ -129,7 +129,7 @@ public class ChatClientConfig {
     }
 
     @Bean
-    @Primary
+//    @Primary
     public ChatClient CLIENT_KEY_1(@Qualifier(value = "modelKey1") OpenAiChatModel model, ChatMemory chatMemory) {
         return ChatClient.builder(model)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
@@ -137,6 +137,7 @@ public class ChatClientConfig {
     }
 
     @Bean
+    @Primary
     public ChatClient CLIENT_KEY_2(@Qualifier(value = "modelKey2") OpenAiChatModel model, ChatMemory chatMemory) {
         return ChatClient.builder(model)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())

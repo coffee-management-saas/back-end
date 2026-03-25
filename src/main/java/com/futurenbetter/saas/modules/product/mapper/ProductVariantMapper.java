@@ -9,6 +9,7 @@ import org.mapstruct.*;
 public interface ProductVariantMapper {
 
     @Mapping(source = "product.name", target = "productName")
+    @Mapping(source = "product.category.name", target = "categoryName")
     @Mapping(source = "size.code", target = "sizeCode")
     ProductVariantResponse toResponse(ProductVariant entity);
 

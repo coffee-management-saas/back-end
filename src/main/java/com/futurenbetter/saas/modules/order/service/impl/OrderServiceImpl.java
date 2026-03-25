@@ -145,7 +145,6 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Bạn không có quyền tạo đơn hàng này");
         }
 
-        // Thanh toán tiền mặt (OFFLINE hoặc ONLINE): hoàn thành ngay theo yêu cầu
         boolean isCash = request.getPaymentGateway() == PaymentGateway.CASH;
         OrderItemStatus initialItemStatus = isCash ? OrderItemStatus.PAID : OrderItemStatus.PENDING;
 
