@@ -1,6 +1,8 @@
 package com.futurenbetter.saas.modules.chatbot.controller;
 
+import com.futurenbetter.saas.modules.chatbot.dto.request.ChatBotRequest;
 import com.futurenbetter.saas.modules.chatbot.dto.request.ChatRequest;
+import com.futurenbetter.saas.modules.chatbot.dto.response.ChatBotResponse;
 import com.futurenbetter.saas.modules.chatbot.service.AIChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -19,16 +21,10 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class AIController {
 
-    private final AIChatService chatService;
+    private final AIChatService aiChatService;
 
-    @PostMapping("/chat")
-    public ResponseEntity<Object> chat(@RequestBody ChatRequest request) {
-        Object result = chatService.chat(request);
-        return ResponseEntity.ok(result);
-    }
-
-    @PostMapping(value = "/ingest", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public String ingest(@RequestParam("file") MultipartFile file) throws IOException {
-        return chatService.ingestFile(file);
+    @PostMapping("/prompt")
+    public ResponseEntity<ChatBotResponse> chat(@RequestBody ChatBotRequest request) {
+        return ResponseEntity.ok(aiChatService.chat(request));
     }
 }

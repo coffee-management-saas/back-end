@@ -130,4 +130,14 @@ public class ProductVariantServiceImpl implements ProductVariantService {
                 filter.getPageable()
         ).map(variantMapper::toResponse);
     }
+
+    @Override
+    public List<ProductVariantResponse> getAllProduct() {
+        return variantRepository.findAll()
+                .stream()
+                .map(variantMapper::toResponse)
+                .toList();
+    }
+
+
 }

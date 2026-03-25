@@ -206,4 +206,12 @@ public class ProductServiceImpl implements ProductService {
                 throw new BusinessException("Vui lòng chọn file ảnh để upload");
         }
     }
+
+    @Override
+    public List<ProductResponse> getAllProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(productMapper::toResponse)
+                .collect(Collectors.toList());
+    }
 }

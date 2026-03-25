@@ -1,14 +1,12 @@
 package com.futurenbetter.saas.modules.chatbot.service;
 
+import com.futurenbetter.saas.modules.chatbot.dto.request.ChatBotRequest;
 import com.futurenbetter.saas.modules.chatbot.dto.request.ChatRequest;
 
+import com.futurenbetter.saas.modules.chatbot.dto.response.ChatBotResponse;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 public interface AIChatService {
-    Object chat(ChatRequest request);
-
-    void ingestData(String content);
-
-    String ingestFile(MultipartFile file) throws IOException;
+    ChatBotResponse chat(ChatBotRequest request);
 }

@@ -14,7 +14,7 @@ import java.util.TimeZone;
 public class SaasApplication {
     public static void main(String[] args) {
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
-//        DotEnvConfig.loadEnv();
+        DotEnvConfig.loadEnv();
         SpringApplication.run(SaasApplication.class, args);
     }
 }
