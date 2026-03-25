@@ -32,6 +32,7 @@ import com.futurenbetter.saas.modules.order.repository.OrderRepository;
 import com.futurenbetter.saas.modules.order.repository.PointHistoryRepository;
 import com.futurenbetter.saas.modules.order.service.OrderService;
 import com.futurenbetter.saas.modules.order.specification.OrderSpecification;
+import com.futurenbetter.saas.modules.payos.service.inter.PayOSService;
 import com.futurenbetter.saas.modules.product.entity.ProductVariant;
 import com.futurenbetter.saas.modules.product.entity.Topping;
 import com.futurenbetter.saas.modules.product.repository.ProductVariantRepository;
@@ -50,6 +51,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
+import vn.payos.model.webhooks.WebhookData;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -78,6 +82,7 @@ public class OrderServiceImpl implements OrderService {
     private final NotificationService notificationService;
     private final MonthlyProductSoldService monthlyProductSoldService;
     private final AsyncOrderTaskServiceImpl asyncOrderTaskService;
+    private final PayOSService payOSService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -651,6 +656,220 @@ public class OrderServiceImpl implements OrderService {
                     order.getShop(),
                     item.getProductVariant().getProduct(),
                     item.getQuantity());
+        }
+    }
+
+
+    @Override
+    @Transactional
+    public CreatePaymentLinkResponse createOrderv2(OrderRequest request) {
+        // 1. Lấy ShopId và Customer từ SecurityUtils
+        Long currentShopId = SecurityUtils.getCurrentShopId();
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        List<String> roles = SecurityUtils.getCurrentUserRoles();
+        Customer currentCustomer = SecurityUtils.getCurrentCustomer();
+
+        boolean isCustomer = roles.contains("ROLE_CUSTOMER") || roles.contains("CUSTOMER");
+        boolean isStaff = roles.contains("ROLE_EMPLOYEE") || roles.contains("EMPLOYEE");
+
+        if (currentShopId == null) {
+            throw new BusinessException("Không tìm thấy thông tin cửa hàng. Vui lòng đăng nhập lại.");
+        }
+
+        Shop shop = shopRepository.findById(currentShopId)
+                .orElseThrow(() -> new BusinessException("Cửa hàng không tồn tại"));
+
+        // 2. Khởi tạo Entity Order từ Request
+        Order order = orderMapper.toOrder(request);
+        order.setShop(shop);
+
+        Customer targetCustomer = null;
+        Long targetCustomerId = null;
+
+        if (isCustomer) {
+            targetCustomer = currentCustomer;
+            order.setCustomer(targetCustomer);
+        } else if (isStaff) {
+            if (request.getCustomerId() != null) {
+                targetCustomer = customerRepository.findById(request.getCustomerId())
+                        .orElseThrow(() -> new BusinessException("Khách hàng không tồn tại"));
+                targetCustomerId = currentUserId;
+                order.setCustomer(targetCustomer);
+            } else {
+                order.setCustomer(null);
+            }
+            // set Employee id
+        } else {
+            throw new BusinessException("Bạn không có quyền tạo đơn hàng này");
+        }
+
+        // Thanh toán tiền mặt (OFFLINE hoặc ONLINE): hoàn thành ngay theo yêu cầu
+        boolean isCash = request.getPaymentGateway() == PaymentGateway.CASH;
+        OrderItemStatus initialItemStatus = isCash ? OrderItemStatus.PAID : OrderItemStatus.PENDING;
+
+        long totalBasePrice = 0;
+        List<OrderItem> items = new ArrayList<>();
+
+        // 3. Xử lý từng Item trong đơn hàng
+        for (OrderItemRequest itemReq : request.getOrderItems()) {
+            OrderItem item = orderMapper.toOrderItem(itemReq);
+            item.setOrder(order);
+            item.setOrderItemStatus(initialItemStatus);
+            item.setCreatedAt(LocalDateTime.now());
+            item.setUpdatedAt(LocalDateTime.now());
+
+            if (itemReq.getProductVariantId() == null) {
+                throw new BusinessException("Mã sản phẩm không được để trống");
+            }
+
+            ProductVariant variant = productVariantRepository.findById(itemReq.getProductVariantId())
+                    .orElseThrow(() -> new BusinessException("Sản phẩm không tồn tại"));
+            item.setProductVariant(variant);
+            item.setUnitPrice(variant.getPrice());
+
+            long itemTotal = (variant.getPrice() * itemReq.getQuantity());
+
+            // 4. Xử lý Toppings đi kèm
+            if (itemReq.getToppingItems() != null && !itemReq.getToppingItems().isEmpty()) {
+                List<ToppingPerOrderItem> toppings = new ArrayList<>();
+                for (ToppingItemRequest topReq : itemReq.getToppingItems()) {
+                    if (topReq.getToppingId() == null) {
+                        throw new BusinessException("Mã topping không được để trống");
+                    }
+
+                    Topping topping = toppingRepository.findById(topReq.getToppingId())
+                            .orElseThrow(() -> new BusinessException("Topping không tồn tại"));
+
+                    ToppingPerOrderItem topEntity = orderMapper.toToppingEntity(topReq);
+                    topEntity.setPrice(topping.getPrice());
+                    topEntity.setOrderItem(item);
+                    topEntity.setTopping(topping);
+                    topEntity.setCreatedAt(LocalDateTime.now());
+
+                    itemTotal += (topping.getPrice() * topReq.getQuantity());
+                    toppings.add(topEntity);
+                }
+                item.setToppingPerOrderItems(toppings);
+            }
+
+            totalBasePrice += itemTotal;
+            items.add(item);
+        }
+
+        // 5. Áp dụng promotion (nếu có)
+        Long discountAmount = 0L;
+        Promotion promotion = null;
+        if (request.getPromotionCode() != null && !request.getPromotionCode().trim().isEmpty()) {
+            promotion = promotionService.validatePromotion(
+                    request.getPromotionCode(),
+                    currentShopId,
+                    currentUserId,
+                    totalBasePrice);
+
+            if (promotion.getPromotionType() == PromotionTypeEnum.ORDER) {
+                discountAmount = calculateDiscount(promotion, totalBasePrice);
+            } else if (promotion.getPromotionType() == PromotionTypeEnum.PRODUCT) {
+                if (promotion.getPromotionTargets() == null || promotion.getPromotionTargets().isEmpty()) {
+                    throw new BusinessException("Mã khuyến mãi không có sản phẩm áp dụng");
+                }
+
+                Set<Long> targetProductIds = promotion.getPromotionTargets().stream()
+                        .map(target -> target.getProduct().getId())
+                        .collect(Collectors.toSet());
+
+                long eligibleAmount = 0L;
+                for (OrderItem item : items) {
+                    Long productId = item.getProductVariant().getProduct().getId();
+
+                    if (targetProductIds.contains(productId)) {
+                        long itemPrice = item.getUnitPrice() * item.getQuantity();
+                        if (item.getToppingPerOrderItems() != null) {
+                            for (ToppingPerOrderItem topping : item.getToppingPerOrderItems()) {
+                                itemPrice += topping.getPrice() * topping.getQuantity();
+                            }
+                        }
+                        eligibleAmount += itemPrice;
+                    }
+                }
+
+                if (eligibleAmount == 0) {
+                    throw new BusinessException("Đơn hàng không có sản phẩm áp dụng mã khuyến mãi này");
+                }
+
+                discountAmount = calculateDiscount(promotion, eligibleAmount);
+            }
+        }
+
+        // 6. Cập nhật thông tin tổng quát và lưu trữ
+        order.setOrderItems(items);
+        order.setBasePrice(totalBasePrice);
+        order.setDiscountAmount(discountAmount);
+        order.setPaidPrice(totalBasePrice - discountAmount);
+        order.setProductQuantity(items.size());
+        order.setPromotion(promotion);
+        order.setCreatedAt(LocalDateTime.now());
+
+        if (isCash) {
+            order.setOrderStatus(OrderStatus.PAID);
+            updateMonthlyProductSold(order);
+        } else {
+            order.setOrderStatus(OrderStatus.PENDING);
+        }
+
+        Order savedOrder = orderRepository.save(order);
+
+        // 7. Ghi nhận promotion usage và xử lý nội bộ nếu đơn hàng đã được THANH TOÁN
+        // (thường là Offline Cash)
+        if (savedOrder.getOrderStatus() == OrderStatus.PAID) {
+            triggerStockDeduction(savedOrder);
+            processCustomerPoints(savedOrder);
+
+            if (promotion != null) {
+
+                promotionService.recordPromotionUsage(
+                        promotion.getPromotionId(),
+                        currentUserId,
+                        currentShopId,
+                        discountAmount);
+            }
+            asyncOrderTaskService.generateAndUploadInvoice(savedOrder.getOrderId());
+
+        }
+
+        if (request.getPaymentGateway() == PaymentGateway.PAYOS) {
+            PaymentLinkItem paymentLinkItem = payOSService.buildPaymentLinkItem(savedOrder);
+            CreatePaymentLinkResponse data = payOSService.buildPaymentLink(savedOrder, paymentLinkItem);
+            OrderResponse orderResponse = orderMapper.toOrderResponse(savedOrder);
+            orderResponse.setPayUrl(data.getCheckoutUrl());
+            return data;
+        }
+        return null;
+    }
+
+    @Override
+    public void updateOrderStatus(WebhookData webhookData) {
+        Order order = orderRepository.findById(webhookData.getOrderCode())
+                .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + webhookData.getOrderCode()));
+
+        if (webhookData.getCode().equals("00")) {
+            order.setOrderStatus(OrderStatus.PAID);
+            order.setPaymentGateway(PaymentGateway.PAYOS);
+            order.setUpdatedAt(LocalDateTime.now());
+
+            if (order.getOrderItems() != null) {
+                order.getOrderItems().forEach(item -> {
+                    item.setOrderItemStatus(OrderItemStatus.PAID);
+                    item.setUpdatedAt(LocalDateTime.now());
+                });
+            }
+
+            order = orderRepository.save(order);
+
+            updateMonthlyProductSold(order);
+            triggerStockDeduction(order);
+            processCustomerPoints(order);
+            asyncOrderTaskService.generateAndUploadInvoice(order.getOrderId());
+
         }
     }
 }
