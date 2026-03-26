@@ -63,7 +63,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
                         "JOIN pv.product p " +
                         "WHERE o.shop.id = :shopId " +
                         "AND o.orderStatus = 'PAID' " +
-                        "AND p.createdAt >= :tenDaysAgo " +
+                        "AND o.createdAt >= :tenDaysAgo " +
                         "GROUP BY p.id, p.name, p.image, p.price, p.createdAt " +
                         "ORDER BY SUM(oi.quantity) DESC, " +
                         "SUM(CAST(oi.quantity AS long) * oi.unitPrice) DESC, " +

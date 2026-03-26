@@ -1,10 +1,10 @@
 package com.futurenbetter.saas.common.rag;
 
 import com.futurenbetter.saas.modules.order.dto.request.OrderRequest;
+import com.futurenbetter.saas.modules.order.enums.OrderType;
 import com.futurenbetter.saas.modules.order.service.OrderService;
 import com.futurenbetter.saas.modules.product.dto.response.ProductVariantResponse;
 import com.futurenbetter.saas.modules.product.service.inter.ProductVariantService;
-import com.futurenbetter.saas.modules.order.enums.OrderType.ONLINE;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
