@@ -26,6 +26,7 @@ public class SecurityConfig {
             "/api/docs/**",
             "/swagger-ui/**",
             "/ws/**",
+            "/payment/**",
     };
     private final AuthenticationService authenticationService;
         private static final String[] PUBLIC_ENDPOINTS = strings;
