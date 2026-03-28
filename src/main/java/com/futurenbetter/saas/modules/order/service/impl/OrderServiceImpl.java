@@ -26,10 +26,12 @@ import com.futurenbetter.saas.modules.order.entity.OrderItem;
 import com.futurenbetter.saas.modules.order.entity.ToppingPerOrderItem;
 import com.futurenbetter.saas.modules.order.enums.OrderItemStatus;
 import com.futurenbetter.saas.modules.order.enums.OrderStatus;
+import com.futurenbetter.saas.modules.order.enums.OrderType;
 import com.futurenbetter.saas.modules.order.enums.PaymentGateway;
 import com.futurenbetter.saas.modules.order.mapper.OrderMapper;
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
 import com.futurenbetter.saas.modules.order.repository.PointHistoryRepository;
+import com.futurenbetter.saas.modules.order.service.GoogleMapService;
 import com.futurenbetter.saas.modules.order.service.OrderService;
 import com.futurenbetter.saas.modules.order.specification.OrderSpecification;
 import com.futurenbetter.saas.modules.product.entity.ProductVariant;
@@ -51,6 +53,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -78,6 +81,7 @@ public class OrderServiceImpl implements OrderService {
     private final NotificationService notificationService;
     private final MonthlyProductSoldService monthlyProductSoldService;
     private final AsyncOrderTaskServiceImpl asyncOrderTaskService;
+    private final GoogleMapService googleMapService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -240,10 +244,34 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderItems(items);
         order.setBasePrice(totalBasePrice);
         order.setDiscountAmount(discountAmount);
-        order.setPaidPrice(totalBasePrice - discountAmount);
+        order.setDeliveryAddress(request.getDeliveryAddress());
+        order.setLatitude(request.getLatitude());
+        order.setLongitude(request.getLongitude());
         order.setProductQuantity(items.size());
         order.setPromotion(promotion);
         order.setCreatedAt(LocalDateTime.now());
+
+        BigDecimal shippingFee = BigDecimal.ZERO;
+
+        if (request.getOrderType() == OrderType.DELIVERY && request.getLatitude() != null) {
+            Double shopLat = 10.7725;
+            Double shopLng = 106.6981;
+
+            long distanceMeters = googleMapService.calculateDistance(
+                    shopLat, shopLng,
+                    request.getLatitude(), request.getLongitude());
+
+            double distanceKm = (double) distanceMeters / 1000;
+
+            if (distanceKm > 1.0) {
+                double extraKm = Math.ceil(distanceKm - 1.0);
+                shippingFee = BigDecimal.valueOf(extraKm * 5000);
+            }
+        }
+
+        order.setShippingFee(shippingFee);
+        long paidPrice = totalBasePrice - discountAmount + shippingFee.longValue();
+        order.setPaidPrice(paidPrice);
 
         if (isCash) {
             order.setOrderStatus(OrderStatus.PAID);

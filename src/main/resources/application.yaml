@@ -91,3 +91,7 @@ vnpay:
   version: "2.1.0"
   command: "pay"
   order-type: "other"
+
+google:
+  maps:
+    api-key: ${GOOGLE_MAP_API_KEY}
