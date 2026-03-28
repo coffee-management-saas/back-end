@@ -92,6 +92,9 @@ vnpay:
   command: "pay"
   order-type: "other"
 
+google:
+  maps:
+    api-key: ${GOOGLE_MAP_API_KEY}
 payos:
   client-id: ${PAYOS_CLIENT_ID}
   api-key: ${PAYOS_API_KEY}

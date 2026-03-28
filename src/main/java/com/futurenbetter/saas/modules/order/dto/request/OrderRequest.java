@@ -22,4 +22,7 @@ public class OrderRequest {
     PaymentGateway paymentGateway;
     List<OrderItemRequest> orderItems;
     String promotionCode;
+    String deliveryAddress;
+    Double latitude;
+    Double longitude;
 }
