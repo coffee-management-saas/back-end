@@ -110,14 +110,14 @@ public class ProductVariantServiceImpl implements ProductVariantService {
 
     @Override
     public ProductVariantResponse getDetail(Long id) {
-        return variantRepository.findByIdAndShopId(id, SecurityUtils.getCurrentShopId())
+        return variantRepository.findByIdAndShopId(id, TenantContext.getCurrentShopId())
                 .map(variantMapper::toResponse)
                 .orElseThrow(() -> new BusinessException("Biến thể không tồn tại"));
     }
 
     @Override
     public List<ProductVariantResponse> getByProductId(Long productId) {
-        return variantRepository.findAllByProductIdAndShopId(productId, SecurityUtils.getCurrentShopId())
+        return variantRepository.findAllByProductIdAndShopId(productId, TenantContext.getCurrentShopId())
                 .stream()
                 .map(variantMapper::toResponse)
                 .collect(Collectors.toList());

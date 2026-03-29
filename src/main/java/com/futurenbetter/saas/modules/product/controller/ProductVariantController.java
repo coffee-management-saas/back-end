@@ -52,7 +52,7 @@ public class ProductVariantController {
     }
 
     @GetMapping("{id}")
-    @PreAuthorize("hasAuthority('product-variant:read-detail')")
+//    @PreAuthorize("hasAuthority('product-variant:read-detail')")
     public ApiResponse<ProductVariantResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -66,7 +66,7 @@ public class ProductVariantController {
     }
 
     @GetMapping("by-product/{productId}")
-    @PreAuthorize("hasAuthority('product-variant:read-by-product')")
+//    @PreAuthorize("hasAuthority('product-variant:read-by-product')")
     public ApiResponse<List<ProductVariantResponse>> getByProduct(
             @PathVariable Long productId
     ) {
@@ -80,7 +80,7 @@ public class ProductVariantController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('product-variant:read')")
+//    @PreAuthorize("hasAuthority('product-variant:read')")
     public ApiResponse<List<ProductVariantResponse>> getAll(
             @ModelAttribute ProductVariantFilter filter
     ) {

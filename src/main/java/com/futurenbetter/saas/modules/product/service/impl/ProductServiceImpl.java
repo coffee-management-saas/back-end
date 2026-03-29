@@ -132,7 +132,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Page<ProductResponse> getAll(ProductFilter filter) {
-        Long currentShopId = SecurityUtils.getCurrentShopId();
+        Long currentShopId = TenantContext.getCurrentShopId();
         return productRepository.findAll(
                 ProductSpec.filter(filter, currentShopId),
                 filter.getPageable()

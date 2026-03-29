@@ -46,7 +46,7 @@ public class PromotionController {
     }
 
     @GetMapping("/{promotionId}")
-    @PreAuthorize("hasAuthority('promotion:read-detail')")
+//    @PreAuthorize("hasAuthority('promotion:read-detail')")
     public ResponseEntity<PromotionResponse> getPromotionById(@PathVariable Long promotionId) {
         PromotionResponse response = promotionService.getPromotion(promotionId);
         return ResponseEntity.ok(response);

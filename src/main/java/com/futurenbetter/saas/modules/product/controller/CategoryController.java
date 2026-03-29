@@ -52,7 +52,7 @@ public class CategoryController {
     }
 
     @GetMapping("{id}")
-    @PreAuthorize("hasAuthority('category:read-detail')")
+//    @PreAuthorize("hasAuthority('category:read-detail')")
     public ApiResponse<CategoryResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -66,7 +66,7 @@ public class CategoryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('category:read')")
+//    @PreAuthorize("hasAuthority('category:read')")
     public ApiResponse<List<CategoryResponse>> getAll(
             @ModelAttribute BaseFilter filter
     ) {

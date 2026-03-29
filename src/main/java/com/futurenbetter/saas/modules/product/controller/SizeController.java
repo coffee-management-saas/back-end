@@ -51,7 +51,7 @@ public class SizeController {
 
     @GetMapping
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('product-size:read')")
+//    @PreAuthorize("hasAuthority('product-size:read')")
     public List<SizeResponse> getAll(
             @RequestParam(required = false) SizeStatus status
     ) {
@@ -59,7 +59,7 @@ public class SizeController {
     }
 
     @GetMapping("active")
-    @PreAuthorize("hasAuthority('product-size:read-active')")
+//    @PreAuthorize("hasAuthority('product-size:read-active')")
     public ApiResponse<List<SizeResponse>> getActive() {
         return ApiResponse.success(
                 HttpStatus.OK,
