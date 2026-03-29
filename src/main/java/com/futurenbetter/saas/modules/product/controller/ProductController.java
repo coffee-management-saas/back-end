@@ -123,7 +123,7 @@ public class ProductController {
     }
 
     @GetMapping("{id}/allow-toppings")
-    @PreAuthorize("hasAuthority('product:read-allow-topping')")
+//    @PreAuthorize("hasAuthority('product:read-allow-topping')")
     public ApiResponse<List<Long>> getAllowToppings(
             @PathVariable Long id
     ) {
