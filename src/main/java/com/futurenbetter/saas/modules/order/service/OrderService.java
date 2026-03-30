@@ -5,6 +5,8 @@ import com.futurenbetter.saas.modules.order.dto.request.OrderRequest;
 import com.futurenbetter.saas.modules.order.dto.response.OrderResponse;
 import com.futurenbetter.saas.modules.order.entity.Order;
 import org.springframework.data.domain.Page;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.webhooks.WebhookData;
 
 import java.util.Map;
 
@@ -21,4 +23,8 @@ public interface OrderService {
     OrderResponse initiatePayment(Long orderId, String returnUrl);
 
     OrderResponse confirmCashPayment(Long orderId);
+
+    CreatePaymentLinkResponse createOrderv2(OrderRequest orderRequest);
+
+    void updateOrderStatus(WebhookData webhookData);
 }
