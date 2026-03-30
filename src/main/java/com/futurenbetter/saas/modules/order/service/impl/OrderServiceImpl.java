@@ -31,7 +31,7 @@ import com.futurenbetter.saas.modules.order.enums.PaymentGateway;
 import com.futurenbetter.saas.modules.order.mapper.OrderMapper;
 import com.futurenbetter.saas.modules.order.repository.OrderRepository;
 import com.futurenbetter.saas.modules.order.repository.PointHistoryRepository;
-import com.futurenbetter.saas.modules.order.service.GoogleMapService;
+import com.futurenbetter.saas.modules.order.service.GoongMapService;
 import com.futurenbetter.saas.modules.order.service.OrderService;
 import com.futurenbetter.saas.modules.order.specification.OrderSpecification;
 import com.futurenbetter.saas.modules.product.entity.ProductVariant;
@@ -81,7 +81,7 @@ public class OrderServiceImpl implements OrderService {
     private final NotificationService notificationService;
     private final MonthlyProductSoldService monthlyProductSoldService;
     private final AsyncOrderTaskServiceImpl asyncOrderTaskService;
-    private final GoogleMapService googleMapService;
+    private final GoongMapService goongMapService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -257,11 +257,9 @@ public class OrderServiceImpl implements OrderService {
             Double shopLat = 10.7725;
             Double shopLng = 106.6981;
 
-            long distanceMeters = googleMapService.calculateDistance(
-                    shopLat, shopLng,
-                    request.getLatitude(), request.getLongitude());
-
-            double distanceKm = (double) distanceMeters / 1000;
+            String origin = shopLat + "," + shopLng;
+            String destination = request.getLatitude() + "," + request.getLongitude();
+            double distanceKm = goongMapService.getDistance(origin, destination);
 
             if (distanceKm > 1.0) {
                 double extraKm = Math.ceil(distanceKm - 1.0);

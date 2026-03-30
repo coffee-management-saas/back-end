@@ -92,6 +92,6 @@ vnpay:
   command: "pay"
   order-type: "other"
 
-google:
-  maps:
-    api-key: ${GOOGLE_MAP_API_KEY}
+goong:
+  api-key: ${GOONG_API_KEY}
+  base-url: https://rsapi.goong.io
