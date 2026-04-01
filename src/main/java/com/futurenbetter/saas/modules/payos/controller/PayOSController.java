@@ -3,6 +3,8 @@ package com.futurenbetter.saas.modules.payos.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.futurenbetter.saas.common.dto.response.ApiResponse;
 import com.futurenbetter.saas.modules.order.service.OrderService;
+import com.futurenbetter.saas.modules.payos.service.inter.PayOSService;
+import com.futurenbetter.saas.modules.subscription.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +19,9 @@ import vn.payos.model.webhooks.WebhookData;
 @RequiredArgsConstructor
 public class PayOSController {
     private final PayOS payOS;
+    private final PayOSService payOSService;
     private final OrderService orderService;
+    private final SubscriptionService subscriptionService;
 
     // WEBHOOK
     @PostMapping(path = "/payos_transfer_handler")
@@ -25,7 +29,13 @@ public class PayOSController {
             throws JsonProcessingException, IllegalArgumentException {
         try {
             WebhookData data = payOS.webhooks().verify(body);
-            orderService.updateOrderStatus(data);
+
+            if (subscriptionService.isPresentSubscription(data.getOrderCode(), data.getAmount())) {
+                subscriptionService.updateSubscriptionStatus(data);
+            } else {
+                orderService.updateOrderStatus(data);
+            }
+
             return ApiResponse.success(HttpStatus.OK, "Xác thực webhook thành công", data, null);
         } catch (Exception e) {
             e.printStackTrace();

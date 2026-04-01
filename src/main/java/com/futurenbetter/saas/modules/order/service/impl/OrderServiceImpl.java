@@ -864,8 +864,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         if (request.getPaymentGateway() == PaymentGateway.PAYOS) {
-            PaymentLinkItem paymentLinkItem = payOSService.buildPaymentLinkItem(savedOrder);
-            CreatePaymentLinkResponse data = payOSService.buildPaymentLink(savedOrder, paymentLinkItem);
+            PaymentLinkItem paymentLinkItem = payOSService.buildPaymentLinkOrderItem(savedOrder);
+            CreatePaymentLinkResponse data = payOSService.buildPaymentLinkOrder(savedOrder, paymentLinkItem);
             OrderResponse orderResponse = orderMapper.toOrderResponse(savedOrder);
             orderResponse.setPayUrl(data.getCheckoutUrl());
             return data;
