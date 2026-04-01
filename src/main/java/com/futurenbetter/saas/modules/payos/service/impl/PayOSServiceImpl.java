@@ -1,21 +1,15 @@
 package com.futurenbetter.saas.modules.payos.service.impl;
 
-import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.order.entity.Order;
-import com.futurenbetter.saas.modules.order.service.OrderService;
 import com.futurenbetter.saas.modules.payos.service.inter.PayOSService;
 import com.futurenbetter.saas.modules.subscription.entity.SubscriptionTransaction;
-import com.futurenbetter.saas.modules.subscription.service.SubscriptionService;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
-import vn.payos.model.webhooks.WebhookData;
 
 @Service
 @RequiredArgsConstructor
@@ -23,11 +17,17 @@ public class PayOSServiceImpl implements PayOSService {
 
     private final PayOS payOS;
 
-    @Value("${payos.return-url}")
-    private String returnUrl;
+    @Value("${payos.order.return-url}")
+    private String orderReturnUrl;
 
-    @Value("${payos.cancel-url}")
-    private String cancelUrl;
+    @Value("${payos.order.cancel-url}")
+    private String orderCancelUrl;
+
+    @Value("${payos.subscription.return-url}")
+    private String subscriptionReturnUrl;
+
+    @Value("${payos.subscription.cancel-url}")
+    private String subscriptionCancelUrl;
 
 
 
@@ -48,8 +48,8 @@ public class PayOSServiceImpl implements PayOSService {
                         .description("ORDER: " + order.getOrderId())
                         .amount(order.getPaidPrice())
                         .item(paymentLinkItem)
-                        .returnUrl(returnUrl)
-                        .cancelUrl(cancelUrl)
+                        .returnUrl(orderReturnUrl)
+                        .cancelUrl(orderCancelUrl)
                         .build();
 
         return payOS.paymentRequests().create(paymentData);
@@ -72,8 +72,8 @@ public class PayOSServiceImpl implements PayOSService {
                         .description("SUB_PLAN: " + subscriptionTransaction.getShop().getId())
                         .amount(subscriptionTransaction.getAmount())
                         .item(paymentLinkItem)
-                        .returnUrl(returnUrl)
-                        .cancelUrl(cancelUrl)
+                        .returnUrl(subscriptionReturnUrl)
+                        .cancelUrl(subscriptionCancelUrl)
                         .build();
 
         return payOS.paymentRequests().create(paymentData);
