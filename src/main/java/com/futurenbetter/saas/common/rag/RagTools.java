@@ -1,6 +1,7 @@
 package com.futurenbetter.saas.common.rag;
 
 import com.futurenbetter.saas.modules.order.dto.request.OrderRequest;
+import com.futurenbetter.saas.modules.order.enums.OrderType;
 import com.futurenbetter.saas.modules.order.service.OrderService;
 import com.futurenbetter.saas.modules.product.dto.response.ProductVariantResponse;
 import com.futurenbetter.saas.modules.product.service.inter.ProductVariantService;
@@ -43,17 +44,18 @@ public class RagTools {
         try {
             OrderRequest orderRequest = new OrderRequest();
             orderRequest.setOrderItems(aiRequest.getOrderItems());
-            // Set các giá trị mặc định cho các trường còn lại
             orderRequest.setCustomerId(0L);
-            orderRequest.setOrderType(com.futurenbetter.saas.modules.order.enums.OrderType.ONLINE);
-            orderRequest.setPaymentGateway(com.futurenbetter.saas.modules.order.enums.PaymentGateway.CASH);
+            orderRequest.setOrderType(OrderType.ONLINE);
+            orderRequest.setPaymentGateway(null);
 
             var response = orderService.createOrder(orderRequest);
             lastCreatedOrderId.set(response.getOrderId());
-            return "Tạo đơn hàng thành công (Order ID: " + response.getOrderId() + ")! Đơn hàng đang được chuẩn bị. Hãy báo lại cho khách hàng hãy thanh toán.";
+            return "Tạo đơn hàng thành công (Order ID: " + response.getOrderId()
+                    + ")! Đơn hàng đang được chuẩn bị. Hãy báo lại cho khách hàng hãy thanh toán.";
         } catch (Exception e) {
             log.error("Error creating order from AI: {}", e.getMessage());
-            return "Có lỗi xảy ra khi tạo đơn hàng: " + e.getMessage() + ". Hãy yêu cầu khách hàng cung cấp lại thông tin. ";
+            return "Có lỗi xảy ra khi tạo đơn hàng: " + e.getMessage()
+                    + ". Hãy yêu cầu khách hàng cung cấp lại thông tin. ";
         }
     }
 }

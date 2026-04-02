@@ -17,6 +17,7 @@ import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
@@ -79,5 +80,13 @@ public class SubscriptionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Internal server error");
         }
+    }
+
+    @PostMapping("/checkout/v2")
+    public ResponseEntity<CreatePaymentLinkResponse> checkoutV2(
+            @Valid @RequestBody SubscriptionRequest request
+    ) {
+        CreatePaymentLinkResponse response = subscriptionService.createSubscriptionWithPayOS(request);
+        return ResponseEntity.ok(response);
     }
 }

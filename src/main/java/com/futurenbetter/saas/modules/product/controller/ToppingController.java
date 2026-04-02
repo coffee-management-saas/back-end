@@ -52,7 +52,7 @@ public class ToppingController {
     }
 
     @GetMapping("{id}")
-    @PreAuthorize("hasAuthority('topping:read-detail')")
+//    @PreAuthorize("hasAuthority('topping:read-detail')")
     public ApiResponse<ToppingResponse> getDetail(
             @PathVariable Long id
     ) {
@@ -66,7 +66,7 @@ public class ToppingController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('topping:read')")
+//    @PreAuthorize("hasAuthority('topping:read')")
     public ApiResponse<List<ToppingResponse>> getAll(
             @ModelAttribute BaseFilter filter
     ) {
