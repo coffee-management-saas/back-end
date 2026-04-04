@@ -898,7 +898,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void updateOrderStatus(WebhookData webhookData) {
-        Map<Long, Long> orderCodeMap = PayOSUtils.parseOrderCode(webhookData.getOrderCode()); // 1. shopId, 2. orderId
+        Map<Long, Long> orderCodeMap = PayOSUtils.parseOrderCodeV2(webhookData.getOrderCode()); // 1. shopId, 2. orderId
 
         Order order = orderRepository.findById(orderCodeMap.get(2L))
                 .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + orderCodeMap.get(2L)));

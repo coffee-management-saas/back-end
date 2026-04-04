@@ -49,7 +49,7 @@ public class PayOSServiceImpl implements PayOSService {
 
     @Override
     public CreatePaymentLinkResponse buildPaymentLinkOrder(Order order, PaymentLinkItem paymentLinkItem) {
-        Long orderCode = PayOSUtils.genOrderCode(order.getShop().getId(), order.getOrderId());
+        Long orderCode = PayOSUtils.genOrderCodeV2(order.getShop().getId(), order.getOrderId());
         CreatePaymentLinkRequest paymentData =
                 CreatePaymentLinkRequest.builder()
                         .orderCode(orderCode)
