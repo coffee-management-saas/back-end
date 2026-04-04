@@ -27,4 +27,17 @@ public class PayOSUtils {
     public static Long parseSubscriptionCode(long subscriptionCode) {
         return (subscriptionCode - PREFIX_SUBSCRIPTION) / 10000000000L;
     }
+
+    // using timestamp to avoid error when testing locally for individuals computers
+    public static long genOrderCodeV2(Long shopId, Long orderId) {
+        return PREFIX_ORDER
+                + (orderId * 10000000000L)
+                + (System.currentTimeMillis() / 1000L);
+    }
+
+    public static Map<Long, Long> parseOrderCodeV2(long orderCode) {
+        long shopId = 0L;
+        long orderId = (orderCode - PREFIX_ORDER) / 10000000000L;
+        return Map.of(1L, shopId, 2L, orderId);
+    }
 }
