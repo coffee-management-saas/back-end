@@ -839,7 +839,7 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal shippingFee = BigDecimal.ZERO;
 
         if (request.getOrderType().equals(OrderType.DELIVERY)) {
-            shippingFee.add(BigDecimal.valueOf(15000L));
+            shippingFee = shippingFee.add(BigDecimal.valueOf(15000L));
         }
 
         if (request.getOrderType() == OrderType.DELIVERY && request.getLatitude() != null) {
@@ -856,7 +856,7 @@ public class OrderServiceImpl implements OrderService {
 
             if (distanceKm > 1.0) {
                 double extraKm = Math.ceil(distanceKm - 1.0);
-                shippingFee = BigDecimal.valueOf(extraKm * 5000);
+                shippingFee = shippingFee.add(BigDecimal.valueOf(extraKm * 5000));
             }
         }
 
