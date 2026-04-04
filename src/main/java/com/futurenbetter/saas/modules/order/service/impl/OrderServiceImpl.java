@@ -834,6 +834,34 @@ public class OrderServiceImpl implements OrderService {
         order.setPromotion(promotion);
         order.setCreatedAt(LocalDateTime.now());
 
+        BigDecimal shippingFee = BigDecimal.ZERO;
+
+        if (request.getOrderType().equals(OrderType.DELIVERY)) {
+            shippingFee = shippingFee.add(BigDecimal.valueOf(15000L));
+        }
+
+        if (request.getOrderType() == OrderType.DELIVERY && request.getLatitude() != null) {
+            Double shopLat = 10.7725;
+            Double shopLng = 106.6981;
+
+            long distanceMeters = googleMapService.calculateDistance(
+                    shopLat, shopLng,
+                    request.getLatitude(), request.getLongitude());
+
+            System.out.println("distance" + distanceMeters);
+
+            double distanceKm = (double) distanceMeters / 1000;
+
+            if (distanceKm > 1.0) {
+                double extraKm = Math.ceil(distanceKm - 1.0);
+                shippingFee = shippingFee.add(BigDecimal.valueOf(extraKm * 5000));
+            }
+        }
+
+        order.setShippingFee(shippingFee);
+        long paidPrice = totalBasePrice - discountAmount + shippingFee.longValue();
+        order.setPaidPrice(paidPrice);
+
         if (isCash) {
             order.setOrderStatus(OrderStatus.PAID);
             updateMonthlyProductSold(order);
