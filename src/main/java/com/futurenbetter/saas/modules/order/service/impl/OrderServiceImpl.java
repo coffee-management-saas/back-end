@@ -86,7 +86,6 @@ public class OrderServiceImpl implements OrderService {
     private final MonthlyProductSoldService monthlyProductSoldService;
     private final AsyncOrderTaskServiceImpl asyncOrderTaskService;
     private final GoongMapService goongMapService;
-    private final GoogleMapService googleMapService;
     private final PayOSService payOSService;
 
     @Value("${momo.api-url}")
