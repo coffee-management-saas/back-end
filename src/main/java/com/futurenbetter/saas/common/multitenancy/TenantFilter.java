@@ -32,8 +32,10 @@ public class TenantFilter implements Filter {
             // Map về domain mặc định có trong DB khi request từ:
             // - localhost / 127.0.0.1 (test local)
             // - IP address bất kỳ, ví dụ 54.95.117.37 (truy cập Swagger qua IP EC2)
-            if (domain.equals("localhost")
+            if (domain.equalsIgnoreCase("localhost")
                     || domain.equals("127.0.0.1")
+                    || domain.equals("::1")
+                    || domain.equals("0:0:0:0:0:0:0:1")
                     || domain.equals("54.95.117.37")
                     || domain.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
                 domain = "futurebetter.online";
@@ -41,10 +43,13 @@ public class TenantFilter implements Filter {
             // Giữ nguyên mọi domain chữ (futurebetter.online, subdomain, v.v.)
             // để tra cứu đúng trong DB
 
-            final String finalDomain = domain.toLowerCase();
+            final String finalDomain = domain.toLowerCase().trim();
 
-            shopRepository.findByDomain(finalDomain).ifPresent(shop -> {
+            shopRepository.findByDomain(finalDomain).ifPresentOrElse(shop -> {
+                System.out.println("DEBUG - TenantFilter: Found shop ID " + shop.getId() + " for domain [" + finalDomain + "]");
                 TenantContext.setCurrentShopId(shop.getId());
+            }, () -> {
+                System.out.println("DEBUG - TenantFilter: No shop found in DB for domain: [" + finalDomain + "]");
             });
         }
 
