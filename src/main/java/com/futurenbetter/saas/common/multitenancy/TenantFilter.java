@@ -34,9 +34,9 @@ public class TenantFilter implements Filter {
             // - IP address bất kỳ, ví dụ 54.95.117.37 (truy cập Swagger qua IP EC2)
             if (domain.equals("localhost")
                     || domain.equals("127.0.0.1")
+                    || domain.equals("54.95.117.37")
                     || domain.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
                 domain = "futurebetter.online";
-//                domain = "abc-shop.com";
             }
             // Giữ nguyên mọi domain chữ (futurebetter.online, subdomain, v.v.)
             // để tra cứu đúng trong DB
