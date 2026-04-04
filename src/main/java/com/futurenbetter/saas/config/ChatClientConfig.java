@@ -76,7 +76,7 @@ public class ChatClientConfig {
 
 
     @Bean
-    @Primary
+//    @Primary
     OpenAiChatModel modelKey1(@Qualifier(value = "apiKey1") OpenAiApi openAiApi) {
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(GPT_OSS_120B)
@@ -90,6 +90,7 @@ public class ChatClientConfig {
     }
 
     @Bean
+    @Primary
     OpenAiChatModel modelKey2(@Qualifier(value = "apiKey2") OpenAiApi openAiApi) {
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(GPT_OSS_120B)
