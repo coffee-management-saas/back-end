@@ -19,36 +19,36 @@ public class TenantFilter implements Filter {
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         String path = httpRequest.getRequestURI();
+
+        // 1. Bỏ qua các path hệ thống
         if (path.startsWith("/api/system/")) {
             chain.doFilter(request, response);
             return;
         }
 
-        String host = httpRequest.getHeader("Host");
+        // 2. Lấy host (Ưu tiên X-Forwarded-Host từ Proxy/Nginx)
+        String host = httpRequest.getHeader("X-Forwarded-Host");
+        if (host == null || host.isEmpty()) {
+            host = httpRequest.getHeader("Host");
+        }
 
         if (host != null) {
-            String domain = host.contains(":") ? host.split(":")[0] : host;
+            // 3. Cắt bỏ port nếu có (ví dụ: futurebetter.online:8080 -> futurebetter.online)
+            String domain = host.split(":")[0].toLowerCase().trim();
 
-            // Map về domain mặc định có trong DB khi request từ:
-            // - localhost / 127.0.0.1 (test local)
-            // - IP address bất kỳ, ví dụ 54.95.117.37 (truy cập Swagger qua IP EC2)
-            if (domain.equalsIgnoreCase("localhost")
-                    || domain.equals("127.0.0.1")
-                    || domain.equals("::1")
-                    || domain.equals("0:0:0:0:0:0:0:1")
-                    || domain.equals("54.95.117.37")
-                    || domain.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
+            // 4. Mapping các domain đặc biệt về domain mặc định trong DB
+            if (isLocalOrIp(domain)) {
                 domain = "futurebetter.online";
             }
-            // Giữ nguyên mọi domain chữ (futurebetter.online, subdomain, v.v.)
-            // để tra cứu đúng trong DB
 
-            final String finalDomain = domain.toLowerCase().trim();
+            final String finalDomain = domain;
 
+            // 5. Truy vấn DB
             shopRepository.findByDomain(finalDomain).ifPresentOrElse(shop -> {
-                System.out.println("DEBUG - TenantFilter: Found shop ID " + shop.getId() + " for domain [" + finalDomain + "]");
+                System.out.println("DEBUG - TenantFilter: Found shop ID " + shop.getId() + " for [" + finalDomain + "]");
                 TenantContext.setCurrentShopId(shop.getId());
             }, () -> {
+                // In ra domain để biết tại sao nó không khớp với DB
                 System.out.println("DEBUG - TenantFilter: No shop found in DB for domain: [" + finalDomain + "]");
             });
         }
@@ -58,5 +58,15 @@ public class TenantFilter implements Filter {
         } finally {
             TenantContext.clearCurrentShopId();
         }
+    }
+
+    // Tách hàm check IP/Local cho sạch code
+    private boolean isLocalOrIp(String domain) {
+        return domain.equals("localhost")
+                || domain.equals("127.0.0.1")
+                || domain.equals("::1")
+                || domain.equals("0:0:0:0:0:0:0:1")
+                || domain.equals("54.95.117.37")
+                || domain.matches("\\d+\\.\\d+\\.\\d+\\.\\d+");
     }
 }
