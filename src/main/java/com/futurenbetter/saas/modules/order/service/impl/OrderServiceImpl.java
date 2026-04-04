@@ -836,7 +836,11 @@ public class OrderServiceImpl implements OrderService {
         order.setPromotion(promotion);
         order.setCreatedAt(LocalDateTime.now());
 
-        BigDecimal shippingFee = BigDecimal.ZERO.add(BigDecimal.valueOf(15000L));
+        BigDecimal shippingFee = BigDecimal.ZERO;
+
+        if (request.getOrderType().equals(OrderType.DELIVERY)) {
+            shippingFee.add(BigDecimal.valueOf(15000L));
+        }
 
         if (request.getOrderType() == OrderType.DELIVERY && request.getLatitude() != null) {
             Double shopLat = 10.7725;
