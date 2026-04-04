@@ -14,4 +14,5 @@ public interface PayOSService {
     CreatePaymentLinkResponse buildPaymentLinkOrder(Order order, PaymentLinkItem paymentLinkItem);
     PaymentLinkItem buildPaymentLinkSubscriptionItem(SubscriptionTransaction subscriptionTransaction);
     CreatePaymentLinkResponse buildPaymentLinkSubscription(SubscriptionTransaction subscriptionTransaction, PaymentLinkItem paymentLinkItem);
+    void messageReturnUrl(WebhookData data);
 }

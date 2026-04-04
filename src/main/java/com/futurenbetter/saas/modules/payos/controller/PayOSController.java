@@ -35,7 +35,7 @@ public class PayOSController {
             } else {
                 orderService.updateOrderStatus(data);
             }
-
+            payOSService.messageReturnUrl(data);
             return ApiResponse.success(HttpStatus.OK, "Xác thực webhook thành công", data, null);
         } catch (Exception e) {
             e.printStackTrace();
