@@ -3,6 +3,7 @@ package com.futurenbetter.saas.modules.subscription.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.utils.MomoUtils;
+import com.futurenbetter.saas.common.utils.PayOSUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
@@ -609,7 +610,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     public void updateSubscriptionStatus(WebhookData data) {
-        Long subscriptionTransactionId = data.getOrderCode();
+        Long subscriptionTransactionId = PayOSUtils.parseSubscriptionCode(data.getOrderCode());
         SubscriptionTransaction transaction = subscriptionTransactionRepository.findById(subscriptionTransactionId)
                 .orElseThrow(() -> new BusinessException("Không tìm thấy giao dịch"));
 
