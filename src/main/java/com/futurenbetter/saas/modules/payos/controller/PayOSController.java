@@ -30,7 +30,7 @@ public class PayOSController {
         try {
             WebhookData data = payOS.webhooks().verify(body);
 
-            if (subscriptionService.isPresentSubscription(data.getOrderCode(), data.getAmount())) {
+            if ((data.getOrderCode() / 1000000000000000L) == 1) {
                 subscriptionService.updateSubscriptionStatus(data);
             } else {
                 orderService.updateOrderStatus(data);
