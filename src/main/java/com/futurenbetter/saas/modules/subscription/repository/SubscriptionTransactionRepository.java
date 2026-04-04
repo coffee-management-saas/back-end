@@ -18,4 +18,6 @@ public interface SubscriptionTransactionRepository extends JpaRepository<Subscri
     );
     @Query("SELECT SUM(t.amount) FROM SubscriptionTransaction t WHERE t.status = 'SUCCESS' AND t.createdAt >= :fromDate AND t.createdAt <= :toDate")
     Long calculateTotalSystemRevenue(@Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
+
+    boolean existsBySubscriptionTransactionIdAndAmount(Long subscriptionTransactionId, Long amount);
 }

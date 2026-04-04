@@ -7,6 +7,12 @@ FROM public.role r
          CROSS JOIN public.permission p
 WHERE r.name = 'SYSTEM';
 
+INSERT INTO public.role_permission (role_id, permission_id)
+SELECT r.role_id, p.permission_id
+FROM public.role r
+         CROSS JOIN public.permission p
+WHERE r.name = 'CUSTOMER_SYSTEM';
+
 -- SHOP_MANAGER
 INSERT INTO public.role_permission (role_id, permission_id)
 SELECT r.role_id, p.permission_id

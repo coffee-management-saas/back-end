@@ -6,6 +6,7 @@ import com.futurenbetter.saas.common.utils.MomoUtils;
 import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
+import com.futurenbetter.saas.modules.payos.service.inter.PayOSService;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.MomoPaymentResponse;
 import com.futurenbetter.saas.modules.subscription.dto.response.VnpayPaymentResponse;
@@ -29,6 +30,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
+import vn.payos.model.webhooks.WebhookData;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -51,6 +55,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     private final PdfExportService pdfExportService;
     private final CloudinaryStorageService cloudinaryStorageService;
     private final MomoUtils momoUtils;
+    private final PayOSService payOSService;
 
     @Value("${momo.api-url}")
     private String momoApiUrl;
@@ -74,21 +79,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Transactional
     public MomoPaymentResponse createSubscriptionWithMomo(SubscriptionRequest request) {
         // 1. Kiểm tra gói dịch vụ
-        SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
-                .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
-
-        if (shopRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException("Email này đã được sử dụng để đăng kí dịch vụ");
-        }
-
-        if (shopRepository.existsByDomain(request.getDomain())) {
-            throw new BusinessException("Tên miền đã được sử dụng");
-        }
+        SubscriptionPlan plan = validateSubscriptionRequest(request);
 
         // 2. Tính tiền
-        Long amount = request.getBillingCycle() == BillingCycleEnum.MONTHLY
-                ? plan.getPriceMonthly()
-                : plan.getPriceYearly();
+        Long amount = calculateAmount(plan, request.getBillingCycle());
 
         Map<String, Object> extraDataMap = new HashMap<>();
         extraDataMap.put("shopData", request);
@@ -350,12 +344,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     @Transactional
     public VnpayPaymentResponse createSubscriptionWithVnpay(SubscriptionRequest request, String ipAddress) {
-        SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
-                .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
+        // 1. Kiểm tra gói dịch vụ
+        SubscriptionPlan plan = validateSubscriptionRequest(request);
 
-        Long amount = request.getBillingCycle() == BillingCycleEnum.MONTHLY
-                ? plan.getPriceMonthly()
-                : plan.getPriceYearly();
+        // 2. Tính tiền
+        Long amount = calculateAmount(plan, request.getBillingCycle());
 
         Shop shop = new Shop();
         shop.setShopName(request.getShopName());
@@ -572,5 +565,133 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             }
         }
         return hashData.toString();
+    }
+
+
+    @Override
+    public CreatePaymentLinkResponse createSubscriptionWithPayOS(SubscriptionRequest request) {
+        // 1. Kiểm tra gói dịch vụ
+        SubscriptionPlan plan = validateSubscriptionRequest(request);
+
+        // 2. Tính tiền
+        Long amount = calculateAmount(plan, request.getBillingCycle());
+
+        Shop shop = new Shop();
+        shop.setShopName(request.getShopName());
+        shop.setAddress(request.getAddress());
+        shop.setPhone(request.getPhone());
+        shop.setEmail(request.getEmail());
+        shop.setDomain(request.getDomain());
+        shop.setShopStatus(ShopStatus.PENDING);
+        shopRepository.save(shop);
+
+        String orderId = "PAYOS_SUB_" + System.currentTimeMillis();
+
+        SubscriptionTransaction transaction = SubscriptionTransaction.builder()
+                .orderId(orderId)
+                .amount(amount)
+                .plan(plan)
+                .shop(shop)
+                .billingCycle(request.getBillingCycle())
+                .paymentGateway(PaymentGatewayEnum.PAYOS)
+                .status(SubscriptionTransactionEnum.PENDING)
+                .isIncome(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        subscriptionTransactionRepository.save(transaction);
+
+        PaymentLinkItem paymentLinkItem = payOSService.buildPaymentLinkSubscriptionItem(transaction);
+        CreatePaymentLinkResponse response = payOSService.buildPaymentLinkSubscription(transaction, paymentLinkItem);
+
+        return response;
+    }
+
+    @Override
+    public void updateSubscriptionStatus(WebhookData data) {
+        Long subscriptionTransactionId = data.getOrderCode();
+        SubscriptionTransaction transaction = subscriptionTransactionRepository.findById(subscriptionTransactionId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy giao dịch"));
+
+        if (transaction.getStatus() == SubscriptionTransactionEnum.ACTIVE) {
+            return;
+        }
+
+        Shop shop = transaction.getShop();
+        shop.setShopStatus(ShopStatus.ACTIVE);
+        shop = shopRepository.save(shop);
+
+        SubscriptionPlan plan = transaction.getPlan();
+        BillingCycleEnum cycle = transaction.getBillingCycle();
+
+        ShopSubscription sub = ShopSubscription.builder()
+                .shop(shop)
+                .plan(plan)
+                .autoRenewal(true)
+                .price(transaction.getAmount())
+                .billingCycleStatus(cycle)
+                .subscriptionPlanStatus(SubscriptionPlanEnum.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .endedAt(LocalDateTime.now().plusMonths(1))
+                .updatedAt(LocalDateTime.now())
+                .build();
+        shopSubscriptionRepository.save(sub);
+
+        BillingInvoice invoice = BillingInvoice.builder()
+                .shop(shop)
+                .shopSubscription(sub)
+                .amount(sub.getPrice())
+                .status(InvoiceEnum.PAID)
+                .dueDate(LocalDateTime.now().plusHours(1))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        invoice.setTransaction(transaction);
+        billingInvoiceRepository.save(invoice);
+
+        BillingInvoice finalInvoice = billingInvoiceRepository.findById(invoice.getBillingInvoiceId())
+                .orElseThrow(() -> new BusinessException("Lỗi nạp hóa đơn"));
+
+        // Xuất PDF & Upload
+        try {
+            byte[] pdfContent = pdfExportService.generateInvoicePdf(finalInvoice);
+            String fileName = "Invoice_" + invoice.getBillingInvoiceId();
+
+            String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
+            invoice.setPdfUrl(pdfUrl);
+            billingInvoiceRepository.save(invoice);
+        } catch (Exception e) {
+            log.error("Lỗi khi tạo hoặc tải lên PDF hóa đơn: {}", e.getMessage());
+        }
+
+        transaction.setInvoice(invoice);
+        transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);
+        transaction.setUpdatedAt(LocalDateTime.now());
+        subscriptionTransactionRepository.save(transaction);
+        billingInvoiceRepository.flush();
+    }
+
+    @Override
+    public boolean isPresentSubscription(long subscriptionTransactionId, long amount) {
+        return subscriptionTransactionRepository.existsBySubscriptionTransactionIdAndAmount(subscriptionTransactionId, amount);
+    }
+
+    private SubscriptionPlan validateSubscriptionRequest(SubscriptionRequest request) {
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
+                .orElseThrow(() -> new BusinessException("Gói dịch vụ không tồn tại"));
+
+        if (shopRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException("Email này đã được sử dụng để đăng kí dịch vụ");
+        }
+
+        if (shopRepository.existsByDomain(request.getDomain())) {
+            throw new BusinessException("Tên miền đã được sử dụng");
+        }
+
+        return plan;
+    }
+
+    private Long calculateAmount(SubscriptionPlan plan, BillingCycleEnum billingCycle) {
+        return billingCycle == BillingCycleEnum.MONTHLY ? plan.getPriceMonthly() : plan.getPriceYearly();
     }
 }

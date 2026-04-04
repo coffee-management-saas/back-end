@@ -4,5 +4,6 @@ public enum PaymentGatewayEnum {
     CASH,
     MOMO,
     VNPAY,
-    BANKING
+    BANKING,
+    PAYOS
 }
