@@ -5,17 +5,23 @@ import com.futurenbetter.saas.modules.payos.service.inter.PayOSService;
 import com.futurenbetter.saas.modules.subscription.entity.SubscriptionTransaction;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import vn.payos.model.v2.paymentRequests.PaymentLinkItem;
+import vn.payos.model.webhooks.WebhookData;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class PayOSServiceImpl implements PayOSService {
 
     private final PayOS payOS;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Value("${payos.order.return-url}")
     private String orderReturnUrl;
@@ -77,5 +83,26 @@ public class PayOSServiceImpl implements PayOSService {
                         .build();
 
         return payOS.paymentRequests().create(paymentData);
+    }
+
+    @Override
+    public void messageReturnUrl(WebhookData data) {
+        String orderCode = String.valueOf(data.getOrderCode());
+
+        Map<String, Object> responseParams = new HashMap<>();
+        responseParams.put("orderCode", data.getOrderCode());
+        responseParams.put("amount", data.getAmount());
+        responseParams.put("description", data.getDescription());
+        responseParams.put("accountNumber", data.getAccountNumber());
+        responseParams.put("reference", data.getReference());
+        responseParams.put("transactionDateTime", data.getTransactionDateTime());
+        responseParams.put("currency", data.getCurrency());
+        responseParams.put("paymentLinkId", data.getPaymentLinkId());
+        responseParams.put("code", data.getCode());
+        responseParams.put("desc", data.getDesc());
+
+        responseParams.put("id", data.getPaymentLinkId());
+
+        messagingTemplate.convertAndSend("/topic/payment/" + orderCode, responseParams);
     }
 }
