@@ -34,7 +34,6 @@ public class TenantFilter implements Filter {
 
             if (isLocalOrIp(domain)) {
                 domain = "futurebetter.online";
-//                domain = "abc-shop.com";
             }
 
             final String finalDomain = domain;
