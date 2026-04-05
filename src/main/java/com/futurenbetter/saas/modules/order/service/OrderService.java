@@ -27,4 +27,6 @@ public interface OrderService {
     CreatePaymentLinkResponse createOrderv2(OrderRequest orderRequest);
 
     void updateOrderStatus(WebhookData webhookData);
+
+    OrderResponse getOrderByIdv2(Long orderId);
 }

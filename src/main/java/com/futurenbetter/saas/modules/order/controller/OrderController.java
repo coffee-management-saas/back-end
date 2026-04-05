@@ -78,4 +78,10 @@ public class OrderController {
         CreatePaymentLinkResponse response = orderService.createOrderv2(orderRequest);
         return ResponseEntity.ok(response);
     }
+    @GetMapping("/v2/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> getOrderByIdv2(@PathVariable Long id) {
+        OrderResponse response = orderService.getOrderByIdv2(id);
+        return ResponseEntity.ok(response);
+    }
 }
