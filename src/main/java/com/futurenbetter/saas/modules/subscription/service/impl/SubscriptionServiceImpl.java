@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.modules.subscription.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.utils.MomoUtils;
@@ -8,6 +9,7 @@ import com.futurenbetter.saas.modules.auth.entity.Shop;
 import com.futurenbetter.saas.modules.auth.enums.ShopStatus;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
 import com.futurenbetter.saas.modules.payos.service.inter.PayOSService;
+import com.futurenbetter.saas.modules.subscription.dto.ShopSnapshot;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.MomoPaymentResponse;
 import com.futurenbetter.saas.modules.subscription.dto.response.VnpayPaymentResponse;
@@ -577,22 +579,31 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         // 2. Tính tiền
         Long amount = calculateAmount(plan, request.getBillingCycle());
 
-        Shop shop = new Shop();
-        shop.setShopName(request.getShopName());
-        shop.setAddress(request.getAddress());
-        shop.setPhone(request.getPhone());
-        shop.setEmail(request.getEmail());
-        shop.setDomain(request.getDomain());
-        shop.setShopStatus(ShopStatus.PENDING);
-        shopRepository.save(shop);
+        // 3. Serialize thông tin shop thành JSON — KHÔNG tạo Shop ở đây
+        ShopSnapshot snapshot = ShopSnapshot.builder()
+                .shopName(request.getShopName())
+                .address(request.getAddress())
+                .phone(request.getPhone())
+                .email(request.getEmail())
+                .domain(request.getDomain())
+                .build();
 
+        String shopSnapshotJson;
+        try {
+            shopSnapshotJson = objectMapper.writeValueAsString(snapshot);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("Không thể serialize thông tin shop");
+        }
+
+        // 4. Tạo transaction với shopSnapshot, không có shop
         String orderId = "PAYOS_SUB_" + System.currentTimeMillis();
 
         SubscriptionTransaction transaction = SubscriptionTransaction.builder()
                 .orderId(orderId)
                 .amount(amount)
                 .plan(plan)
-                .shop(shop)
+                .shopSnapshot(shopSnapshotJson) // <-- lưu JSON
+                // .shop(shop) -- bỏ dòng này
                 .billingCycle(request.getBillingCycle())
                 .paymentGateway(PaymentGatewayEnum.PAYOS)
                 .status(SubscriptionTransactionEnum.PENDING)
@@ -618,10 +629,24 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             return;
         }
 
-        Shop shop = transaction.getShop();
-        shop.setShopStatus(ShopStatus.ACTIVE);
+        // Parse shopSnapshot JSON → tạo Shop mới
+        ShopSnapshot snapshot;
+        try {
+            snapshot = objectMapper.readValue(transaction.getShopSnapshot(), ShopSnapshot.class);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("Không thể đọc thông tin shop từ giao dịch");
+        }
+
+        Shop shop = new Shop();
+        shop.setShopName(snapshot.getShopName());
+        shop.setAddress(snapshot.getAddress());
+        shop.setPhone(snapshot.getPhone());
+        shop.setEmail(snapshot.getEmail());
+        shop.setDomain(snapshot.getDomain());
+        shop.setShopStatus(ShopStatus.ACTIVE); // tạo thẳng ACTIVE vì đã thanh toán
         shop = shopRepository.save(shop);
 
+        // Phần còn lại giữ nguyên
         SubscriptionPlan plan = transaction.getPlan();
         BillingCycleEnum cycle = transaction.getBillingCycle();
 
@@ -633,7 +658,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .billingCycleStatus(cycle)
                 .subscriptionPlanStatus(SubscriptionPlanEnum.ACTIVE)
                 .createdAt(LocalDateTime.now())
-                .endedAt(LocalDateTime.now().plusMonths(1))
+                .endedAt(cycle == BillingCycleEnum.MONTHLY
+                        ? LocalDateTime.now().plusMonths(1)
+                        : LocalDateTime.now().plusYears(1))
                 .updatedAt(LocalDateTime.now())
                 .build();
         shopSubscriptionRepository.save(sub);
@@ -653,11 +680,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         BillingInvoice finalInvoice = billingInvoiceRepository.findById(invoice.getBillingInvoiceId())
                 .orElseThrow(() -> new BusinessException("Lỗi nạp hóa đơn"));
 
-        // Xuất PDF & Upload
         try {
             byte[] pdfContent = pdfExportService.generateInvoicePdf(finalInvoice);
             String fileName = "Invoice_" + invoice.getBillingInvoiceId();
-
             String pdfUrl = cloudinaryStorageService.uploadInvoice(pdfContent, fileName);
             invoice.setPdfUrl(pdfUrl);
             billingInvoiceRepository.save(invoice);
@@ -665,6 +690,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             log.error("Lỗi khi tạo hoặc tải lên PDF hóa đơn: {}", e.getMessage());
         }
 
+        transaction.setShop(shop); // gán shop vào transaction sau khi tạo xong
         transaction.setInvoice(invoice);
         transaction.setStatus(SubscriptionTransactionEnum.ACTIVE);
         transaction.setUpdatedAt(LocalDateTime.now());
