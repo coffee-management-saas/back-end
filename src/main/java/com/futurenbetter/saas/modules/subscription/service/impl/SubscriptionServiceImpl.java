@@ -12,6 +12,7 @@ import com.futurenbetter.saas.modules.payos.service.inter.PayOSService;
 import com.futurenbetter.saas.modules.subscription.dto.ShopSnapshot;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.MomoPaymentResponse;
+import com.futurenbetter.saas.modules.subscription.dto.response.SubscriptionTransactionResponse;
 import com.futurenbetter.saas.modules.subscription.dto.response.VnpayPaymentResponse;
 import com.futurenbetter.saas.modules.subscription.entity.BillingInvoice;
 import com.futurenbetter.saas.modules.subscription.entity.ShopSubscription;
@@ -720,5 +721,24 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     private Long calculateAmount(SubscriptionPlan plan, BillingCycleEnum billingCycle) {
         return billingCycle == BillingCycleEnum.MONTHLY ? plan.getPriceMonthly() : plan.getPriceYearly();
+    }
+
+
+    @Override
+    public SubscriptionTransactionResponse getSubscriptionTransactionByOrderCode(Long orderCode) {
+        Long subscriptionTransactionId = PayOSUtils.parseSubscriptionCode(orderCode);
+        SubscriptionTransaction transaction = subscriptionTransactionRepository.findById(subscriptionTransactionId)
+                .orElseThrow(() -> new BusinessException("Không tìm thấy giao dịch"));
+
+        return SubscriptionTransactionResponse.builder()
+                .subscriptionTransactionId(subscriptionTransactionId)
+                .subscriptionPlanId(transaction.getPlan().getSubscriptionPlanId())
+                .billingInvoiceId(transaction.getInvoice().getBillingInvoiceId())
+                .shopId(transaction.getShop().getId())
+                .amount(transaction.getAmount())
+                .billingCycle(transaction.getBillingCycle())
+                .paymentGateway(transaction.getPaymentGateway())
+                .status(transaction.getStatus())
+                .build();
     }
 }

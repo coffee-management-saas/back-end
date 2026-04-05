@@ -2,6 +2,7 @@ package com.futurenbetter.saas.modules.subscription.service;
 
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.MomoPaymentResponse;
+import com.futurenbetter.saas.modules.subscription.dto.response.SubscriptionTransactionResponse;
 import com.futurenbetter.saas.modules.subscription.dto.response.VnpayPaymentResponse;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import vn.payos.model.webhooks.WebhookData;
@@ -25,4 +26,6 @@ public interface SubscriptionService {
     CreatePaymentLinkResponse createSubscriptionWithPayOS(SubscriptionRequest request);
     void updateSubscriptionStatus(WebhookData data);
     boolean isPresentSubscription(long subscriptionTransactionId, long amount);
+
+    SubscriptionTransactionResponse getSubscriptionTransactionByOrderCode(Long orderCode);
 }
