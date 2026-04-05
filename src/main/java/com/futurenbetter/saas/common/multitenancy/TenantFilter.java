@@ -13,38 +13,37 @@ import java.io.IOException;
 public class TenantFilter implements Filter {
     private final ShopRepository shopRepository;
 
-    // lấy domain từ httpRequest để xác định shopId
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         String path = httpRequest.getRequestURI();
+
         if (path.startsWith("/api/system/")) {
             chain.doFilter(request, response);
             return;
         }
 
-        String host = httpRequest.getHeader("Host");
+        String host = httpRequest.getHeader("X-Forwarded-Host");
+        if (host == null || host.isEmpty()) {
+            host = httpRequest.getHeader("Host");
+        }
 
         if (host != null) {
-            String domain = host.contains(":") ? host.split(":")[0] : host;
+            String domain = host.split(":")[0].toLowerCase().trim();
 
-            // Map về domain mặc định có trong DB khi request từ:
-            // - localhost / 127.0.0.1 (test local)
-            // - IP address bất kỳ, ví dụ 54.95.117.37 (truy cập Swagger qua IP EC2)
-            if (domain.equals("localhost")
-                    || domain.equals("127.0.0.1")
-                    || domain.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
+            if (isLocalOrIp(domain)) {
                 domain = "futurebetter.online";
 //                domain = "abc-shop.com";
             }
-            // Giữ nguyên mọi domain chữ (futurebetter.online, subdomain, v.v.)
-            // để tra cứu đúng trong DB
 
-            final String finalDomain = domain.toLowerCase();
+            final String finalDomain = domain;
 
-            shopRepository.findByDomain(finalDomain).ifPresent(shop -> {
+            shopRepository.findByDomain(finalDomain).ifPresentOrElse(shop -> {
+                System.out.println("DEBUG - TenantFilter: Found shop ID " + shop.getId() + " for [" + finalDomain + "]");
                 TenantContext.setCurrentShopId(shop.getId());
+            }, () -> {
+                System.out.println("DEBUG - TenantFilter: No shop found in DB for domain: [" + finalDomain + "]");
             });
         }
 
@@ -53,5 +52,14 @@ public class TenantFilter implements Filter {
         } finally {
             TenantContext.clearCurrentShopId();
         }
+    }
+
+    private boolean isLocalOrIp(String domain) {
+        return domain.equals("localhost")
+                || domain.equals("127.0.0.1")
+                || domain.equals("::1")
+                || domain.equals("0:0:0:0:0:0:0:1")
+                || domain.equals("54.95.117.37")
+                || domain.matches("\\d+\\.\\d+\\.\\d+\\.\\d+");
     }
 }
