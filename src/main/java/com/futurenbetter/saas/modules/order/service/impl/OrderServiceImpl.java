@@ -3,6 +3,7 @@ package com.futurenbetter.saas.modules.order.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.common.utils.MomoUtils;
+import com.futurenbetter.saas.common.utils.PayOSUtils;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.auth.entity.Customer;
 import com.futurenbetter.saas.modules.auth.entity.MembershipRank;
@@ -834,6 +835,30 @@ public class OrderServiceImpl implements OrderService {
         order.setPromotion(promotion);
         order.setCreatedAt(LocalDateTime.now());
 
+        BigDecimal shippingFee = BigDecimal.ZERO;
+
+        if (request.getOrderType().equals(OrderType.DELIVERY)) {
+            shippingFee = shippingFee.add(BigDecimal.valueOf(15000L));
+        }
+
+        if (request.getOrderType() == OrderType.DELIVERY && request.getLatitude() != null) {
+            Double shopLat = 10.7725;
+            Double shopLng = 106.6981;
+
+            String origin = shopLat + "," + shopLng;
+            String destination = request.getLatitude() + "," + request.getLongitude();
+            double distanceKm = goongMapService.getDistance(origin, destination);
+
+            if (distanceKm > 1.0) {
+                double extraKm = Math.ceil(distanceKm - 1.0);
+                shippingFee = shippingFee.add(BigDecimal.valueOf(extraKm * 5000));
+            }
+        }
+
+        order.setShippingFee(shippingFee);
+        long paidPrice = totalBasePrice - discountAmount + shippingFee.longValue();
+        order.setPaidPrice(paidPrice);
+
         if (isCash) {
             order.setOrderStatus(OrderStatus.PAID);
             updateMonthlyProductSold(order);
@@ -873,8 +898,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void updateOrderStatus(WebhookData webhookData) {
-        Order order = orderRepository.findById(webhookData.getOrderCode())
-                .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + webhookData.getOrderCode()));
+        Map<Long, Long> orderCodeMap = PayOSUtils.parseOrderCodeV2(webhookData.getOrderCode()); // 1. shopId, 2. orderId
+
+        Order order = orderRepository.findById(orderCodeMap.get(2L))
+                .orElseThrow(() -> new BusinessException("Không tìm thấy đơn hàng với ID: " + orderCodeMap.get(2L)));
 
         if (webhookData.getCode().equals("00")) {
             order.setOrderStatus(OrderStatus.PAID);

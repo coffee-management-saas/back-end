@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.modules.payos.service.impl;
 
+import com.futurenbetter.saas.common.utils.PayOSUtils;
 import com.futurenbetter.saas.modules.order.entity.Order;
 import com.futurenbetter.saas.modules.payos.service.inter.PayOSService;
 import com.futurenbetter.saas.modules.subscription.entity.SubscriptionTransaction;
@@ -48,9 +49,10 @@ public class PayOSServiceImpl implements PayOSService {
 
     @Override
     public CreatePaymentLinkResponse buildPaymentLinkOrder(Order order, PaymentLinkItem paymentLinkItem) {
+        Long orderCode = PayOSUtils.genOrderCodeV2(order.getShop().getId(), order.getOrderId());
         CreatePaymentLinkRequest paymentData =
                 CreatePaymentLinkRequest.builder()
-                        .orderCode(order.getOrderId())
+                        .orderCode(orderCode)
                         .description("ORDER: " + order.getOrderId())
                         .amount(order.getPaidPrice())
                         .item(paymentLinkItem)
@@ -72,9 +74,10 @@ public class PayOSServiceImpl implements PayOSService {
 
     @Override
     public CreatePaymentLinkResponse buildPaymentLinkSubscription(SubscriptionTransaction subscriptionTransaction, PaymentLinkItem paymentLinkItem) {
+        Long orderCode = PayOSUtils.genSubscriptionCode(subscriptionTransaction.getSubscriptionTransactionId());
         CreatePaymentLinkRequest paymentData =
                 CreatePaymentLinkRequest.builder()
-                        .orderCode(subscriptionTransaction.getSubscriptionTransactionId())
+                        .orderCode(orderCode)
                         .description("SUB_PLAN: " + subscriptionTransaction.getShop().getId())
                         .amount(subscriptionTransaction.getAmount())
                         .item(paymentLinkItem)
