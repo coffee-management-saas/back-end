@@ -3,6 +3,7 @@ package com.futurenbetter.saas.modules.subscription.controller;
 import com.futurenbetter.saas.common.exception.BusinessException;
 import com.futurenbetter.saas.modules.subscription.dto.request.SubscriptionRequest;
 import com.futurenbetter.saas.modules.subscription.dto.response.MomoPaymentResponse;
+import com.futurenbetter.saas.modules.subscription.dto.response.SubscriptionTransactionResponse;
 import com.futurenbetter.saas.modules.subscription.dto.response.VnpayPaymentResponse;
 import com.futurenbetter.saas.modules.subscription.entity.BillingInvoice;
 import com.futurenbetter.saas.modules.subscription.repository.BillingInvoiceRepository;
@@ -87,6 +88,12 @@ public class SubscriptionController {
             @Valid @RequestBody SubscriptionRequest request
     ) {
         CreatePaymentLinkResponse response = subscriptionService.createSubscriptionWithPayOS(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/v2/{id}")
+    public ResponseEntity<SubscriptionTransactionResponse> getSubscriptionTransactionById(@PathVariable Long id) {
+        SubscriptionTransactionResponse response = subscriptionService.getSubscriptionTransactionByOrderCode(id);
         return ResponseEntity.ok(response);
     }
 }

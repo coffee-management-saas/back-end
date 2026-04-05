@@ -924,4 +924,10 @@ public class OrderServiceImpl implements OrderService {
 
         }
     }
+
+    @Override
+    public OrderResponse getOrderByIdv2(Long orderId) {
+        Long parsedOrderId = PayOSUtils.parseOrderCodeV2(orderId).get(2L);
+        return getOrderById(parsedOrderId);
+    }
 }

@@ -66,7 +66,7 @@ public class PayOSServiceImpl implements PayOSService {
     @Override
     public PaymentLinkItem buildPaymentLinkSubscriptionItem(SubscriptionTransaction subscriptionTransaction) {
         return PaymentLinkItem.builder()
-                .name("SUB_PLAN: " + subscriptionTransaction.getShop().getId())
+                .name("SUB_PLAN: " + subscriptionTransaction.getSubscriptionTransactionId())
                 .quantity(1)
                 .price(subscriptionTransaction.getAmount())
                 .build();
@@ -78,7 +78,7 @@ public class PayOSServiceImpl implements PayOSService {
         CreatePaymentLinkRequest paymentData =
                 CreatePaymentLinkRequest.builder()
                         .orderCode(orderCode)
-                        .description("SUB_PLAN: " + subscriptionTransaction.getShop().getId())
+                        .description("SUB_PLAN: " + subscriptionTransaction.getSubscriptionTransactionId())
                         .amount(subscriptionTransaction.getAmount())
                         .item(paymentLinkItem)
                         .returnUrl(subscriptionReturnUrl)

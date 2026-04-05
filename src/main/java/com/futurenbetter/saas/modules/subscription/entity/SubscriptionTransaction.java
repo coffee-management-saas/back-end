@@ -62,4 +62,7 @@ public class SubscriptionTransaction {
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private SubscriptionTransactionEnum status;
+
+    @Column(name = "shop_snapshot", columnDefinition = "TEXT")
+    private String shopSnapshot;
 }
