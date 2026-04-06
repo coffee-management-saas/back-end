@@ -673,7 +673,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public CreatePaymentLinkResponse createOrderv2(OrderRequest request) {
+    public Object createOrderv2(OrderRequest request) {
         // 1. Lấy ShopId và Customer từ SecurityUtils
         Long currentShopId = SecurityUtils.getCurrentShopId();
         Long currentUserId = SecurityUtils.getCurrentUserId();
@@ -854,7 +854,7 @@ public class OrderServiceImpl implements OrderService {
             orderResponse.setPayUrl(data.getCheckoutUrl());
             return data;
         }
-        return null;
+        return orderMapper.toOrderResponse(savedOrder);
     }
 
     @Override
