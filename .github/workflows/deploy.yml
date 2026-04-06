@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: hawks-actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -22,7 +22,6 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        # Sử dụng clean để xóa toàn bộ bản build cũ trước khi tạo bản mới
         run: ./mvnw clean package -DskipTests
 
       - name: Login to Docker Hub
@@ -39,7 +38,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          # Gắn tag latest để server dễ pull
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/back-end:latest
 
       - name: Deploy to EC2 with Docker Compose
@@ -50,16 +48,8 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Di chuyển vào thư mục chứa dự án
             cd /home/${{ secrets.EC2_USER }}/back-end
-            
-            # Pull image mới nhất từ Docker Hub về
             sudo docker compose pull
-            
-            # Khởi động lại các service
-            # --force-recreate: Ép Docker tạo lại container ngay cả khi cấu hình không đổi
-            # --remove-orphans: Xóa các container thừa không được định nghĩa trong file yaml
             sudo docker compose up -d --force-recreate --remove-orphans
-            
-            # Dọn dẹp các image "rác" (dangling images) để tránh đầy ổ cứng server
             sudo docker image prune -f
+            
