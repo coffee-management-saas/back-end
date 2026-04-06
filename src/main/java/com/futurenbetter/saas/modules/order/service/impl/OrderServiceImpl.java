@@ -107,6 +107,10 @@ public class OrderServiceImpl implements OrderService {
     @Value("${momo.redirect-url}")
     private String redirectUrl;
 
+    // Tọa độ Trường Đại học FPT TP.HCM
+    private static final double SHOP_LAT = 10.8412;
+    private static final double SHOP_LNG = 106.8098;
+
     @Override
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -257,25 +261,7 @@ public class OrderServiceImpl implements OrderService {
         order.setPromotion(promotion);
         order.setCreatedAt(LocalDateTime.now());
 
-        BigDecimal shippingFee = BigDecimal.ZERO;
-
-        if (request.getOrderType() == OrderType.DELIVERY && request.getLatitude() != null) {
-            Double shopLat = 10.7725;
-            Double shopLng = 106.6981;
-
-            String origin = shopLat + "," + shopLng;
-            String destination = request.getLatitude() + "," + request.getLongitude();
-            double distanceKm = goongMapService.getDistance(origin, destination);
-
-            if (distanceKm > 1.0) {
-                double extraKm = Math.ceil(distanceKm - 1.0);
-                shippingFee = BigDecimal.valueOf(extraKm * 5000);
-            }
-        }
-
-        order.setShippingFee(shippingFee);
-        long paidPrice = totalBasePrice - discountAmount + shippingFee.longValue();
-        order.setPaidPrice(paidPrice);
+        calculateAndSetShippingFee(order, request, totalBasePrice, discountAmount);
 
         if (isCash) {
             order.setOrderStatus(OrderStatus.PAID);
@@ -685,10 +671,9 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-
     @Override
     @Transactional
-    public CreatePaymentLinkResponse createOrderv2(OrderRequest request) {
+    public Object createOrderv2(OrderRequest request) {
         // 1. Lấy ShopId và Customer từ SecurityUtils
         Long currentShopId = SecurityUtils.getCurrentShopId();
         Long currentUserId = SecurityUtils.getCurrentUserId();
@@ -830,34 +815,11 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderItems(items);
         order.setBasePrice(totalBasePrice);
         order.setDiscountAmount(discountAmount);
-        order.setPaidPrice(totalBasePrice - discountAmount);
         order.setProductQuantity(items.size());
         order.setPromotion(promotion);
         order.setCreatedAt(LocalDateTime.now());
 
-        BigDecimal shippingFee = BigDecimal.ZERO;
-
-        if (request.getOrderType().equals(OrderType.DELIVERY)) {
-            shippingFee = shippingFee.add(BigDecimal.valueOf(15000L));
-        }
-
-        if (request.getOrderType() == OrderType.DELIVERY && request.getLatitude() != null) {
-            Double shopLat = 10.7725;
-            Double shopLng = 106.6981;
-
-            String origin = shopLat + "," + shopLng;
-            String destination = request.getLatitude() + "," + request.getLongitude();
-            double distanceKm = goongMapService.getDistance(origin, destination);
-
-            if (distanceKm > 1.0) {
-                double extraKm = Math.ceil(distanceKm - 1.0);
-                shippingFee = shippingFee.add(BigDecimal.valueOf(extraKm * 5000));
-            }
-        }
-
-        order.setShippingFee(shippingFee);
-        long paidPrice = totalBasePrice - discountAmount + shippingFee.longValue();
-        order.setPaidPrice(paidPrice);
+        calculateAndSetShippingFee(order, request, totalBasePrice, discountAmount);
 
         if (isCash) {
             order.setOrderStatus(OrderStatus.PAID);
@@ -869,7 +831,6 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
 
         // 7. Ghi nhận promotion usage và xử lý nội bộ nếu đơn hàng đã được THANH TOÁN
-        // (thường là Offline Cash)
         if (savedOrder.getOrderStatus() == OrderStatus.PAID) {
             triggerStockDeduction(savedOrder);
             processCustomerPoints(savedOrder);
@@ -893,10 +854,11 @@ public class OrderServiceImpl implements OrderService {
             orderResponse.setPayUrl(data.getCheckoutUrl());
             return data;
         }
-        return null;
+        return orderMapper.toOrderResponse(savedOrder);
     }
 
     @Override
+    @Transactional
     public void updateOrderStatus(WebhookData webhookData) {
         Map<Long, Long> orderCodeMap = PayOSUtils.parseOrderCodeV2(webhookData.getOrderCode()); // 1. shopId, 2. orderId
 
@@ -929,5 +891,23 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse getOrderByIdv2(Long orderId) {
         Long parsedOrderId = PayOSUtils.parseOrderCodeV2(orderId).get(2L);
         return getOrderById(parsedOrderId);
+    }
+
+    private void calculateAndSetShippingFee(Order order, OrderRequest request, long totalBasePrice,
+            Long discountAmount) {
+        long shippingFee = 0;
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            String origin = SHOP_LAT + "," + SHOP_LNG;
+            String destination = request.getLatitude() + "," + request.getLongitude();
+            try {
+                double distanceKm = goongMapService.getDistance(origin, destination);
+                shippingFee = goongMapService.calculateShippingFee(distanceKm);
+            } catch (Exception e) {
+                // Error calculating shipping fee
+                e.printStackTrace();
+            }
+        }
+        order.setShippingFee(BigDecimal.valueOf(shippingFee));
+        order.setPaidPrice(totalBasePrice - (discountAmount != null ? discountAmount : 0) + shippingFee);
     }
 }

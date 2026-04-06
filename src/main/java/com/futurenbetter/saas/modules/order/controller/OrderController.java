@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
 import java.util.List;
 
@@ -74,8 +73,8 @@ public class OrderController {
 
     @PostMapping("/v2")
     @PreAuthorize("hasAuthority('order:create')")
-    public ResponseEntity<CreatePaymentLinkResponse> createOrderv2(@Valid @RequestBody OrderRequest orderRequest) {
-        CreatePaymentLinkResponse response = orderService.createOrderv2(orderRequest);
+    public ResponseEntity<Object> createOrderv2(@Valid @RequestBody OrderRequest orderRequest) {
+        Object response = orderService.createOrderv2(orderRequest);
         return ResponseEntity.ok(response);
     }
     @GetMapping("/v2/{id}")
