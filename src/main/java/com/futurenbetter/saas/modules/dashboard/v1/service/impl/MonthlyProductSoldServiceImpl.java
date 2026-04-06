@@ -1,0 +1,65 @@
+package com.futurenbetter.saas.modules.dashboard.v1.service.impl;
+
+import com.futurenbetter.saas.common.utils.SecurityUtils;
+import com.futurenbetter.saas.modules.auth.entity.Shop;
+import com.futurenbetter.saas.modules.dashboard.v1.dto.filter.MonthlyProductSoldFilter;
+import com.futurenbetter.saas.modules.dashboard.v1.dto.response.MonthlyProductSoldResponse;
+import com.futurenbetter.saas.modules.dashboard.v1.entity.MonthlyProductSold;
+import com.futurenbetter.saas.modules.dashboard.v1.mapper.MonthlyProductSoldMapper;
+import com.futurenbetter.saas.modules.dashboard.v1.repository.MonthlyProductSoldRepository;
+import com.futurenbetter.saas.modules.dashboard.v1.service.inter.MonthlyProductSoldService;
+import com.futurenbetter.saas.modules.product.entity.Product;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Month;
+import java.time.YearMonth;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class MonthlyProductSoldServiceImpl implements MonthlyProductSoldService {
+
+    private final MonthlyProductSoldRepository monthlyProductSoldRepository;
+    private final MonthlyProductSoldMapper monthlyProductSoldMapper;
+
+    @Override
+    @Transactional
+    public boolean updateMonthlyProductSold(Shop shop, Product product, Integer quantitySold) {
+
+        Integer year = YearMonth.now().getYear();
+        Month month = YearMonth.now().getMonth();
+
+        MonthlyProductSold existingRecord = monthlyProductSoldRepository
+                .findByShopIdAndProductIdAndYearAndMonth(shop.getId(), product.getId(), year, month)
+                .orElse(null);
+
+        if(existingRecord != null) {
+            existingRecord.setQuantitySold(existingRecord.getQuantitySold() + quantitySold);
+        } else {
+            var newRecord = MonthlyProductSold.builder()
+                    .shop(shop)
+                    .product(product)
+                    .month(month)
+                    .year(year)
+                    .quantitySold(quantitySold)
+                    .build();
+            monthlyProductSoldRepository.save(newRecord);
+        }
+
+        return true;
+    }
+
+    @Override
+    public List<MonthlyProductSoldResponse> getAll(MonthlyProductSoldFilter filter) {
+
+        Long shopId = SecurityUtils.getCurrentShopId();
+
+        return monthlyProductSoldRepository.findTopProductsPerMonthByYear(shopId, filter.getYear(), filter.getProductNum())
+                .stream()
+                .map(monthlyProductSoldMapper::toResponse)
+                .toList();
+    }
+}

@@ -14,7 +14,7 @@ import com.futurenbetter.saas.modules.auth.mapper.PointHistoryMapper;
 import com.futurenbetter.saas.modules.auth.repository.CustomerRepository;
 import com.futurenbetter.saas.modules.auth.repository.MembershipRankRepository;
 import com.futurenbetter.saas.modules.auth.repository.ShopRepository;
-import com.futurenbetter.saas.modules.dashboard.service.inter.MonthlyProductSoldService;
+import com.futurenbetter.saas.modules.dashboard.v1.service.inter.MonthlyProductSoldService;
 import com.futurenbetter.saas.modules.inventory.service.inter.InventoryInvoiceService;
 import com.futurenbetter.saas.modules.notification.service.inter.NotificationService;
 import com.futurenbetter.saas.modules.order.dto.filter.OrderFilter;
