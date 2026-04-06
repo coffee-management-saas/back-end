@@ -1,0 +1,33 @@
+package com.futurenbetter.saas.modules.dashboard.v1.repository;
+
+import com.futurenbetter.saas.modules.dashboard.v1.entity.MonthlyProductSold;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.Month;
+import java.util.List;
+import java.util.Optional;
+
+public interface MonthlyProductSoldRepository extends JpaRepository<MonthlyProductSold, Long>, JpaSpecificationExecutor<MonthlyProductSold> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<MonthlyProductSold> findByShopIdAndProductIdAndYearAndMonth(Long shop_id, Long product_id, Integer year, Month month);
+    @Query(value = """
+            WITH RankedProducts AS (
+                SELECT *,
+                       ROW_NUMBER() OVER(PARTITION BY month ORDER BY quantity_sold DESC) as row_num
+                FROM monthly_product_sold m
+                WHERE m.shop_id = :shopId 
+                  AND m.year = :year
+            )           
+            SELECT * FROM RankedProducts 
+            WHERE row_num <= :limit
+            """, nativeQuery = true)
+    List<MonthlyProductSold> findTopProductsPerMonthByYear(
+            @Param("shopId") Long shopId,
+            @Param("year") Integer year,
+            @Param("limit") Integer limit);
+}

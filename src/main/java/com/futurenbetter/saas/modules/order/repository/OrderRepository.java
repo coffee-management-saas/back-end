@@ -1,7 +1,7 @@
 package com.futurenbetter.saas.modules.order.repository;
 
-import com.futurenbetter.saas.modules.dashboard.dto.projection.BestSellerProjection;
-import com.futurenbetter.saas.modules.dashboard.dto.projection.TopProductProjection;
+import com.futurenbetter.saas.modules.dashboard.v1.dto.projection.BestSellerProjection;
+import com.futurenbetter.saas.modules.dashboard.v1.dto.projection.TopProductProjection;
 import com.futurenbetter.saas.modules.order.entity.Order;
 import com.futurenbetter.saas.modules.order.enums.OrderStatus;
 import com.futurenbetter.saas.modules.order.enums.OrderType;
