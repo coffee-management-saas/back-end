@@ -2,6 +2,7 @@ package com.futurenbetter.saas.modules.order.repository;
 
 import com.futurenbetter.saas.modules.dashboard.v1.dto.projection.BestSellerProjection;
 import com.futurenbetter.saas.modules.dashboard.v1.dto.projection.TopProductProjection;
+import com.futurenbetter.saas.modules.dashboard.v2.dto.response.ShopDashboardResponseV2;
 import com.futurenbetter.saas.modules.order.entity.Order;
 import com.futurenbetter.saas.modules.order.enums.OrderStatus;
 import com.futurenbetter.saas.modules.order.enums.OrderType;
@@ -81,4 +82,31 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
         @Query("UPDATE Order o SET o.orderStatus = :status, o.updatedAt = :updatedAt WHERE o.orderId = :orderId")
         void updateOrderStatus(@Param("orderId") Long orderId, @Param("status") OrderStatus status,
                         @Param("updatedAt") LocalDateTime updatedAt);
+
+    @Query("SELECT SUM(o.paidPrice) FROM Order o " +
+            "WHERE o.shop.id = :shopId " +
+            "AND o.createdAt >= :start AND o.createdAt <= :end " +
+            "AND o.orderStatus = 'PAID'") // Chỉ tính đơn đã hoàn thành
+    Double sumRevenueByShopAndDate(@Param("shopId") Long shopId,
+                                   @Param("start") LocalDateTime start,
+                                   @Param("end") LocalDateTime end);
+
+    @Query("SELECT COUNT(o.orderId) FROM Order o " +
+            "WHERE o.shop.id = :shopId " +
+            "AND o.createdAt >= :start AND o.createdAt <= :end " +
+            "AND o.orderStatus = 'PAID'")
+    Long countOrdersByShopAndDate(@Param("shopId") Long shopId,
+                                  @Param("start") LocalDateTime start,
+                                  @Param("end") LocalDateTime end);
+
+    @Query("SELECT HOUR(o.createdAt) as hour, SUM(o.paidPrice) as revenue, COUNT(o.orderId) as count " +
+            "FROM Order o " +
+            "WHERE o.shop.id = :shopId " +
+            "AND o.createdAt >= :start AND o.createdAt <= :end " +
+            "AND o.orderStatus = 'PAID' " +
+            "GROUP BY HOUR(o.createdAt) " +
+            "ORDER BY hour ASC")
+    List<ShopDashboardResponseV2.ChartDataPoint> getHourlyChartDataRaw(@Param("shopId") Long shopId,
+                                                                       @Param("start") LocalDateTime start,
+                                                                       @Param("end") LocalDateTime end);
 }
