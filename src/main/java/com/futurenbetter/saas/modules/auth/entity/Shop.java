@@ -83,7 +83,7 @@ public class Shop {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if(shopStatus == null) {
+        if (shopStatus == null) {
             shopStatus = ShopStatus.ACTIVE;
         }
     }

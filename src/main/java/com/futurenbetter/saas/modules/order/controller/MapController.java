@@ -1,5 +1,6 @@
 package com.futurenbetter.saas.modules.order.controller;
 
+import com.futurenbetter.saas.modules.order.service.GoongMapService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -17,17 +18,22 @@ import java.nio.charset.StandardCharsets;
 @RequestMapping("/api/map")
 @RequiredArgsConstructor
 public class MapController {
-    @Value("${GOONG_API_KEY}")
+    @Value("${goong.api-key}")
     private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final GoongMapService goongMapService;
+
+    // Tọa độ Trường Đại học FPT TP.HCM
+    private static final double SHOP_LAT = 10.8412;
+    private static final double SHOP_LNG = 106.8098;
 
     @GetMapping("/autocomplete")
     public ResponseEntity<?> autocomplete(@RequestParam String input) {
         String encodedInput = UriUtils.encode(input, StandardCharsets.UTF_8);
-        String url = String.format("https://rsapi.goong.io/Place/AutoComplete?api_key=%s&input=%s", apiKey, encodedInput);
+        String url = String.format("https://rsapi.goong.io/Place/AutoComplete?api_key=%s&input=%s", apiKey,
+                encodedInput);
         try {
-            // Sử dụng URI.create để tránh RestTemplate encode lần nữa những dấu % đã có
             Object response = restTemplate.getForObject(URI.create(url), Object.class);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -52,6 +58,25 @@ public class MapController {
         try {
             Object response = restTemplate.getForObject(URI.create(url), Object.class);
             return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/calculate-shipping")
+    public ResponseEntity<?> calculateShipping(@RequestParam double lat, @RequestParam double lng) {
+        try {
+            String origin = SHOP_LAT + "," + SHOP_LNG;
+            String destination = lat + "," + lng;
+            double distanceKm = goongMapService.getDistance(origin, destination);
+            long shippingFee = goongMapService.calculateShippingFee(distanceKm);
+
+            java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+            result.put("shopAddress", "Trường Đại học FPT TP.HCM, Khu Công nghệ cao, Thủ Đức");
+            result.put("distanceKm", Math.round(distanceKm * 10.0) / 10.0);
+            result.put("shippingFee", shippingFee);
+            result.put("shippingFeeFormatted", String.format("%,dđ", shippingFee));
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(400).body(e.getMessage());
         }

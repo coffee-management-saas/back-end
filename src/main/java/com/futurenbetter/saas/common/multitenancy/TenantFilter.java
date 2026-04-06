@@ -33,14 +33,12 @@ public class TenantFilter implements Filter {
             String domain = host.split(":")[0].toLowerCase().trim();
 
             if (isLocalOrIp(domain)) {
-//                domain = "abc-shop.com";
-                domain = "futurebetter.online";
+                domain = "abc-shop.com";
+//                domain = "futurebetter.online";
             }
-
             final String finalDomain = domain;
 
             shopRepository.findByDomain(finalDomain).ifPresentOrElse(shop -> {
-                System.out.println("DEBUG - TenantFilter: Found shop ID " + shop.getId() + " for [" + finalDomain + "]");
                 TenantContext.setCurrentShopId(shop.getId());
             }, () -> {
                 System.out.println("DEBUG - TenantFilter: No shop found in DB for domain: [" + finalDomain + "]");
