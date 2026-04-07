@@ -33,7 +33,7 @@ public class TenantFilter implements Filter {
             String domain = host.split(":")[0].toLowerCase().trim();
 
             if (isLocalOrIp(domain)) {
-//                domain = "abc-shop.com";
+                //domain = "abc-shop.com";
                 domain = "futurebetter.online";
             }
             final String finalDomain = domain;
