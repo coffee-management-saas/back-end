@@ -23,7 +23,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('category:create')")
+    //@PreAuthorize("hasAuthority('category:create')")
     public ApiResponse<CategoryResponse> create(
             @RequestBody @Valid CategoryRequest request
     ) {
@@ -37,7 +37,7 @@ public class CategoryController {
     }
 
     @PutMapping("{id}")
-    @PreAuthorize("hasAuthority('category:update')")
+    //@PreAuthorize("hasAuthority('category:update')")
     public ApiResponse<CategoryResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid CategoryRequest request
@@ -87,7 +87,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("{id}")
-    @PreAuthorize("hasAuthority('category:delete')")
+    //@PreAuthorize("hasAuthority('category:delete')")
     public ApiResponse<Void> delete(
             @PathVariable Long id
     ) {
