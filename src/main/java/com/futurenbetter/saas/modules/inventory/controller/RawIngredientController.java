@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/inventory/ingredients")
+@RequestMapping("/api/inventory/ingredients")
 @RequiredArgsConstructor
 public class RawIngredientController {
 

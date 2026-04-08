@@ -72,7 +72,7 @@ public class OrderController {
     }
 
     @PostMapping("/v2")
-    @PreAuthorize("hasAuthority('order:create')")
+//    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Object> createOrderv2(@Valid @RequestBody OrderRequest orderRequest) {
         Object response = orderService.createOrderv2(orderRequest);
         return ResponseEntity.ok(response);

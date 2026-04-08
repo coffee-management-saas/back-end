@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/notifications")
+@RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 public class NotificationController {
 
     private final NotificationService notificationService;
 
     @PutMapping("{id}")
-    @PreAuthorize("hasAuthority('notification:update')")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<NotificationResponse> update(
             @PathVariable Long id
     ) {
@@ -36,7 +36,7 @@ public class NotificationController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('notification:read')")
+//    @PreAuthorize("isAuthenticated()")
     public ApiResponse<List<NotificationResponse>> getAll(
             @ModelAttribute NotificationFilter filter
     ) {

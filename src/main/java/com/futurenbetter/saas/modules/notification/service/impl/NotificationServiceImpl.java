@@ -1,5 +1,7 @@
 package com.futurenbetter.saas.modules.notification.service.impl;
 
+import com.futurenbetter.saas.common.multitenancy.TenantContext;
+import com.futurenbetter.saas.common.multitenancy.TenantFilter;
 import com.futurenbetter.saas.common.utils.SecurityUtils;
 import com.futurenbetter.saas.modules.notification.dto.filter.NotificationFilter;
 import com.futurenbetter.saas.modules.notification.dto.response.NotificationResponse;
@@ -53,6 +55,9 @@ public class NotificationServiceImpl implements NotificationService {
 
         Long shopId = SecurityUtils.getCurrentShopId();
         Long recipientId = SecurityUtils.getCurrentUserId();
+
+        System.out.println("Shop ID: " + shopId);
+        System.out.println("Recipient ID: " + recipientId);
 
         return notificationRepository.findAll(
                 NotificationSpecification.filter(filter, shopId, recipientId),

@@ -29,6 +29,7 @@ public class SecurityConfig {
             "/payment/**",
             "/api/system/auth/**",
             "/api/categories/**",
+            "/api/subscriptions/**",
     };
     private final AuthenticationService authenticationService;
         private static final String[] PUBLIC_ENDPOINTS = strings;
