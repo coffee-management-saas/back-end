@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/employee/shift-templates")
+@RequestMapping("/api/shift-templates")
 @RequiredArgsConstructor
 public class ShiftTemplateController {
 

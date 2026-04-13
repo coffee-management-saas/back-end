@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/employee/unavailability")
+@RequestMapping("/api/unavailability")
 @RequiredArgsConstructor
 public class EmployeeUnavailabilityController {
 
